@@ -1,0 +1,18 @@
+/* @snippet aurora — slowly rotating conic gradient driven by a registered angle */
+@layer scene {
+  .aurora {
+    position: absolute;
+    inset: -25%;
+    background:
+      conic-gradient(from var(--a-spin) at 50% 50%,
+        var(--c-accent), transparent 25%, var(--c-accent) 50%, transparent 75%, var(--c-accent));
+    filter: blur(80px);
+    opacity: 0.6;
+    animation: aurora-spin var(--t-drift) linear infinite;
+  }
+  @keyframes aurora-spin { to { --a-spin: 360deg; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurora { animation: none; }
+  }
+}

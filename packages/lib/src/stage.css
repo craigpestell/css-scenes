@@ -1,0 +1,23 @@
+/* @snippet stage — full-window, contained scene root */
+@layer reset, tokens, base, scene, utilities;
+
+@layer reset {
+  *, ::before, ::after { box-sizing: border-box; margin: 0; }
+  html { block-size: 100%; }
+}
+
+@layer base {
+  body {
+    min-block-size: 100dvh;
+    background: var(--c-paper);
+    color: var(--c-ink);
+    font: 1rem/1.5 system-ui, sans-serif;
+    overflow: clip;
+  }
+  .stage {
+    position: fixed;
+    inset: 0;
+    contain: strict;
+    overflow: clip;
+  }
+}

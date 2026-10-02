@@ -1,0 +1,12 @@
+{
+  "title": "Tokyo Subway",
+  "tags": ["parallax", "seamless-loop", "gradients", "mask-image", "light-dark", "sibling-index", "no-js"],
+  "techniques": ["period-locked repeating-gradient tile loop", "ratio-locked parallax", "mask-image window cutouts", "light-dark()", "sibling-index() stagger with --i fallback"],
+  "features": [
+    { "name": "light-dark() / color-scheme", "baseline": "newly available (2024-05-13)" },
+    { "name": "mask-image", "baseline": "widely available (2023-12-07)" },
+    { "name": "sibling-index()", "baseline": "newly available (2026-08-18); --i fallback" },
+    { "name": "individual transforms (translate, rotate)", "baseline": "widely available" }
+  ],
+  "exceptions": {}
+}

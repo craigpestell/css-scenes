@@ -1,0 +1,4 @@
+node_modules
+dist
+reports/history
+.DS_Store

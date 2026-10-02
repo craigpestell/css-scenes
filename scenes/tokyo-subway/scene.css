@@ -1,0 +1,138 @@
+@import "lib/stage";
+
+@layer scene {
+  .stage {
+    --tile-far: 120px;
+    --tile-near: 480px;
+    --holes: repeating-linear-gradient(90deg, #000 0 30.4%, transparent 30.4% 33.333%);
+    background: linear-gradient(var(--c-car-wall), color-mix(in oklab, var(--c-car-wall), var(--c-ink) 12%));
+  }
+  /* pillars/frames between windows: one dark band behind the masked windows */
+  .stage::before {
+    content: "";
+    position: absolute;
+    inset: calc(16% - 8px) calc(3% - 8px) calc(34% - 8px);
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--c-car-wall), var(--c-ink) 28%);
+  }
+  .windows {
+    position: absolute;
+    inset: 16% 3% 34%;
+    overflow: clip;
+    background: var(--c-tunnel);
+    mask-image: var(--holes);
+  }
+  .far, .near {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    background-repeat: repeat-x;
+  }
+  .far {
+    inline-size: calc(100% + var(--tile-far));
+    background-image:
+      linear-gradient(90deg, transparent, var(--c-lamp) 60%, transparent),
+      linear-gradient(90deg, transparent, var(--c-lamp) 60%, transparent);
+    background-size: var(--tile-far) 3px, var(--tile-far) 3px;
+    background-position: 0 30%, 40px 62%;
+    opacity: 0.7;
+    animation: tile-far calc(var(--t-rush) * 3) linear infinite, dip var(--t-drift) linear infinite;
+  }
+  .near {
+    inline-size: calc(100% + var(--tile-near));
+    background-image:
+      linear-gradient(90deg, transparent, var(--c-lamp) 50%, transparent),
+      linear-gradient(90deg, color-mix(in oklab, var(--c-lamp) 30%, transparent) 0 70%, transparent 70%);
+    background-size: var(--tile-near) 8px, var(--tile-near) 2px;
+    background-position: 0 14%, 0 86%;
+    animation: tile-near var(--t-rush) linear infinite, dip var(--t-drift) linear infinite;
+  }
+  @keyframes tile-far { to { translate: calc(var(--tile-far) * -1); } }
+  @keyframes tile-near { to { translate: calc(var(--tile-near) * -1); } }
+  @keyframes dip {
+    0%, 58%, 92%, 100% { opacity: 1; }
+    66%, 84% { opacity: 0.25; }
+  }
+
+  .station {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 14%, color-mix(in oklab, var(--c-platform), var(--c-ink) 55%) 14% 17%, transparent 17% 33.333%),
+      linear-gradient(var(--c-platform) 55%, color-mix(in oklab, var(--c-platform), var(--c-ink) 35%) 55%);
+    animation: stop var(--t-drift) var(--ease-out) infinite;
+  }
+  @keyframes stop {
+    0%, 60% { opacity: 0; translate: 40%; }
+    70% { opacity: 1; translate: 0; }
+    84% { opacity: 1; translate: 0; animation-timing-function: ease-in; }
+    92%, 100% { opacity: 0; translate: -40%; }
+  }
+  .sign {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-start: 14%;
+    translate: -50%;
+    padding: 0.2em 0.7em;
+    font: 700 clamp(0.9rem, 3.4vmin, 2rem) system-ui, sans-serif;
+    letter-spacing: 0.2em;
+    color: light-dark(var(--c-ink), var(--c-paper));
+    background: var(--c-line);
+    border-radius: 3px;
+    box-shadow: 0 0 2em color-mix(in oklab, var(--c-accent) 60%, transparent);
+  }
+
+  .glass {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(115deg, transparent 30%, color-mix(in oklab, var(--c-accent) 14%, transparent) 42%, transparent 52%),
+      radial-gradient(ellipse at 50% 40%, transparent 55%, color-mix(in oklab, var(--c-ink) 30%, transparent));
+  }
+
+  .interior {
+    position: absolute;
+    inset: auto 0 0;
+    block-size: 24%;
+    background:
+      linear-gradient(var(--c-line) 0 10px, transparent 10px),
+      linear-gradient(color-mix(in oklab, var(--c-seat), var(--c-ink) 12%), var(--c-seat) 30%, color-mix(in oklab, var(--c-seat), var(--c-ink) 20%));
+  }
+
+  .straps {
+    position: absolute;
+    inset: 9% 0 auto;
+    block-size: 6px;
+    background: linear-gradient(color-mix(in oklab, var(--c-paper), var(--c-ink) 40%), color-mix(in oklab, var(--c-car-wall), var(--c-ink) 55%));
+  }
+  .straps i {
+    position: absolute;
+    inset-block-start: 6px;
+    inset-inline-start: calc(var(--i) * 11% + 1%);
+    inline-size: 4vmin;
+    block-size: 20vh;
+    transform-origin: 50% 0;
+    background: linear-gradient(var(--c-line), var(--c-line)) 50% 0 / 2px calc(100% - 4vmin) no-repeat;
+    animation: sway 3.2s ease-in-out infinite alternate;
+    animation-delay: calc(var(--i) * -0.4s);
+    animation-delay: calc(sibling-index() * -0.4s);
+  }
+  .straps i::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    aspect-ratio: 1;
+    border: 0.6vmin solid var(--c-line);
+    border-radius: 50%;
+  }
+  @keyframes sway { from { rotate: -1.5deg; } to { rotate: 1.5deg; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .far, .near, .station, .straps i { animation: none; }
+    .far { translate: -40px; }
+    .near { translate: -170px; }
+    .straps i { rotate: 0deg; }
+  }
+}
