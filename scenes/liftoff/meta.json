@@ -1,0 +1,17 @@
+{
+  "title": "Liftoff",
+  "tags": ["scroll-driven", "scrollytelling", "counters", "shape", "no-js"],
+  "techniques": ["one keyframe script on two timelines (time fallback, scroll(root) upgrade)", "@property <integer> countdown and altimeter via counter()", "composed scale + transform flame flicker", "shape() nose cone with polygon fallback", "sibling-index() smoke spread with --i fallback"],
+  "features": [
+    { "name": "scroll-driven animations (animation-timeline: scroll())", "baseline": "limited availability (Chrome/Edge 115, Safari 26; not Firefox) per web-features 3.40.1; time-based loop fallback" },
+    { "name": "@property", "baseline": "newly available (2024-07-09)" },
+    { "name": "shape()", "baseline": "newly available (2026-02-24); polygon() fallback" },
+    { "name": "sibling-index()", "baseline": "newly available (2026-08-18); --i fallback" }
+  ],
+  "inspiration": [
+    { "title": "Artemis 2 - Scroll to Launch", "author": "Chris Bolson", "url": "https://codepen.io/cbolson/pen/jEMxeZW" }
+  ],
+  "exceptions": {
+    "localColors": "Sky, hull, flame and HUD colours are local custom properties (only --c-accent is a token). Accepted by the user on 2026-10-03; tokens.json unchanged."
+  }
+}

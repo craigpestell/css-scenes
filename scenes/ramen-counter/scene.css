@@ -1,0 +1,214 @@
+@import "lib/stage";
+
+@layer scene {
+  .stage {
+    --wall: light-dark(#ead8b8, #2a1b15);
+    --wall-line: light-dark(#d9c29c, #22150f);
+    --wood: light-dark(#b98552, #5c3721);
+    --wood-dark: light-dark(#8c5c31, #3a2215);
+    --cloth: light-dark(#22305a, #18203d);
+    --cloth-ink: #f4efe6;
+    --tag: light-dark(#f1dfb9, #c8a673);
+    --bowl: #f3eee6;
+    --glaze: #b3261e;
+    /* one gust per iteration: rises, overshoots, settles back to rest at 100% */
+    /* named OS Japanese faces first: some generic fallbacks lack vertical metrics and overlap in vertical-rl */
+    --jp: "Hiragino Sans", "Yu Gothic UI", "Noto Sans CJK JP", system-ui, sans-serif;
+    --gust: linear(0, 0.55 12%, 1 24%, 0.78 38%, 0.9 50%, 0.4 72%, 0.08 88%, 0);
+    background:
+      radial-gradient(circle at 16% 34%, #ff7a3d55, #ff7a3d00 32%),
+      repeating-linear-gradient(90deg, var(--wall) 0 9vmin, var(--wall-line) 0 9.4vmin);
+  }
+  .stage * { position: absolute; }
+
+  /* the open doorway: a dark street behind the curtain, so steam reads in both schemes */
+  .door {
+    inset: 0 30% 30%;
+    background:
+      radial-gradient(circle at 18% 62%, #ffb45c66 0 1.2vmin, #0000 2.4vmin),
+      radial-gradient(circle at 74% 55%, #5ce1ff55 0 1.6vmin, #0000 3vmin),
+      radial-gradient(circle at 52% 70%, #ff5c8a44 0 1vmin, #0000 2.2vmin),
+      radial-gradient(circle at 90% 76%, #ffd27a55 0 0.8vmin, #0000 1.8vmin),
+      linear-gradient(#070a18, #171228 70%, #241a2a);
+    box-shadow: 0 0 0 1.6vmin var(--wood-dark);
+  }
+
+  .noren {
+    inset: 0 30% auto;
+    block-size: 30%;
+    display: flex;
+    gap: 0.6vmin;
+  }
+  .noren i {
+    position: relative;
+    flex: 1;
+    display: grid;
+    place-items: end center;
+    padding-block-end: 2vmin;
+    background: linear-gradient(#0000 0 6%, #ffffff14 0 7%, #0000 0), var(--cloth);
+    color: var(--cloth-ink);
+    font: 700 clamp(1.2rem, 8vmin, 5rem)/1 var(--jp);
+    font-style: normal;
+    transform-origin: 50% 0;
+    animation: stir 7s var(--gust) infinite;
+    animation-delay: calc(var(--i) * 0.35s);
+    animation-delay: calc(sibling-index() * 0.35s);
+  }
+  @keyframes stir { from { rotate: 0deg; transform: skewX(0deg); } to { rotate: 3deg; transform: skewX(-4deg); } }
+
+  .lantern {
+    inset: 0 auto auto 9%;
+    inline-size: clamp(5rem, 15vmin, 11rem);
+    block-size: 44%;
+    transform-origin: 50% 0;
+    animation: sway 6.4s ease-in-out infinite alternate;
+  }
+  .lantern::before {
+    content: "";
+    position: absolute;
+    inset: 0 calc(50% - 1px) 60%;
+    background: #1a1210;
+  }
+  .lantern b {
+    position: absolute;
+    inset: 38% 0 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50% / 42%;
+    background:
+      repeating-linear-gradient(#0000 0 6%, #0000002a 0 7%),
+      radial-gradient(circle at 40% 40%, #ff7b55, #d8322a 55%, #8f1a14);
+    box-shadow: 0 0 10vmin #ff5a3070, inset 0 0 3vmin #ffd0a050;
+    color: #1a0e0c;
+    font: 800 clamp(1.4rem, 8vmin, 5rem)/1 var(--jp);
+  }
+  .lantern b::before, .lantern b::after { /* caps */
+    content: "";
+    position: absolute;
+    inset: -0.8vmin 22% auto;
+    block-size: 2.2vmin;
+    border-radius: 0.5vmin;
+    background: #1a1210;
+  }
+  .lantern b::after { inset-block: auto -0.8vmin; }
+  @keyframes sway { from { rotate: -2.5deg; } to { rotate: 2.5deg; } }
+
+  .menu {
+    inset: 7% 4% auto auto;
+    margin: 0;
+    padding: 0;
+    /* vertical-rl turns the column axis horizontal and right-to-left: Japanese menu order */
+    writing-mode: vertical-rl;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 1.4vmin;
+    list-style: none;
+  }
+  .menu li {
+    position: relative;
+    padding: 1.6vmin 1vmin 2.4vmin;
+    background: var(--tag);
+    color: #2a1a10;
+    font: 700 clamp(0.8rem, 3.2vmin, 1.8rem)/1 var(--jp);
+    letter-spacing: 0.2em;
+    border-radius: 0 0 1.4vmin 1.4vmin;
+    corner-shape: bevel;
+    box-shadow: 0 0.6vmin 1vmin #0003;
+    rotate: calc((var(--i) - 2.5) * 1.5deg);
+  }
+  @supports (order: sibling-index()) {
+    .menu li { rotate: calc((sibling-index() - (sibling-count() + 1) / 2) * 1.5deg); }
+  }
+
+  .counter {
+    inset: auto 0 0;
+    block-size: 30%;
+    background:
+      linear-gradient(#ffffff26 0 1%, #0000 0 34%, #0003 0 36%, #0000 0),
+      repeating-linear-gradient(178deg, #0000 0 1.5vmin, #00000012 0 1.7vmin),
+      linear-gradient(var(--wood) 35%, var(--wood-dark) 0);
+  }
+
+  .bowl {
+    inset: auto auto 18% calc(50% - 20vmin);
+    inline-size: 40vmin;
+    block-size: 17vmin;
+    border-radius: 0 0 50% 50% / 0 0 100% 100%;
+    background:
+      repeating-linear-gradient(90deg, var(--glaze) 0 1.4vmin, #0000 0 2vmin) 0 2.2vmin / 100% 1.6vmin no-repeat,
+      linear-gradient(90deg, #0000001f, #0000 30% 60%, #00000033),
+      var(--bowl);
+    filter: drop-shadow(0 2vmin 1.6vmin #0005);
+  }
+  .broth {
+    inset: -4.5vmin 0 auto;
+    block-size: 9vmin;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 0.9vmin var(--bowl), inset 0 0 0 1.3vmin #0002;
+    background:
+      radial-gradient(circle, #e64d84 0 0.6vmin, #fff 0 1.4vmin, #e64d84 0 1.8vmin, #fff 0 2.6vmin, #0000 0) 62% 38% / 6vmin 6vmin no-repeat,
+      radial-gradient(ellipse, #f2a51a 0 30%, #fffaf0 0 62%, #0000 0) 30% 45% / 8vmin 5vmin no-repeat,
+      radial-gradient(ellipse, #f2a51a 0 30%, #fffaf0 0 62%, #0000 0) 42% 62% / 8vmin 5vmin no-repeat,
+      radial-gradient(ellipse, #c98a6a 0 50%, #8a4b32 0 60%, #0000 0) 80% 55% / 9vmin 6vmin no-repeat,
+      linear-gradient(#1c2a1c, #0f1a12) 50% 10% / 7vmin 4.5vmin no-repeat,
+      radial-gradient(circle, #6fbf4a 0 0.4vmin, #0000 0) 0 0 / 2.6vmin 2.2vmin,
+      repeating-linear-gradient(-12deg, #0000 0 0.8vmin, #f6d98a 0 1.2vmin),
+      radial-gradient(#e2ae63, #b97a35);
+  }
+
+  .steam {
+    inset: auto 18% calc(100% + 2vmin);
+    block-size: 46vmin;
+    filter: blur(1.4vmin); /* paint-ok: re-filtered as the wisps animate. On the parent: a filter on the clipped wisps would be cut off by their own clip */
+  }
+  .steam i {
+    inset-block: 0;
+    inline-size: 9vmin;
+    border-radius: 50%;
+    background: linear-gradient(to top, #fff0, #ffffffb3 18%, #ffffff4d 60%, #fff0);
+    opacity: 0;
+    animation: curl 7.5s ease-in-out infinite; /* paint-ok: clip-path morph is the point of the scene; small area */
+    animation-delay: calc(var(--i) * -2.5s);
+    animation-delay: calc(sibling-index() * -2.5s);
+  }
+  .steam i:nth-child(1) { inset-inline-start: 6%; }
+  .steam i:nth-child(2) { inset-inline-start: 40%; }
+  .steam i:nth-child(3) { inset-inline-start: 70%; }
+  @supports (clip-path: shape(from 0 0, line to 1px 1px)) {
+    .steam i { border-radius: 0; inline-size: 14vmin; }
+  }
+  /* every frame uses the same command list, so the browser can interpolate the points */
+  @keyframes curl {
+    0% {
+      opacity: 0; translate: 0 4vmin;
+      clip-path: shape(from 45% 100%, curve to 30% 50% with 65% 75%, curve to 55% 0% with 0% 25%, hline to 70%, curve to 45% 50% with 20% 25%, curve to 60% 100% with 80% 75%, close);
+    }
+    35% { opacity: 1; }
+    50% {
+      clip-path: shape(from 45% 100%, curve to 65% 50% with 20% 75%, curve to 40% 0% with 100% 25%, hline to 55%, curve to 80% 50% with 90% 25%, curve to 60% 100% with 35% 75%, close);
+    }
+    100% {
+      opacity: 0; translate: 0 -8vmin;
+      clip-path: shape(from 45% 100%, curve to 30% 50% with 65% 75%, curve to 55% 0% with 0% 25%, hline to 70%, curve to 45% 50% with 20% 25%, curve to 60% 100% with 80% 75%, close);
+    }
+  }
+
+  .sticks {
+    inset: auto auto calc(18% + 15vmin) calc(50% + 4vmin);
+    inline-size: 30vmin;
+    block-size: 1vmin;
+    border-radius: 0.5vmin;
+    background: linear-gradient(90deg, #6b3a1f, #c58a52);
+    rotate: -10deg;
+    box-shadow: 0.4vmin 1.6vmin 0 #a8703f;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .noren i, .lantern, .steam i { animation: none; }
+    .steam i { opacity: 0.6; }
+    @supports (clip-path: shape(from 0 0, line to 1px 1px)) {
+      .steam i { clip-path: shape(from 45% 100%, curve to 65% 50% with 20% 75%, curve to 40% 0% with 100% 25%, hline to 55%, curve to 80% 50% with 90% 25%, curve to 60% 100% with 35% 75%, close); }
+    }
+  }
+}
