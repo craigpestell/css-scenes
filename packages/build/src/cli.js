@@ -6,14 +6,15 @@ import { fileURLToPath } from 'node:url';
 import { transform, browserslistToTargets } from 'lightningcss';
 import { generateTokens } from './tokens.js';
 import { renderCard, describe, sceneChrome } from '../../../sites/index/cards.js';
+import { renderSource } from '../../../sites/source/source.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const dist = path.join(root, 'dist');
 const targets = browserslistToTargets(['chrome >= 120', 'safari >= 17.4', 'firefox >= 128']);
-const BUDGET = 14 * 1024; // brotli bytes, HTML + CSS
+const BUDGET = 14 * 1024; // brotli bytes, HTML + CSS + JS
 
 /** Inline `@import "lib/<name>"` lines, then run Lightning CSS. */
-async function bundleCss(source, tokensCss, filename = 'scene.css') {
+async function bundleCss(source, tokensCss, filename = 'scene.css', minify = true) {
   const parts = [tokensCss];
   for (const m of source.matchAll(/@import\s+["']lib\/([\w-]+)["'];?/g)) {
     parts.push(await readFile(path.join(root, 'packages/lib/src', `${m[1]}.css`), 'utf8'));
@@ -22,7 +23,7 @@ async function bundleCss(source, tokensCss, filename = 'scene.css') {
   const { code } = transform({
     filename,
     code: Buffer.from(parts.join('\n')),
-    minify: true,
+    minify,
     targets,
   });
   return code.toString();
@@ -37,22 +38,29 @@ async function build() {
   const measure = (slug, out, extra = 0) => {
     const br = brotliCompressSync(Buffer.from(out)).length;
     const budget = BUDGET + extra;
-    report.push({ slug, raw: Buffer.byteLength(out), gzip: gzipSync(out).length, br, budget, ok: br <= budget });
+    const row = { slug, raw: Buffer.byteLength(out), gzip: gzipSync(out).length, br, budget, ok: br <= budget };
+    report.push(row);
+    return row;
   };
+  const sourceCss = await bundleCss(await readFile(path.join(root, 'sites/source/source.css'), 'utf8'), tokensCss, 'source.css');
 
   for (const slug of slugs) {
     const dir = path.join(root, 'scenes', slug);
-    const [html, css, meta] = await Promise.all([
+    const [html, css, meta, js] = await Promise.all([
       readFile(path.join(dir, 'index.html'), 'utf8'),
       readFile(path.join(dir, 'scene.css'), 'utf8'),
       readFile(path.join(dir, 'meta.json'), 'utf8').then(JSON.parse),
+      readFile(path.join(dir, 'scene.js'), 'utf8').catch(() => null), // optional; most scenes are CSS only
     ]);
-    const out = html.replace('<!--css-->', `<style>${await bundleCss(css, tokensCss)}</style>`) + sceneChrome(slug);
+    const script = js ? `<script type="module">${js.replaceAll('</script', '<\\/script')}</script>` : '';
+    const out = html.replace('<!--css-->', `<style>${await bundleCss(css, tokensCss)}</style>`) + script + sceneChrome(slug);
     const outDir = path.join(dist, 'scenes', slug);
     await mkdir(outDir, { recursive: true });
     await writeFile(path.join(outDir, 'index.html'), out);
-    measure(slug, out, meta.exceptions?.extraBytes);
-    cards.push(renderCard({ slug, meta, description: describe(html) }));
+    const size = measure(slug, out, meta.exceptions?.extraBytes);
+    const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
+    await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, bundled, size, pageCss: sourceCss }));
+    cards.push(renderCard({ slug, meta, description: describe(html), hasJs: Boolean(js) }));
   }
 
   // Index page: one card per scene, generated from the scenes above
