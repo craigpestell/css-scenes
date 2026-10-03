@@ -1,0 +1,19 @@
+{
+  "title": "Vertical Drive",
+  "tags": ["scroll-driven", "motion-path", "counters", "shape", "no-js"],
+  "techniques": ["offset-path car on a scroll(root) timeline", "shape() motion path that scales with the board, path() fallback", "one keyframe script on two timelines (time fallback, scroll(root) upgrade)", "@property <integer> race clock split with round() and mod() into counter()", "SVG <use> layers for kerbs, tarmac and centreline from one path"],
+  "features": [
+    { "name": "scroll-driven animations (animation-timeline: scroll())", "baseline": "limited availability (Chrome/Edge 115, Safari 26; not Firefox) per web-features 3.40.1; time-based loop fallback" },
+    { "name": "motion path (offset-path, offset-distance, offset-rotate)", "baseline": "widely available (2025-03-12)" },
+    { "name": "shape() in offset-path", "baseline": "shape() newly available (2026-02-24); fixed-size path() fallback" },
+    { "name": "@property", "baseline": "newly available (2024-07-09)" },
+    { "name": "round() and mod()", "baseline": "newly available (2024-05-17); clock reads 0:00.00 without them" },
+    { "name": "light-dark()", "baseline": "newly available (2024-05-13)" }
+  ],
+  "inspiration": [
+    { "title": "landonorris.com (lime on near-black, contour lines)", "author": "OFF+BRAND", "url": "https://landonorris.com/" }
+  ],
+  "exceptions": {
+    "localColors": "Lime #d2ff00, near-black #111112 and the track greys are local custom properties under the local-colours exception the user accepted on 2026-10-03; tokens.json unchanged."
+  }
+}
