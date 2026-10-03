@@ -1,0 +1,121 @@
+@import "lib/stage";
+
+@layer scene {
+  .stage {
+    /* Time loop (forwards then back) by default; the scrollbar drives it where scroll timelines exist.
+       Base styles are the finished frame and keyframes only say `from`, so reduced motion just switches animation off. */
+    --loop: 9s;
+    --dir: alternate;
+    --lime: #d2ff00;
+    --night: #111112;
+    --bg: light-dark(#ecece4, var(--night));
+    --ink: light-dark(var(--night), #f2f2ee);
+    --muted: light-dark(#11111233, #f2f2ee33);
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 3vmin;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .runway { display: none; }
+  .stage > * { animation: var(--loop) linear infinite var(--dir) both; }
+
+  .word {
+    position: relative; /* paint after (above) the band */
+    inline-size: min(94vw, 100dvh);
+    overflow: visible;
+    font: 900 40px system-ui, sans-serif; /* textLength sets the width, so no font-stretch needed */
+    animation-name: approach;
+  }
+  @keyframes approach { from { scale: 0.9; } }
+  .flood {
+    fill: var(--lime);
+    clip-path: inset(0); /* rises from the glyphs' bottom edge */
+    animation: inherit;
+    animation-name: flood;
+  }
+  @keyframes flood { 0%, 35% { clip-path: inset(100% 0 0); } } /* paint-ok: clip on two short text runs */
+  .line {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 0.9; /* only the outer half shows, see .knock */
+    stroke-linejoin: round;
+    stroke-dasharray: 220;
+    stroke-dashoffset: 0;
+    animation: inherit;
+    animation-name: draw;
+  }
+  /* a background-coloured fill over the stroke hides its inner half, including where system-font contours overlap (the N) */
+  .knock { fill: var(--bg); }
+  @keyframes draw { from { stroke-dashoffset: 220; } 50% { stroke-dashoffset: 0; } } /* paint-ok: stroke on two text runs */
+
+  /* background-clip: text: a two-tone gradient twice the line's width slides under the letters */
+  .sub {
+    margin: 0;
+    font: 800 clamp(1rem, 4.5vmin, 2.4rem)/1 system-ui, sans-serif;
+    letter-spacing: 0.06em;
+    color: var(--ink); /* without background-clip: text the line is simply solid */
+    animation-name: sweep;
+  }
+  @supports (background-clip: text) {
+    .sub {
+      background: linear-gradient(90deg, light-dark(var(--night), var(--lime)) 50%, var(--muted) 0) 0 0 / 200% 100%;
+      background-clip: text;
+      color: #0000;
+    }
+    @keyframes sweep { 0%, 70% { background-position: 100% 0; } 95%, 100% { background-position: 0 0; } } /* paint-ok: one line of text */
+  }
+
+  .band {
+    position: absolute;
+    inset: 47% -10vw auto; /* crosses behind the word, between the lines */
+    rotate: -5deg;
+    overflow: clip;
+    padding-block: 0.6em;
+    background: var(--lime);
+    color: var(--night);
+    font: 800 clamp(0.8rem, 2.6vmin, 1.3rem)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.14em;
+    white-space: nowrap;
+    animation: none;
+  }
+  .band span {
+    display: block;
+    inline-size: max-content;
+    translate: -50% 0; /* the text is written twice, so -50% lands on an identical frame */
+    animation: ticker var(--loop) linear infinite var(--dir) both;
+  }
+  @keyframes ticker { from { translate: 0 0; } }
+
+  .hint {
+    position: absolute;
+    inset: auto 0 4vmin;
+    margin: 0;
+    display: none;
+    text-align: center;
+    font: 600 clamp(0.8rem, 2.2vmin, 1.1rem)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.08em;
+    opacity: 0;
+    animation-name: fade;
+  }
+  @keyframes fade { 0% { opacity: 1; } 3% { opacity: 0; } }
+
+  @supports (animation-timeline: scroll()) {
+    body { overflow: auto; }
+    .runway { display: block; block-size: 400dvh; }
+    .hint { display: block; }
+    .stage { --dir: normal; }
+    .stage > *, .flood, .line, .band span {
+      animation-duration: auto;
+      animation-iteration-count: 1;
+      animation-timeline: scroll(root);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage *, .stage *::before, .stage *::after { animation: none !important; }
+    .runway, .hint { display: none; }
+    body { overflow: clip; }
+  }
+}
