@@ -39,7 +39,10 @@ export function renderCard({ slug, meta, description, hasJs }) {
 /** Chrome added to every scene page, generated from the scene list: a header with breadcrumbs, previous/next scene
  * links (wrapping at the ends) and a source link, plus the view transition back to the scene's card. The header dims
  * after a few seconds on hover devices and wakes on hover or focus. Card previews load the scene at #preview, which
- * hides it. */
+ * hides it.
+ *
+ * The source link opens source.html in a modal <dialog> over the scene. The iframe gets its src on first hover, focus
+ * or open, so the source page costs nothing until it's wanted; modified clicks and no-JS visitors get the page. */
 export const sceneChrome = ({ slug, title, prev, next }) => `<style>
 @media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}
 .stage{view-transition-name:scene-${esc(slug)}}
@@ -58,9 +61,30 @@ export const sceneChrome = ({ slug, title, prev, next }) => `<style>
 @media (prefers-reduced-motion:reduce){.scene-nav{animation-duration:0s}}
 @keyframes scene-nav-idle{to{opacity:.35}}
 :root:has(#preview:target) .scene-nav{display:none}
+.scene-source{inline-size:min(76rem,100% - 2rem);block-size:min(52rem,100% - 2rem);max-inline-size:none;max-block-size:none;margin:auto;padding:0;border:0;border-radius:1rem;background:var(--c-paper,Canvas);color:var(--c-ink,CanvasText);box-shadow:0 1.5rem 4rem #0008;overflow:hidden;font:600 .8rem/1 system-ui,sans-serif}
+.scene-source[open]{display:flex;flex-direction:column}
+.scene-source::backdrop{background:#0007;backdrop-filter:blur(4px)}
+.scene-source form{display:flex;justify-content:end;gap:.25rem;padding:.4rem;border-block-end:1px solid light-dark(#14121f1f,#fff2)}
+.scene-source :is(a,button){padding:.45rem .7rem;border:0;border-radius:99rem;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.scene-source :is(a,button):hover{background:light-dark(#14121f14,#fff2)}
+.scene-source :is(a,button):focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+.scene-source iframe{flex:1;inline-size:100%;border:0}
+@media (prefers-reduced-motion:no-preference){.scene-source[open],.scene-source[open]::backdrop{animation:scene-source-in .2s ease-out}}
+@keyframes scene-source-in{from{opacity:0;translate:0 .5rem}}
+:root:has(.scene-source[open]){overflow:hidden}
 </style>
 <header class="scene-nav">
 <nav aria-label="Breadcrumb"><ol role="list"><li><a href="../../"><span class="home">CSS </span>Scenes</a></li><li><span aria-current="page">${esc(title)}</span></li></ol></nav>
 <nav aria-label="Scenes"><a href="../${esc(prev.slug)}/" rel="prev" title="Previous: ${esc(prev.title)}" aria-label="Previous scene: ${esc(prev.title)}">←</a><a href="source.html">Source</a><a href="../${esc(next.slug)}/" rel="next" title="Next: ${esc(next.title)}" aria-label="Next scene: ${esc(next.title)}">→</a></nav>
 </header>
+<dialog class="scene-source" id="scene-source" aria-label="${esc(title)} source" closedby="any">
+<form method="dialog"><a href="source.html">Open as page</a><button autofocus>Close</button></form>
+<iframe title="${esc(title)} source"></iframe>
+</dialog>
+<script type="module">
+const d=document.getElementById('scene-source'),f=d.querySelector('iframe'),a=document.querySelector('.scene-nav [href="source.html"]');
+const load=()=>{f.src||=a.href+'#embed'};
+a.addEventListener('pointerenter',load);a.addEventListener('focus',load);
+a.addEventListener('click',e=>{if(e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();load();d.showModal()});
+</script>
 <b id="preview" hidden></b>`;

@@ -1,4 +1,5 @@
-/** Render a scene's source page: its authored files in tabs, the bundled CSS that ships, and an Open in CodePen button. */
+/** Render a scene's source page: its authored files in tabs, the bundled CSS that ships, and an Open in CodePen button.
+ * The scene's Source link shows this page in a dialog at source.html#embed, which drops the page's own navigation. */
 import { esc, highlight } from './highlight.js';
 
 /** CodePen's HTML panel is the body, so drop the document head and the build placeholders. */
@@ -42,6 +43,11 @@ export function renderSource({ slug, meta, html, css, js, bundled, size, pageCss
 <meta name="color-scheme" content="light dark">
 <title>${esc(meta.title)} source · CSS Scenes</title>
 <style>${pageCss}</style>
+<b id="embed" hidden></b>
+<script>
+// Opened in the scene's source dialog: Escape pressed in here never reaches the parent page, so close it from here
+if (frameElement && location.hash === '#embed') addEventListener('keydown', (e) => e.key === 'Escape' && frameElement.closest('dialog')?.close());
+</script>
 <header class="masthead">
   <nav><a href="../../">All scenes</a> / <a href="./">${esc(meta.title)}</a></nav>
   <h1>${esc(meta.title)} <span>source</span></h1>
