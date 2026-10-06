@@ -25,13 +25,21 @@
     .stage { --blend: multiply; } /* ...and filters it like stained glass held up to a window */
   }
 
-  /* Brass barrel: a static conic "brushed metal" ring around the turning view */
+  /* Brass barrel around the eyepiece */
   .tube {
     position: relative;
     padding: var(--rim);
     border-radius: 50%;
-    background: conic-gradient(from 40deg, #7a5a24, #f0d48c, #8c6a2c, #5e4419, #e2bf6c, #7a5a24);
     box-shadow: 0 2vmin 6vmin #0008, 0 0 0 1px #0006;
+  }
+  /* the barrel's brushed-brass highlights turn with the object cell, so you can see the tube turning */
+  .tube::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 40deg, #7a5a24, #f0d48c, #8c6a2c, #5e4419, #e2bf6c, #7a5a24);
+    animation: cell 90s linear infinite;
   }
   /* Eyepiece glint and depth shadow sit on the barrel, so they stay put while the view turns */
   .tube::after {
@@ -51,11 +59,7 @@
     border-radius: 50%;
     overflow: clip;
     background: radial-gradient(circle, light-dark(#fffdf6, #1a1430), var(--field) 75%);
-    rotate: 0deg;
-    animation: turn 150s linear infinite, tint 40s ease-in-out infinite alternate;
   }
-  @keyframes turn { to { rotate: 1turn; } }
-  @keyframes tint { to { filter: hue-rotate(-50deg) saturate(1.2); } }
 
   /* One wedge = a right triangle from the centre whose angle is 360deg / n.
      Odd wedges sit at k * 2a; even ones are mirror images (scaleY(-1)) rotated one wedge further,
@@ -81,19 +85,21 @@
     .scope b { --n: sibling-count(); --k: round(down, (sibling-index() - 1) / 2); }
   }
 
-  /* The object chamber: every wedge holds an identical copy, so identical animations stay in perfect symmetry.
-     Two layers orbit in opposite directions around off-centre origins, so the pieces slide past each other. */
+  /* The object cell. The mirrors (wedges) never move; turning the barrel turns the cell in front of them,
+     and the loose glass inside it tumbles: it catches, lags behind the cell, then slips and falls.
+     Every wedge holds an identical copy on the same timeline, so the copies stay in perfect symmetry. */
   .scope i,
-  .scope i::before {
+  .scope i::before,
+  .scope i::after {
     position: absolute;
     inset: calc(var(--r) * -0.5) auto auto calc(var(--r) * -0.18);
     inline-size: calc(var(--r) * 1.45);
     aspect-ratio: 1;
-    animation: orbit 38s linear infinite;
+    animation: cell 90s linear infinite;
   }
   .scope i {
     transform-origin: 52% 48%;
-    rotate: 35deg; /* the reduced-motion frame */
+    rotate: 35deg; /* resting angles are the reduced-motion frame */
     background:
       radial-gradient(circle at 31% 35%, #fffb 0 0.9%, #fff0 1.3%),
       radial-gradient(circle at 33% 37%, var(--ruby) 0 6%, #0000 6.4%),
@@ -112,8 +118,8 @@
     transform-origin: 44% 58%;
     rotate: -80deg;
     mix-blend-mode: var(--blend);
-    animation-duration: 23s;
-    animation-direction: reverse;
+    animation-name: tumble;
+    animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); /* per segment: hold, then slip */
     background:
       radial-gradient(circle at 38% 52%, var(--violet) 0 5%, #0000 5.4%),
       radial-gradient(circle at 60% 40%, var(--ruby) 0 2.6%, #0000 3%),
@@ -122,8 +128,48 @@
       conic-gradient(from 90deg at 50% 50%, #0000 0 30deg, var(--teal) 30.6deg 44deg, #0000 44.6deg 210deg, var(--ruby) 210.6deg 222deg, #0000 222.6deg),
       repeating-conic-gradient(from 0deg at 62% 54%, color-mix(in oklab, var(--amber) 45%, #0000) 0 2deg, #0000 2.8deg 24deg);
   }
-  /* add a turn on top of each layer's own resting angle */
-  @keyframes orbit { to { transform: rotate(1turn); } }
+  .scope i::after {
+    content: "";
+    inset: -12%;
+    inline-size: auto;
+    transform-origin: 58% 46%;
+    rotate: 140deg;
+    animation-name: rattle;
+    animation-timing-function: cubic-bezier(0.8, 0, 0.2, 1);
+    background:
+      radial-gradient(circle at 46% 40%, var(--amber) 0 1.6%, #0000 2%),
+      radial-gradient(circle at 52% 44%, var(--teal) 0 1.2%, #0000 1.6%),
+      radial-gradient(circle at 57% 61%, var(--ruby) 0 1.8%, #0000 2.2%),
+      radial-gradient(circle at 36% 63%, var(--cobalt) 0 1.4%, #0000 1.8%),
+      conic-gradient(from 300deg at 66% 50%, var(--violet) 0 14deg, #0000 14.6deg);
+  }
+  /* Transforms add to each layer's resting `rotate`. The cell turns steadily; the loose layers turn against it
+     and wander, in uneven steps, so relative to the mirrors the pieces tumble instead of just spinning. */
+  @keyframes cell { to { transform: rotate(1turn); } }
+  @keyframes tumble {
+    9% { transform: rotate(-30deg) translate(4%, -2%); }
+    17% { transform: rotate(-45deg) translate(1%, 3%); }
+    26% { transform: rotate(-85deg) translate(-4%, 2%); }
+    34% { transform: rotate(-100deg) translate(-2%, -3%); }
+    45% { transform: rotate(-160deg) translate(3%, -4%); }
+    52% { transform: rotate(-172deg) translate(5%, 1%); }
+    63% { transform: rotate(-230deg) translate(-1%, 4%); }
+    71% { transform: rotate(-250deg) translate(-5%, 0); }
+    82% { transform: rotate(-305deg) translate(-2%, -4%); }
+    90% { transform: rotate(-325deg) translate(2%, -1%); }
+    100% { transform: rotate(-360deg); }
+  }
+  @keyframes rattle {
+    12% { transform: rotate(45deg) translate(-3%, 3%); }
+    20% { transform: rotate(60deg) translate(2%, 5%); }
+    33% { transform: rotate(150deg) translate(4%, -1%); }
+    41% { transform: rotate(170deg) translate(0, -4%); }
+    55% { transform: rotate(260deg) translate(-4%, -2%); }
+    62% { transform: rotate(280deg) translate(-2%, 3%); }
+    76% { transform: rotate(310deg) translate(3%, 4%); }
+    84% { transform: rotate(330deg) translate(4%, -2%); }
+    100% { transform: rotate(360deg); }
+  }
 
   .runway { display: none; }
   .hint {
@@ -136,25 +182,24 @@
     letter-spacing: 0.08em;
   }
 
-  /* Scroll upgrade: the scrollbar turns the barrel (two full turns over the runway); the glass keeps tumbling on time */
+  /* Scroll upgrade: scrolling is turning the barrel. Nothing moves unless you scroll; scrolling back turns it back.
+     Without scroll timelines the barrel turns itself, slowly, on the same keyframes. */
   @supports (animation-timeline: scroll()) {
     body { overflow: auto; }
-    .runway { display: block; block-size: 400dvh; }
+    .runway { display: block; block-size: 800dvh; }
     /* longhands only: Lightning CSS would fold a shorthand + animation-timeline into one invalid shorthand */
     .hint { display: block; animation-name: fade; animation-fill-mode: both; animation-timeline: scroll(root); }
-    .scope {
-      animation-duration: auto, 40s;
-      animation-timing-function: linear, ease-in-out;
-      animation-iteration-count: 1, infinite;
-      animation-fill-mode: both, none;
-      animation-timeline: scroll(root), auto;
+    .tube::before, .scope i, .scope i::before, .scope i::after {
+      animation-duration: auto;
+      animation-iteration-count: 1;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root);
     }
-    @keyframes turn { to { rotate: 2turn; } }
   }
   @keyframes fade { 4% { opacity: 0; } 100% { opacity: 0; } }
 
   @media (prefers-reduced-motion: reduce) {
-    .stage *, .stage *::before { animation: none !important; }
+    .stage *, .stage *::before, .stage *::after { animation: none !important; }
     .runway, .hint { display: none; }
     body { overflow: clip; }
   }

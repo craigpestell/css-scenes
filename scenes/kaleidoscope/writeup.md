@@ -4,7 +4,7 @@ slug: kaleidoscope
 ---
 ## The idea
 
-You look down the eyepiece of a brass kaleidoscope. Glass beads, rings and shards tumble in the object chamber, and twelve mirrored slices fold them into six-fold patterns that keep changing. Scrolling turns the barrel. In dark mode the glass glows like jewels under a lamp; in light mode it filters daylight like stained glass. No JavaScript, no images, no web fonts.
+You look down the eyepiece of a brass kaleidoscope. Twelve fixed mirror slices fold the glass beads, rings and shards in the object cell into a six-fold pattern. Scrolling turns the barrel: the cell turns, the loose glass inside tumbles, and the pattern changes. Nothing moves until you scroll, and scrolling back turns it back. In dark mode the glass glows like jewels under a lamp; in light mode it filters daylight like stained glass. No JavaScript, no images, no web fonts.
 
 ## Techniques
 
@@ -41,22 +41,49 @@ The fold count comes from the markup. Where `sibling-index()` is supported, `--n
 
 Delete four `<b>` elements and you get four-fold symmetry with no CSS change (checked in Chrome). Keep the count even and at least 6, since `tan(90deg)` is infinite. `sibling-index()` is newly available (2026-08-18). Without it, `--n: 12` and five `:nth-child(n + 3)`… rules set `--k`, so the shipped markup looks the same everywhere.
 
-### Identical object chambers on one clock, orbiting off-centre
+### Fixed mirrors over a turning object cell with tumbling glass layers
 
-CSS has no way to render one element in twelve places, so every wedge holds its own copy of the glass. They stay perfectly symmetric because they share the same styles and the same document timeline: twelve animations with the same duration, started on the same frame, are always in step.
+In a real kaleidoscope the mirrors never move. Turning the barrel turns the object cell at the far end, and the loose glass in it tumbles: pieces catch, ride along, then slip and fall over each other. That is why the pattern changes instead of the whole picture spinning. The scene copies that. The wedges (the mirrors) and `.scope` have no animation at all; only the glass moves.
+
+CSS has no way to render one element in twelve places, so every wedge holds its own copy of the cell. The copies stay perfectly symmetric because they share the same styles and the same timeline.
 
 ```css
 .scope i,
-.scope i::before {
+.scope i::before,
+.scope i::after {
   position: absolute;
   inset: calc(var(--r) * -0.5) auto auto calc(var(--r) * -0.18);
   inline-size: calc(var(--r) * 1.45);
   aspect-ratio: 1;
-  animation: orbit 38s linear infinite;
+  animation: cell 90s linear infinite;
 }
 ```
 
-The glass is a stack of radial gradients (beads with a highlight dot, a thin ring) and narrow conic gradients (shards). The `i` turns around `52% 48%` and its `::before` turns the other way every 23s around `44% 58%`, so pieces slide past each other rather than the whole picture just spinning. The resting angle lives in the `rotate` property and the animation adds a turn through `transform`; both apply, so turning animation off leaves a composed still frame.
+There are three layers, each with its own resting `rotate` and its own off-centre `transform-origin`:
+
+- `i`, the cell, turns one steady turn (`cell`).
+- `::before`, the large glass, turns a full turn against the cell (`tumble`).
+- `::after`, the small loose beads, turns with the cell but further, in uneven steps (`rattle`).
+
+The loose layers wander with a small `translate` at each step, and their timing function applies per keyframe segment, so each step holds and then slips:
+
+```css
+.scope i::before {
+  animation-name: tumble;
+  animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); /* per segment: hold, then slip */
+}
+@keyframes cell { to { transform: rotate(1turn); } }
+@keyframes tumble {
+  9% { transform: rotate(-30deg) translate(4%, -2%); }
+  17% { transform: rotate(-45deg) translate(1%, 3%); }
+  /* …uneven steps… */
+  100% { transform: rotate(-360deg); }
+}
+```
+
+Because the three layers move at different, uneven rates, they slide past each other relative to the fixed mirrors, and the folded pattern keeps re-forming. The resting angle lives in the `rotate` property and the animation adds to it through `transform`; both apply, so turning animation off leaves a composed still frame.
+
+The brass ring is a `.tube::before` that runs the same `cell` keyframes, so its highlights turn with the barrel. The eyepiece glint on `.tube::after` stays put.
 
 Everything that moves is a transform, so it runs on the compositor. The gradients paint once per layer and are then only moved.
 
@@ -78,28 +105,30 @@ The second glass layer uses `mix-blend-mode: var(--blend)`. On black, `screen` m
 
 ### scroll(root) barrel turn with longhand-only timeline
 
-With scroll timelines the scrollbar turns the barrel two full turns over a 400dvh runway, while the glass keeps tumbling on time. Without them the barrel turns once every 150s.
+With scroll timelines, scrolling the 800dvh runway turns the barrel one full turn and runs every glass layer through its keyframes once. At the top of the page everything is at rest, and nothing moves without input. Without scroll timelines (Firefox) the same keyframes run on time, one turn every 90s.
 
 ```css
-.scope {
-  animation-duration: auto, 40s;
-  animation-timing-function: linear, ease-in-out;
-  animation-iteration-count: 1, infinite;
-  animation-fill-mode: both, none;
-  animation-timeline: scroll(root), auto;
+@supports (animation-timeline: scroll()) {
+  .tube::before, .scope i, .scope i::before, .scope i::after {
+    animation-duration: auto;
+    animation-iteration-count: 1;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root);
+  }
 }
-@keyframes turn { to { rotate: 2turn; } }
 ```
 
-A build gotcha: written as `animation: turn linear both, …; animation-timeline: scroll(root), auto;`, Lightning CSS merged the two into `animation: linear both turn scroll(root), …`. `animation-timeline` is reset-only in the shorthand, so Chrome dropped the whole declaration and the barrel silently went back to the time loop. Setting longhands only avoids the merge.
+The longhands keep each layer's own `animation-name` and timing function from the base rules and only swap the clock.
+
+A build gotcha: written as `animation: turn linear both; animation-timeline: scroll(root);`, Lightning CSS merged the two into `animation: linear both turn scroll(root)`. `animation-timeline` is reset-only in the shorthand, so Chrome dropped the whole declaration and the animation silently went back to the time loop. Setting longhands only avoids the merge.
 
 ## Performance notes
 
 | raw | gzip | brotli | budget | ok |
 |---|---|---|---|---|
-| 7,809 B | 2,866 B | 2,483 B | 14,336 B | yes |
+| 9,171 B | 3,117 B | 2,691 B | 14,336 B | yes |
 
-All motion is `transform`, `rotate`, `opacity` or `filter`. The costliest part is 24 clipped, composited glass layers plus one blend per wedge, and the hue drift filter over the eyepiece. A 3s requestAnimationFrame sample in Chrome on the dev machine held 60 fps with no frames over 25 ms. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
+All motion is `transform` or `opacity`. The costliest part is 36 clipped, composited glass layers plus one blend per wedge. A requestAnimationFrame sample in Chrome on the dev machine, scrolling the whole runway in 3s, held 61 fps with no frames over 25 ms. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
 
 The eyepiece is capped at `min(88vmin, 62rem)` rather than filling the window, which keeps every wedge's layer small.
 
