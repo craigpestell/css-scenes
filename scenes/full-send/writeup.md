@@ -4,7 +4,7 @@ slug: full-send
 ---
 ## The idea
 
-A race-day poster built by scrolling. The outlines of FULL SEND draw themselves in, lime floods the letters from the bottom up, and colour sweeps across NO LIFT. NO BRAKES. All the while, a tilted lime ticker slides behind the word. No JavaScript and no web fonts.
+A race-day poster built by scrolling. The outlines of FULL SEND draw themselves in, lime floods the letters from the bottom up, and colour sweeps across ALL GAS, NO BRAKES. All the while, a tilted lime ticker slides behind the word. No JavaScript and no web fonts.
 
 ## Techniques
 
