@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Day / Night Hillside</title>
+<!--css-->
+<main class="stage" aria-label="A hillside town that swings from day to night when you toggle the switch">
+<input type="checkbox" id="night">
+<div class="world" aria-hidden="true">
+<div class="stars"></div>
+<div class="haze"></div>
+<div class="orbit"><i class="sun"></i><i class="moon"></i></div>
+<svg class="land" viewBox="0 0 160 90" preserveAspectRatio="xMidYMax slice">
+<path class="far" d="M0 90V52Q20 43 40 50T80 46T120 51T160 45V90Z"/>
+<path class="mid" d="M0 90V60Q30 50 60 56T110 52T160 58V90ZM40 56q-2.5-9 0-17q2.5 8 0 17zM148 58q-2.5-9 0-17q2.5 8 0 17z"/>
+<path class="wall" d="M14 66v-7h10v7zM30 70v-8h12v8zM50 64v-7h9v7zM66 72v-8h11v8zM100 70v-8h12v8zM124 65v-7h10v7zM84 66v-16h6v16z"/>
+<path class="roof" d="M13 59l6-4l6 4zM29 62l7-4l7 4zM49 57l5.5-4l5.5 4zM65 64l6.5-4l6.5 4zM99 62l7-4l7 4zM123 58l6-4l6 4zM83 50l4-7l4 7z"/>
+<path class="pane" d="M16 61.5h2v2.5h-2zM20 61.5h2v2.5h-2zM32 64.5h2v2.5h-2zM38 64.5h2v2.5h-2zM52 59.5h2v2.5h-2zM55 59.5h2v2.5h-2zM68 66.5h2v2.5h-2zM73 66.5h2v2.5h-2zM102 64.5h2v2.5h-2zM108 64.5h2v2.5h-2zM126 60.5h2v2.5h-2zM130 60.5h2v2.5h-2zM86 53h2v4h-2z"/>
+<g class="lit"><rect x="68" y="66.5" width="2" height="2.5" style="--i:1"/><rect x="73" y="66.5" width="2" height="2.5" style="--i:2"/><rect x="32" y="64.5" width="2" height="2.5" style="--i:3"/><rect x="38" y="64.5" width="2" height="2.5" style="--i:4"/><rect x="102" y="64.5" width="2" height="2.5" style="--i:5"/><rect x="108" y="64.5" width="2" height="2.5" style="--i:6"/><rect x="16" y="61.5" width="2" height="2.5" style="--i:7"/><rect x="20" y="61.5" width="2" height="2.5" style="--i:8"/><rect x="126" y="60.5" width="2" height="2.5" style="--i:9"/><rect x="130" y="60.5" width="2" height="2.5" style="--i:10"/><rect x="52" y="59.5" width="2" height="2.5" style="--i:11"/><rect x="55" y="59.5" width="2" height="2.5" style="--i:12"/></g>
+<path class="near" d="M0 90V78Q40 72 80 76T160 74V90ZM145 68a7 6 0 1 0 14 0a7 6 0 1 0-14 0zM151.2 68v12h1.6v-12zM139.6 66h.8v14h-.8zM138.2 64h3.6v2.4h-3.6z"/>
+<path class="trail" d="M28 90Q48 84 40 76.5"/>
+</svg>
+</div>
+<label class="toggle" for="night">Night<span class="track"><span class="thumb"></span></span></label>
+</main>
