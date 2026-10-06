@@ -1,0 +1,25 @@
+{
+  "title": "Day / Night Hillside",
+  "tags": ["state-toggle", "registered-properties", "crossfade", "inline-svg", "sibling-index", "mask-image", "light-dark", "no-js"],
+  "techniques": [
+    "Checkbox as preceding sibling (no :has())",
+    "Typed @property palette crossfade",
+    "One pivot rotation swaps sun and moon",
+    "Registered angle driving the haze",
+    "sibling-index() stagger with --i fallback",
+    "Masked-disc crescent moon",
+    "--u stage unit and bottom-anchored SVG crop",
+    "Two-tone focus ring",
+    "light-dark() chrome and reduced motion"
+  ],
+  "features": [
+    { "name": "@property (<color>, <angle>)", "baseline": "newly available (2024-07-09); palette snaps without it" },
+    { "name": "sibling-index() / sibling-count()", "baseline": "newly available (2026-08-18); --i fallback" },
+    { "name": "sin() / min() / max()", "baseline": "widely available" },
+    { "name": "light-dark() / color-scheme", "baseline": "newly available (2024-05-13); UI chrome only" },
+    { "name": "individual transforms (translate, rotate)", "baseline": "widely available" },
+    { "name": "mask-image (crescent moon)", "baseline": "widely available (2023-12-07)" },
+    { "name": "prefers-reduced-motion", "baseline": "widely available" }
+  ],
+  "exceptions": {}
+}
