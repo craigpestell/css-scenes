@@ -1,0 +1,197 @@
+@import "lib/stage";
+
+/* Phase palette (day -> night). Source of truth: tokens.json "phase" group.
+   The build only emits color/duration/easing/angle today, so registrations and
+   values live here until a `phase` emitter exists. Registered so one state
+   switch crossfades the whole scene; unregistered browsers snap. */
+@property --c-sky-top  { syntax: "<color>"; inherits: true; initial-value: #5aa9e6; }
+@property --c-sky-low  { syntax: "<color>"; inherits: true; initial-value: #ffd9a0; }
+@property --c-glow     { syntax: "<color>"; inherits: true; initial-value: #fff1c9; }
+@property --c-far-hill { syntax: "<color>"; inherits: true; initial-value: #8fb8a0; }
+@property --c-mid-hill { syntax: "<color>"; inherits: true; initial-value: #5f9a7a; }
+@property --c-near-hill{ syntax: "<color>"; inherits: true; initial-value: #3f7a5c; }
+@property --c-wall     { syntax: "<color>"; inherits: true; initial-value: #f2e3c8; }
+@property --c-roof     { syntax: "<color>"; inherits: true; initial-value: #c4553a; }
+@property --c-window   { syntax: "<color>"; inherits: true; initial-value: #5f87a8; }
+@property --glow-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+@layer scene {
+  .stage {
+    --u: max(100vw / 160, 100dvh / 200);    /* one SVG viewBox unit in px; portrait crops to the town centre */
+    --hz: calc(var(--u) * 40);              /* horizon height above the stage bottom */
+    --r: max(10vmin, min(44vw, 100dvh - var(--u) * 54)); /* orbit radius */
+    --s: max(2.5rem, var(--u) * 9);         /* sun / moon diameter */
+    /* fixed celestial colours (intentionally not tokens): the same in both phases and both OS schemes */
+    --sun: #ffb23e;
+    --moon: #f4f1ff;
+  }
+
+  /* scene state: the checkbox precedes .world, so a sibling combinator is enough (no :has() needed) */
+  #night { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
+
+  .world {
+    position: absolute;
+    inset: 0;
+    --c-sky-top: #5aa9e6; --c-sky-low: #ffd9a0; --c-glow: #fff1c9;
+    --c-far-hill: #8fb8a0; --c-mid-hill: #5f9a7a; --c-near-hill: #3f7a5c;
+    --c-wall: #f2e3c8; --c-roof: #c4553a; --c-window: #5f87a8;
+    /* paint-ok: these are main-thread transitions. Each frame the inheriting --c-* props restyle every
+       descendant, repaint the SVG fills and the full-size sky gradient. Flat fills, no blur; the sky is the
+       only large repaint. */
+    transition-property: --c-sky-top, --c-sky-low, --c-glow, --c-far-hill, --c-mid-hill, --c-near-hill, --c-wall, --c-roof, --c-window;
+    transition-duration: var(--t-swing);
+    transition-timing-function: var(--ease-out); /* same curve as the orbit so colour tracks the sun */
+    background: linear-gradient(var(--c-sky-top), var(--c-sky-low) 62%);
+  }
+  #night:checked ~ .world {
+    --c-sky-top: #0e1230; --c-sky-low: #3a2a5c; --c-glow: #6b5aa8;
+    --c-far-hill: #1d2748; --c-mid-hill: #131a36; --c-near-hill: #0b1026;
+    --c-wall: #4a4466; --c-roof: #5a2f3f; --c-window: #2a2748;
+  }
+
+  .stars {
+    position: absolute;
+    inset: 0 0 45%;
+    opacity: 0;
+    background:
+      radial-gradient(2.5px 2.5px at 8% 20%, var(--moon), transparent),
+      radial-gradient(1.5px 1.5px at 17% 52%, var(--moon), transparent),
+      radial-gradient(2.5px 2.5px at 28% 12%, var(--moon), transparent),
+      radial-gradient(1.5px 1.5px at 38% 38%, var(--moon), transparent),
+      radial-gradient(2.5px 2.5px at 52% 22%, var(--moon), transparent),
+      radial-gradient(1.5px 1.5px at 63% 8%, var(--moon), transparent),
+      radial-gradient(2.5px 2.5px at 72% 44%, var(--moon), transparent),
+      radial-gradient(1.5px 1.5px at 81% 16%, var(--moon), transparent),
+      radial-gradient(2.5px 2.5px at 90% 34%, var(--moon), transparent),
+      radial-gradient(1.5px 1.5px at 95% 6%, var(--moon), transparent);
+    transition: opacity var(--t-base);
+  }
+  #night:checked ~ .world .stars {
+    opacity: 1;
+    transition: opacity calc(var(--t-slow) * 2) 1.4s; /* appear after the sky darkens */
+  }
+
+  /* one pivot on the horizon: sun above, moon below; rotating 180deg swaps them */
+  .orbit {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-end: var(--hz);
+    inline-size: 0;
+    block-size: 0;
+    rotate: 0deg;
+    transition: rotate var(--t-swing) var(--ease-out);
+  }
+  #night:checked ~ .world .orbit { rotate: 180deg; }
+  .sun, .moon {
+    position: absolute;
+    inline-size: var(--s);
+    block-size: var(--s);
+    border-radius: 50%;
+  }
+  .sun {
+    /* element is 1.8x the disc; the disc is the inner 55%, the rest is a soft gradient halo */
+    inline-size: calc(var(--s) * 1.8);
+    block-size: calc(var(--s) * 1.8);
+    background: radial-gradient(closest-side, var(--sun) 0 55%, color-mix(in srgb, var(--sun) 40%, transparent) 58%, transparent);
+    translate: -50% calc(-50% - var(--r));
+  }
+  .moon {
+    background: var(--moon);
+    mask: radial-gradient(circle at 70% 36%, transparent 0 52%, #000 53%); /* crescent bite */
+    translate: -50% calc(-50% + var(--r));
+  }
+
+  /* golden-hour glow: follows the sun's x and peaks mid-swing, both derived from one angle */
+  .haze {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-end: var(--hz);
+    inline-size: calc(var(--r) * 1.6);
+    aspect-ratio: 1;
+    /* NOT compositor-driven: translate and opacity are recomputed on the main thread every frame from the
+       transitioning --glow-angle (style recalc, then a cheap layer update). Fallback 0deg keeps the day
+       state quiet when @property is unsupported (it would otherwise be invalid, i.e. full opacity). */
+    translate: calc(-50% + sin(var(--glow-angle, 0deg)) * var(--r)) 50%;
+    opacity: calc(.2 + .7 * sin(var(--glow-angle, 0deg)));
+    background: radial-gradient(closest-side, var(--c-glow), transparent);
+    transition: --glow-angle var(--t-swing) var(--ease-out);
+  }
+  #night:checked ~ .world .haze { --glow-angle: 180deg; }
+
+  .land {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-end: 0;
+    inline-size: calc(var(--u) * 160);
+    aspect-ratio: 16 / 9;
+    translate: -50% 0;
+  }
+  .far { fill: var(--c-far-hill); }
+  .mid { fill: var(--c-mid-hill); }
+  .wall { fill: var(--c-wall); }
+  .roof { fill: var(--c-roof); }
+  .pane { fill: var(--c-window); }
+  .near { fill: var(--c-near-hill); }
+  .trail { fill: none; stroke: var(--c-wall); stroke-width: 2; stroke-linecap: round; opacity: .45; }
+
+  /* windows: the lit overlay fades (opacity), staggered candle-by-candle */
+  .lit { --n: 12; } /* window count, for the --i fallback; the sibling-count() path needs no number */
+  .lit rect {
+    fill: var(--c-lamp);
+    stroke: var(--c-lamp);
+    stroke-width: .8;
+    stroke-opacity: .3;
+    opacity: 0;
+    transition: opacity var(--t-slow);
+    transition-delay: calc((var(--n) - var(--i)) * 60ms);
+  }
+  #night:checked ~ .world .lit rect {
+    opacity: 1;
+    transition-delay: calc(var(--i) * 140ms + 1.6s);
+  }
+  @supports (transition-delay: calc(sibling-index() * 1ms)) {
+    .lit rect { transition-delay: calc((sibling-count() - sibling-index()) * 60ms); }
+    #night:checked ~ .world .lit rect { transition-delay: calc(sibling-index() * 140ms + 1.6s); }
+  }
+
+  /* UI chrome */
+  .toggle {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-end: max(1rem, env(safe-area-inset-bottom));
+    translate: -50% 0;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-block-size: 44px;
+    padding-inline: 1.1rem .6rem;
+    border: 2px solid var(--c-ink);
+    border-radius: 99px;
+    background: var(--c-paper);
+    color: var(--c-ink);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .track { display: block; inline-size: 2.75rem; block-size: 1.5rem; padding: .2rem; border-radius: 99px; background: color-mix(in oklab, var(--c-ink) 18%, var(--c-paper)); }
+  .thumb {
+    display: block;
+    inline-size: 1.1rem;
+    block-size: 1.1rem;
+    border-radius: 50%;
+    background: var(--sun);
+    transition: translate var(--t-base) var(--ease-out), background-color var(--t-base); /* paint-ok: 1.1rem dot */
+  }
+  #night:checked ~ .toggle .thumb { translate: 1.25rem 0; background: var(--c-accent); }
+  /* Two-tone ring: dark inner band + white outer band, so one band always contrasts with the scene behind
+     (near-hill is light green by day, near-black by night). Fixed colours on purpose: the backdrop follows
+     the scene state, not the OS colour scheme. */
+  #night:focus-visible ~ .toggle {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px #14121f;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .world, .world *, .thumb { transition-duration: 0s !important; transition-delay: 0s !important; }
+  }
+}
