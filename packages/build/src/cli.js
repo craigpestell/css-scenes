@@ -7,6 +7,7 @@ import { transform, browserslistToTargets } from 'lightningcss';
 import { generateTokens } from './tokens.js';
 import { renderCard, describe, sceneChrome } from '../../../sites/index/cards.js';
 import { renderSource } from '../../../sites/source/source.js';
+import { sceneStats, statsTags } from '../../../sites/stats/stats.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const dist = path.join(root, 'dist');
@@ -62,12 +63,13 @@ async function build() {
     const chrome = sceneChrome({ slug, title: meta.title, prev, next });
     const script = js ? `<script type="module">${js.replaceAll('</script', '<\\/script')}</script>` : '';
     // The header goes straight after the styles so it comes first in focus order, ahead of the stage
-    const sceneCss = await bundleCss(css, tokensCss);
-    const out = html.replace('<!--css-->', () => `<style>${sceneCss}</style>${chrome}`) + script;
+    const minCss = await bundleCss(css, tokensCss);
+    const out = html.replace('<!--css-->', () => `<style>${minCss}</style>${chrome}`) + script;
     const outDir = path.join(dist, 'scenes', slug);
     await mkdir(outDir, { recursive: true });
-    await writeFile(path.join(outDir, 'index.html'), out);
     const size = measure(slug, out, meta.exceptions?.extraBytes);
+    const markup = html.replace('<!--css-->', () => chrome);
+    await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size })));
     const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
     await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, bundled, size, pageCss: sourceCss }));
     cards.push(renderCard({ slug, meta, description: describe(html), hasJs: Boolean(js) }));
@@ -84,6 +86,7 @@ async function build() {
     .replace('<!--count-->', `${cards.length} scenes`)
     .replace('<!--cards-->', cards.join('\n'));
   await writeFile(path.join(dist, 'index.html'), index);
+  await writeFile(path.join(dist, 'stats.js'), await readFile(path.join(root, 'sites/stats/panel.js')));
   measure('(index)', index);
 
   console.table(report);
@@ -96,7 +99,7 @@ const rebuild = () => (pending ??= build().finally(() => { pending = undefined; 
 
 async function dev() {
   await build();
-  const types = { '.html': 'text/html; charset=utf-8' };
+  const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
   createServer(async (req, res) => {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p.endsWith('/')) p += 'index.html';
