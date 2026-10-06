@@ -1,0 +1,22 @@
+{
+  "title": "Kaleidoscope",
+  "tags": ["symmetry", "clip-path", "gradients", "scroll-driven", "no-js"],
+  "techniques": [
+    "mirrored clip-path wedges (rotate + scaleY(-1))",
+    "sibling-count() and sibling-index() fold count with :nth-child fallback",
+    "fixed mirrors over a turning object cell with tumbling glass layers",
+    "mix-blend-mode switched by colour scheme",
+    "scroll(root) barrel turn with longhand-only timeline"
+  ],
+  "features": [
+    { "name": "sibling-count() / sibling-index()", "baseline": "newly available (2026-08-18); :nth-child fallback fixed at 12 wedges" },
+    { "name": "scroll-driven animations (animation-timeline: scroll())", "baseline": "limited availability (Chrome/Edge 115, Safari 26; not Firefox) per web-features 3.40.1; slow automatic turn as fallback" },
+    { "name": "CSS trigonometric functions (tan())", "baseline": "widely available" },
+    { "name": "clip-path: polygon()", "baseline": "widely available" },
+    { "name": "mix-blend-mode", "baseline": "widely available" },
+    { "name": "light-dark()", "baseline": "newly available (2024-05-13)" }
+  ],
+  "exceptions": {
+    "localColors": "Glass, field and brass colours are local custom properties; Accepted by the user on 2026-10-06; tokens.json unchanged."
+  }
+}
