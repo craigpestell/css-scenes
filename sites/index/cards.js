@@ -21,7 +21,7 @@ export function renderCard({ slug, meta, description, hasJs }) {
 
   return `    <li class="card">
       <div class="preview" style="view-transition-name: scene-${esc(slug)}" inert>
-        <iframe src="scenes/${esc(slug)}/" title="${esc(meta.title)} preview" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
+        <iframe src="scenes/${esc(slug)}/#preview" title="${esc(meta.title)} preview" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
       </div>
       <h2><a href="scenes/${esc(slug)}/">${esc(meta.title)}</a></h2>
       ${description ? `<p class="desc">${esc(description)}</p>` : ''}
@@ -36,16 +36,31 @@ export function renderCard({ slug, meta, description, hasJs }) {
     </li>`;
 }
 
-/** Tiny chrome added to every scene page: view transition back to its card, a focus-only link home, and a source link
- * that shows on hover or focus (card previews never get hover, since their iframes ignore the pointer). */
-export const sceneChrome = (slug) => `<style>
+/** Chrome added to every scene page, generated from the scene list: a header with breadcrumbs, previous/next scene
+ * links (wrapping at the ends) and a source link, plus the view transition back to the scene's card. The header dims
+ * after a few seconds on hover devices and wakes on hover or focus. Card previews load the scene at #preview, which
+ * hides it. */
+export const sceneChrome = ({ slug, title, prev, next }) => `<style>
 @media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}
-.stage{view-transition-name:scene-${slug}}
-.to-index{position:fixed;inset:1rem auto auto 1rem;z-index:1;padding:.5rem .9rem;border-radius:99rem;background:#000c;color:#fff;font:600 .9rem/1.2 system-ui,sans-serif;text-decoration:none;translate:0 -200%}
-.to-index:focus-visible{translate:none;outline:2px solid #fff;outline-offset:2px}
-.to-source{position:fixed;inset:auto 1rem 1rem auto;z-index:1;padding:.4rem .8rem;border-radius:99rem;background:#000a;color:#fff;font:600 .8rem/1.2 system-ui,sans-serif;text-decoration:none;opacity:0;transition:opacity .2s}
-:root:hover .to-source,.to-source:focus-visible{opacity:1}
-.to-source:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.stage{view-transition-name:scene-${esc(slug)}}
+.scene-nav{position:fixed;inset:max(.75rem,env(safe-area-inset-top)) max(.75rem,env(safe-area-inset-right)) auto auto;z-index:9;display:flex;align-items:center;gap:.25rem;padding:.25rem;border-radius:99rem;background:light-dark(#fffc,#0009);color:light-dark(#14121f,#f4f1ff);box-shadow:0 0 0 1px light-dark(#14121f1f,#fff2);backdrop-filter:blur(8px);font:600 .8rem/1 system-ui,sans-serif;white-space:nowrap;view-transition-name:scene-nav}
+.scene-nav :is(ol,nav){display:flex;align-items:center;margin:0;padding:0;list-style:none}
+.scene-nav li+li::before{content:"/"/"";margin-inline-start:-.3rem;opacity:.5}
+.scene-nav a,.scene-nav [aria-current]{display:inline-block;padding:.45rem .6rem;border-radius:99rem;color:inherit;text-decoration:none}
+.scene-nav [aria-current]{padding-inline-start:.3rem}
+.scene-nav a:hover{background:light-dark(#14121f14,#fff2)}
+.scene-nav a:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+.scene-nav [rel]{min-inline-size:1.9rem;text-align:center}
+.scene-nav nav:last-child{border-inline-start:1px solid light-dark(#14121f26,#fff3);padding-inline-start:.25rem}
+/* Narrow screens keep the current crumb for screen readers only, so the header clears scene HUDs */
+@media (width<34rem){.scene-nav :is(.home,li+li){position:absolute;clip-path:inset(50%);inline-size:1px;overflow:hidden;white-space:nowrap}}
+@media (hover:hover){.scene-nav{animation:scene-nav-idle .6s 3s both}.scene-nav:is(:hover,:focus-within){animation:none}}
+@media (prefers-reduced-motion:reduce){.scene-nav{animation-duration:0s}}
+@keyframes scene-nav-idle{to{opacity:.35}}
+:root:has(#preview:target) .scene-nav{display:none}
 </style>
-<a class="to-index" href="../../">← All scenes</a>
-<a class="to-source" href="source.html">View source</a>`;
+<header class="scene-nav">
+<nav aria-label="Breadcrumb"><ol role="list"><li><a href="../../"><span class="home">CSS </span>Scenes</a></li><li><span aria-current="page">${esc(title)}</span></li></ol></nav>
+<nav aria-label="Scenes"><a href="../${esc(prev.slug)}/" rel="prev" title="Previous: ${esc(prev.title)}" aria-label="Previous scene: ${esc(prev.title)}">←</a><a href="source.html">Source</a><a href="../${esc(next.slug)}/" rel="next" title="Next: ${esc(next.title)}" aria-label="Next scene: ${esc(next.title)}">→</a></nav>
+</header>
+<b id="preview" hidden></b>`;

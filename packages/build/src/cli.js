@@ -44,7 +44,7 @@ async function build() {
   };
   const sourceCss = await bundleCss(await readFile(path.join(root, 'sites/source/source.css'), 'utf8'), tokensCss, 'source.css');
 
-  for (const slug of slugs) {
+  const scenes = await Promise.all(slugs.map(async (slug) => {
     const dir = path.join(root, 'scenes', slug);
     const [html, css, meta, js] = await Promise.all([
       readFile(path.join(dir, 'index.html'), 'utf8'),
@@ -52,8 +52,18 @@ async function build() {
       readFile(path.join(dir, 'meta.json'), 'utf8').then(JSON.parse),
       readFile(path.join(dir, 'scene.js'), 'utf8').catch(() => null), // optional; most scenes are CSS only
     ]);
+    return { slug, html, css, meta, js, title: meta.title };
+  }));
+
+  for (const [i, { slug, html, css, meta, js }] of scenes.entries()) {
+    // Previous/next wrap around, in the same order as the index cards
+    const prev = scenes.at(i - 1);
+    const next = scenes[(i + 1) % scenes.length];
+    const chrome = sceneChrome({ slug, title: meta.title, prev, next });
     const script = js ? `<script type="module">${js.replaceAll('</script', '<\\/script')}</script>` : '';
-    const out = html.replace('<!--css-->', `<style>${await bundleCss(css, tokensCss)}</style>`) + script + sceneChrome(slug);
+    // The header goes straight after the styles so it comes first in focus order, ahead of the stage
+    const sceneCss = await bundleCss(css, tokensCss);
+    const out = html.replace('<!--css-->', () => `<style>${sceneCss}</style>${chrome}`) + script;
     const outDir = path.join(dist, 'scenes', slug);
     await mkdir(outDir, { recursive: true });
     await writeFile(path.join(outDir, 'index.html'), out);
