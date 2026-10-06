@@ -3,3 +3,4 @@ dist
 reports/history
 .DS_Store
 .vercel
+.env*
