@@ -126,7 +126,7 @@ A build gotcha: written as `animation: turn linear both; animation-timeline: scr
 
 | raw | gzip | brotli | budget | ok |
 |---|---|---|---|---|
-| 9,171 B | 3,117 B | 2,691 B | 14,336 B | yes |
+| 9,188 B | 3,114 B | 2,676 B | 14,336 B | yes |
 
 All motion is `transform` or `opacity`. The costliest part is 36 clipped, composited glass layers plus one blend per wedge. A requestAnimationFrame sample in Chrome on the dev machine, scrolling the whole runway in 3s, held 61 fps with no frames over 25 ms. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
 
