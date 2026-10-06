@@ -43,7 +43,7 @@ With scroll timelines nothing moves until the page scrolls, and scrolling back t
 A composed still pattern: glass layers at their resting angles (35deg / -80deg / 140deg), barrel unturned, no hint, page doesn't scroll.
 
 ## Exceptions
-Only local colours. No JS, fonts or images.
+Only local colours, accepted by the owner on 2026-10-06. No JS, fonts or images.
 
 ## Snippets reused / candidates to extract
 Uses `lib/stage`. Candidate: the mirrored-wedge kaleidoscope rig (any content dropped into `i` becomes symmetric).
@@ -52,4 +52,4 @@ Uses `lib/stage`. Candidate: the mirrored-wedge kaleidoscope rig (any content dr
 14 KB brotli. Lighthouse perf ≥ 95, CLS 0, dropped frames < 2%.
 
 ## Open questions for the human
-- OK to use local colours rather than adding the glass palette to `tokens.json`?
+None. Local colours were accepted on 2026-10-06.

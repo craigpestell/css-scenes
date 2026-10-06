@@ -17,6 +17,6 @@
     { "name": "light-dark()", "baseline": "newly available (2024-05-13)" }
   ],
   "exceptions": {
-    "localColors": "Glass, field and brass colours are local custom properties; tokens.json unchanged. Pending the owner's OK (earlier scenes had the same exception accepted)."
+    "localColors": "Glass, field and brass colours are local custom properties; Accepted by the user on 2026-10-06; tokens.json unchanged."
   }
 }
