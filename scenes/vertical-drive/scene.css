@@ -1,0 +1,144 @@
+@import "lib/stage";
+
+/* typed integers interpolate (and round), so an animation can count */
+@property --lap { syntax: "<integer>"; inherits: false; initial-value: 1; }
+@property --pos { syntax: "<integer>"; inherits: false; initial-value: 4; }
+@property --cs { syntax: "<integer>"; inherits: false; initial-value: 0; } /* race clock, centiseconds */
+
+@layer scene {
+  .stage {
+    /* three laps. Time-based loop by default; the scrollbar drives it where scroll timelines exist */
+    --loop: 30s;
+    --lime: #d2ff00;
+    --night: #111112;
+    --bg: light-dark(#ecece4, var(--night));
+    --contour: light-dark(#1111121a, #f2f2ee14);
+    --tarmac: light-dark(#c9c9c0, #26262a);
+    --paint: light-dark(var(--night), #f2f2ee);
+    --rival: light-dark(#55555c, #b9b9c0);
+    display: grid;
+    place-items: center;
+    /* topographic contours: two offset ring fields, painted once */
+    background:
+      repeating-radial-gradient(circle at 18% 78%, #0000 0 5vmin, var(--contour) 0 calc(5vmin + 1px)),
+      repeating-radial-gradient(ellipse at 88% 12%, #0000 0 7vmin, var(--contour) 0 calc(7vmin + 1px)),
+      var(--bg);
+  }
+  .runway { display: none; }
+
+  /* The board keeps the SVG's 100 x 160 aspect, so viewBox units and percentages map 1:1 */
+  .board {
+    position: relative;
+    container-type: inline-size;
+    inline-size: 250px;
+    aspect-ratio: 5 / 8;
+  }
+  svg { display: block; inline-size: 100%; block-size: 100%; overflow: visible; }
+  svg path, svg use { fill: none; stroke-linejoin: round; }
+  .kerb { stroke: light-dark(#9fbf00, var(--lime)); stroke-width: 10; } /* shows as a thin lime edge either side of the tarmac */
+  .tarmac { stroke: var(--tarmac); stroke-width: 9; }
+  .centre { stroke: var(--paint); stroke-width: 0.35; stroke-dasharray: 2 3; opacity: 0.5; }
+  .grid { stroke: var(--paint); stroke-width: 2; stroke-dasharray: 1.5; }
+
+  /* Cars ride the track centreline. The fallback path() is the SVG path at 2.5px per unit (fixed 250px board) */
+  .car {
+    position: absolute;
+    inset: 0 auto auto 0;
+    inline-size: 8cqi;  /* drawn nose-right: offset-rotate: auto aligns +x with the direction of travel */
+    block-size: 4.2cqi;
+    offset-path: path("M205 325L205 85C205 35 140 35 140 80C140 115 100 125 75 105C45 80 35 115 45 155C50 200 100 210 105 250C110 290 45 280 45 330C45 375 100 380 130 365C160 350 205 375 205 325Z");
+    offset-rotate: auto;
+    border-radius: 1cqi;
+    background:
+      radial-gradient(circle at 46% 50%, var(--night) 0 0.9cqi, #0000 0),                          /* cockpit */
+      linear-gradient(90deg, var(--body) 0 7%, #0000 0 90%, var(--body) 0) 0 50% / 100% 100% no-repeat, /* wings */
+      linear-gradient(#0000 24%, var(--body) 0 76%, #0000 0),                                    /* body */
+      linear-gradient(90deg, #0000 12%, var(--night) 0 27%, #0000 0 64%, var(--night) 0 79%, #0000 0); /* tyres */
+    filter: drop-shadow(0 0.4cqi 0.5cqi #0007);
+    animation: drive var(--loop) linear infinite both;
+  }
+  .you {
+    --body: var(--lime);
+    --e: 300%;
+    transform: translateY(-1.8cqi); /* applied after the offset transform, so it is relative to the heading: the inside line */
+  }
+  .rival { /* each starts ahead and runs a little slower; you pass them at 27%, 43% and 64% of the race */
+    --body: var(--rival);
+    --s: calc(var(--i) * var(--i) * 1.5% + 2.5%);
+    --e: calc(var(--s) + 290% - var(--i) * 5%);
+    transform: translateY(1.8cqi);
+  }
+  @keyframes drive { from { offset-distance: var(--s, 0%); } to { offset-distance: var(--e); } } /* closed path: past 100% it wraps into the next lap */
+
+  @supports (offset-path: shape(from 0 0, line to 1px 1px)) {
+    .board { inline-size: min(92vw, 52.5dvh); }
+    /* the same path in percentages of the board (y / 160), so it scales with it */
+    .car {
+      offset-path: shape(from 82% 81.25%, line to 82% 21.25%,
+        curve to 56% 20% with 82% 8.75% / 56% 8.75%,
+        curve to 30% 26.25% with 56% 28.75% / 40% 31.25%,
+        curve to 18% 38.75% with 18% 20% / 14% 28.75%,
+        curve to 42% 62.5% with 20% 50% / 40% 52.5%,
+        curve to 18% 82.5% with 44% 72.5% / 18% 70%,
+        curve to 52% 91.25% with 18% 93.75% / 40% 95%,
+        curve to 82% 81.25% with 64% 87.5% / 82% 93.75%, close);
+    }
+  }
+
+  .hud, .hint {
+    position: absolute;
+    margin: 0;
+    font: 600 clamp(0.8rem, 2.4vmin, 1.25rem)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.08em;
+  }
+  .hud {
+    inset: 3vmin auto auto 3vmin;
+    padding: 0.4em 0.8em;
+    border-radius: 0.5em;
+    background: #111112e6;
+    color: var(--lime); /* ~17:1 on the backing in both schemes */
+    counter-reset: lap var(--lap) pos var(--pos)
+      min calc(round(down, var(--cs) / 6000)) sec calc(mod(round(down, var(--cs) / 100), 60)) cs calc(mod(var(--cs), 100));
+    animation: timing var(--loop) linear infinite both; /* paint-ok: counter text changes; tiny box */
+  }
+  .hud::before { content: "LAP " counter(lap) "/3  P" counter(pos); display: block; white-space: pre; }
+  .hud::after { content: counter(min) ":" counter(sec, decimal-leading-zero) "." counter(cs, decimal-leading-zero); display: block; }
+  @keyframes timing {
+    0% { --cs: 0; --lap: 1; --pos: 4; }
+    26.6% { --pos: 4; } 26.8% { --pos: 3; }
+    33.3% { --lap: 1; } 33.4% { --lap: 2; }
+    42.4% { --pos: 3; } 42.6% { --pos: 2; }
+    63.9% { --pos: 2; } 64.1% { --pos: 1; }
+    66.6% { --lap: 2; } 66.7% { --lap: 3; }
+    100% { --cs: 26400; --lap: 3; --pos: 1; }
+  }
+  .hint {
+    display: none;
+    inset: auto 0 4vmin;
+    color: var(--paint);
+    text-align: center;
+    animation: fade var(--loop) linear both;
+  }
+  @keyframes fade { 3%, 100% { opacity: 0; } }
+
+  @supports (animation-timeline: scroll()) {
+    body { overflow: auto; }
+    .runway { display: block; block-size: 900dvh; }
+    .hint { display: block; }
+    .car, .hud, .hint {
+      animation-duration: auto;
+      animation-iteration-count: 1;
+      animation-timeline: scroll(root);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage *, .stage *::before, .stage *::after { animation: none !important; }
+    .runway, .hint { display: none; }
+    body { overflow: clip; }
+    /* still frame: last lap, you lead out of the final corner with the pack behind */
+    .you { offset-distance: 97%; }
+    .rival { offset-distance: calc(94% - var(--i) * 3%); }
+    .hud { --lap: 3; --pos: 1; --cs: 25611; }
+  }
+}

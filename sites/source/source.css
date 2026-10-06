@@ -1,0 +1,114 @@
+@layer reset, tokens, base, source;
+
+@layer reset {
+  *, ::before, ::after { box-sizing: border-box; margin: 0; }
+}
+
+@layer base {
+  html { color-scheme: light dark; }
+  body {
+    min-block-size: 100dvh;
+    background: var(--c-paper);
+    color: var(--c-ink);
+    font: 1rem/1.55 system-ui, sans-serif;
+    padding: clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem) 4rem;
+  }
+  a { color: inherit; }
+}
+
+@layer source {
+  .masthead, .tabs { max-inline-size: 76rem; margin-inline: auto; }
+
+  .masthead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.75rem 1.5rem;
+    margin-block-end: 2rem;
+  }
+  nav { flex-basis: 100%; font-size: 0.9rem; opacity: 0.75; }
+  h1 { font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1; letter-spacing: -0.03em; }
+  h1 span { color: var(--c-accent); }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0;
+    list-style: none;
+    font: 600 0.75rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .facts li {
+    padding: 0.2rem 0.6rem;
+    border-radius: 99rem;
+    background: color-mix(in oklab, var(--c-ink) 8%, transparent);
+  }
+  .facts .no-js, .facts .js { background: color-mix(in oklab, var(--c-accent) 18%, transparent); }
+
+  form { margin-inline-start: auto; }
+  button {
+    padding: 0.55rem 1.1rem;
+    border: 0;
+    border-radius: 99rem;
+    background: var(--c-accent);
+    color: var(--c-paper);
+    font: 600 0.9rem/1.2 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:focus-visible, pre:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+
+  /* Tabs without JS: a radio group, and :has() shows the panel whose position matches the checked radio */
+  .tablist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    border-block-end: 1px solid color-mix(in oklab, var(--c-ink) 15%, transparent);
+  }
+  .tablist label {
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.6rem 0.6rem 0 0;
+    font: 600 0.85rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    cursor: pointer;
+    opacity: 0.7;
+  }
+  .tablist label:hover { opacity: 1; }
+  .tablist label:has(:checked) { opacity: 1; background: var(--code-bg); color: var(--c-accent); }
+  .tablist label:has(:focus-visible) { outline: 2px solid var(--c-accent); outline-offset: -2px; }
+  .tablist input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .panel { display: none; }
+  .tabs:has(label:nth-child(1) :checked) .panel:nth-of-type(1),
+  .tabs:has(label:nth-child(2) :checked) .panel:nth-of-type(2),
+  .tabs:has(label:nth-child(3) :checked) .panel:nth-of-type(3),
+  .tabs:has(label:nth-child(4) :checked) .panel:nth-of-type(4) { display: block; }
+
+  .note { padding: 0.75rem 1rem 0; background: var(--code-bg); font-size: 0.85rem; opacity: 0.8; }
+
+  .tabs {
+    --code-bg: color-mix(in oklab, var(--c-ink) 5%, var(--c-paper));
+    --t-com: light-dark(#6b6880, #8d89a6);
+    --t-kw: light-dark(#b0127a, #ff7ac6);
+    --t-prop: light-dark(#0b6bcb, #7cc4ff);
+    --t-var: light-dark(#7a3fd1, #c3a6ff);
+    --t-fn: light-dark(#0d7d5f, #6fe0b8);
+    --t-str: light-dark(#a45200, #ffc27a);
+    --t-num: light-dark(#a45200, #ffc27a);
+  }
+  pre {
+    overflow: auto;
+    max-block-size: 75dvh;
+    padding: 1rem;
+    border-radius: 0 0 0.8rem 0.8rem;
+    background: var(--code-bg);
+    font: 0.85rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    tab-size: 2;
+  }
+  .t-com { color: var(--t-com); font-style: italic; }
+  .t-kw { color: var(--t-kw); }
+  .t-prop { color: var(--t-prop); }
+  .t-var { color: var(--t-var); }
+  .t-fn { color: var(--t-fn); }
+  .t-str { color: var(--t-str); }
+  .t-num { color: var(--t-num); }
+}

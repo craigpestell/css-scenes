@@ -1,0 +1,17 @@
+{
+  "title": "Full Send",
+  "tags": ["scroll-driven", "typography", "svg", "background-clip", "no-js"],
+  "techniques": ["stroke-dashoffset draw-in on SVG text, shared through <use>", "clip-path flood on a second <use> of the same text", "background-clip: text colour sweep", "finished-frame base styles with from-only keyframes", "one keyframe script on two timelines (alternating time fallback, scroll(root) upgrade)"],
+  "features": [
+    { "name": "scroll-driven animations (animation-timeline: scroll())", "baseline": "limited availability (Chrome/Edge 115, Safari 26; not Firefox) per web-features 3.40.1; alternating time loop fallback" },
+    { "name": "background-clip: text", "baseline": "limited availability (Chrome/Edge 120, Safari 14) per web-features 3.40.1; solid text fallback" },
+    { "name": "clip-path (animatable inset())", "baseline": "widely available" },
+    { "name": "light-dark()", "baseline": "newly available (2024-05-13)" }
+  ],
+  "inspiration": [
+    { "title": "landonorris.com (outlined display type, lime ticker)", "author": "OFF+BRAND", "url": "https://landonorris.com/" }
+  ],
+  "exceptions": {
+    "localColors": "Lime #d2ff00 and near-black #111112 are local custom properties under the local-colours exception the user accepted on 2026-10-03; tokens.json unchanged."
+  }
+}

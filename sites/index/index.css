@@ -1,0 +1,127 @@
+@layer reset, tokens, base, index;
+
+@layer reset {
+  *, ::before, ::after { box-sizing: border-box; margin: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+
+@layer base {
+  html { color-scheme: light dark; }
+  body {
+    min-block-size: 100dvh;
+    background: var(--c-paper);
+    color: var(--c-ink);
+    font: 1rem/1.55 system-ui, sans-serif;
+    padding: clamp(2rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem) 4rem;
+  }
+  a { color: inherit; }
+  code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace; }
+}
+
+@layer index {
+  .masthead, main { max-inline-size: 76rem; margin-inline: auto; }
+
+  .masthead { margin-block-end: clamp(2rem, 5vw, 3.5rem); }
+  h1 {
+    font-size: clamp(2.6rem, 9vw, 5.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+  .lede { max-inline-size: 38rem; margin-block-start: 1rem; font-size: 1.15rem; text-wrap: pretty; }
+  .count {
+    margin-block-start: 1rem;
+    color: var(--c-accent);
+    font: 600 0.8rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.75rem 0.75rem 1.1rem;
+    border: 1px solid color-mix(in oklab, var(--c-ink) 12%, transparent);
+    border-radius: 1.1rem;
+    background: color-mix(in oklab, var(--c-ink) 3%, var(--c-paper));
+    transition: border-color var(--t-fast) var(--ease-out), translate var(--t-base) var(--ease-out);
+  }
+  .card:hover, .card:has(h2 a:focus-visible) {
+    border-color: var(--c-accent);
+    translate: 0 -3px;
+  }
+  .card:has(h2 a:focus-visible) { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+
+  /* Live preview: the scene itself, rendered at card size. Scenes size in vmin/dvh, so they recompose for the frame. */
+  .preview {
+    aspect-ratio: 16 / 10;
+    margin-block-end: 0.4rem;
+    border-radius: 0.7rem;
+    overflow: clip;
+    background: var(--c-ink);
+  }
+  .preview iframe {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    border: 0;
+    pointer-events: none;
+  }
+
+  h2 { padding-inline: 0.35rem; font-size: 1.35rem; line-height: 1.2; letter-spacing: -0.01em; }
+  /* the title link covers the whole card; details and credits sit above it */
+  h2 a { text-decoration: none; outline: none; }
+  h2 a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+
+  .desc, .credits, .source, details { padding-inline: 0.35rem; }
+  .desc { font-size: 0.95rem; text-wrap: pretty; opacity: 0.85; }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0 0.35rem;
+    list-style: none;
+  }
+  .tags li {
+    padding: 0.15rem 0.55rem;
+    border-radius: 99rem;
+    background: color-mix(in oklab, var(--c-accent) 14%, transparent);
+    font: 600 0.72rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  details, .credits, .source { position: relative; z-index: 1; }
+  details { margin-block-start: auto; font-size: 0.88rem; }
+  summary { cursor: pointer; inline-size: fit-content; font-weight: 600; color: var(--c-accent); }
+  details h3 { margin-block: 0.7rem 0.2rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+  details ul { padding-inline-start: 1.1rem; }
+  .features small { opacity: 0.7; }
+  .credits { font-size: 0.8rem; opacity: 0.75; }
+  .source { inline-size: fit-content; font-size: 0.88rem; }
+  .source a { font-weight: 600; color: var(--c-accent); }
+
+  /* Cards rise into place as they scroll in */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .card {
+        animation: rise linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 70%;
+      }
+      @keyframes rise { from { opacity: 0; transform: translateY(2rem) scale(0.96); } } /* transform, so it composes with the hover translate */
+    }
+  }
+}

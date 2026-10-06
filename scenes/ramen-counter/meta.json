@@ -1,0 +1,19 @@
+{
+  "title": "Ramen Counter",
+  "tags": ["tokyo", "seamless-loop", "shape", "light-dark", "sibling-index", "no-js"],
+  "techniques": ["clip-path: shape() keyframe morph", "blur on parent of clipped children", "one-curve gust easing with linear()", "corner-shape: bevel tags", "sibling-index()/sibling-count() stagger with --i fallback", "light-dark() scene palette"],
+  "features": [
+    { "name": "shape()", "baseline": "newly available (2026-02-24); wisps fall back to soft rising blobs" },
+    { "name": "linear() easing", "baseline": "widely available (2026-06-11)" },
+    { "name": "corner-shape", "baseline": "limited availability (Chrome/Edge 139 only); falls back to plain border-radius" },
+    { "name": "sibling-index() / sibling-count()", "baseline": "newly available (2026-08-18); --i fallback" },
+    { "name": "light-dark()", "baseline": "newly available (2024-05-13)" }
+  ],
+  "inspiration": [
+    { "title": "Rise & Steam (sleepy dumplings)", "author": "Gemma Croad", "url": "https://codepen.io/GemmaCroad/pen/bNqWNWx" },
+    { "title": "Tokyo Subway", "author": "this gallery", "url": "../tokyo-subway/" }
+  ],
+  "exceptions": {
+    "localColors": "Scene palette is local light-dark() custom properties; no --c-* tokens are used. Accepted by the user on 2026-10-03; tokens.json unchanged."
+  }
+}

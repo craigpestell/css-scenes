@@ -73,7 +73,7 @@ Measured by the build:
 
 | raw | gzip | brotli | budget | ok |
 |---|---|---|---|---|
-| 6,314 B | 2,066 B | 1,779 B | 14,336 B | yes |
+| 6,803 B | 2,270 B | 1,947 B | 14,336 B | yes |
 
 Not yet measured: Lighthouse scores, frame times and dropped frames, and layer counts from the browser. `pnpm measure` does not exist yet. TODO: fill these in when it does.
 

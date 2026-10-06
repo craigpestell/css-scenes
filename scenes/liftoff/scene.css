@@ -1,0 +1,212 @@
+@import "lib/stage";
+
+/* typed integers interpolate (and round), so an animation can count */
+@property --t { syntax: "<integer>"; inherits: false; initial-value: 10; }
+@property --alt { syntax: "<integer>"; inherits: false; initial-value: 0; }
+
+@layer scene {
+  .stage {
+    /* one launch. Time-based loop by default; the scrollbar drives it where scroll timelines exist */
+    --loop: 16s;
+    --hull: #eceef4;
+    --hull-shade: #8f97ad;
+    --hull-grad: linear-gradient(90deg, var(--hull-shade), var(--hull) 30%, #fff 48%, var(--hull) 66%, var(--hull-shade));
+    --fire: radial-gradient(ellipse 50% 100% at 50% 0, #fff 12%, #ffe066 30%, #ff8a1f 55%, #ff3d0000 100%);
+    background: #cdeaff;
+  }
+  .stage * { position: absolute; }
+  .runway { display: none; }
+
+  /* The script lives in keyframe percentages, so the same keyframes play on either timeline:
+     0-12% countdown + ignition, 12-45% liftoff, 58-64% staging, 55-90% night falls */
+
+  .sky {
+    inset: 0 0 auto;
+    block-size: 400%;
+    translate: 0 -75%;
+    background: linear-gradient(#01020a, #070b25 22%, #1d2a6b 45%, #4f7fd1 68%, #8fc6ff 85%, #cdeaff);
+    animation: ascend var(--loop) linear infinite both;
+  }
+  @keyframes ascend { 0%, 12% { translate: 0 -75%; } 100% { translate: 0 0; } }
+
+  .stars {
+    inset: 0;
+    opacity: 0;
+    background:
+      radial-gradient(1.5px 1.5px at 20% 30%, #fff 99%, #fff0),
+      radial-gradient(1px 1px at 70% 60%, #fff 99%, #fff0),
+      radial-gradient(1.2px 1.2px at 45% 85%, #fff 99%, #fff0),
+      radial-gradient(1px 1px at 85% 15%, #fff 99%, #fff0);
+    background-size: 180px 180px, 130px 130px, 230px 230px, 90px 90px;
+    animation: stars var(--loop) linear infinite both;
+  }
+  @keyframes stars { 0%, 55% { opacity: 0; } 90%, 100% { opacity: 1; } }
+
+  .clouds { inset: 0; }
+  .clouds i {
+    inset-block-start: -35%;
+    inline-size: 60vmin;
+    aspect-ratio: 3;
+    opacity: 0.9;
+    filter: blur(0.6vmin);
+    --puff: radial-gradient(circle closest-side, #fff 70%, #fff0);
+    background:
+      var(--puff) 10% 70% / 40% 80% no-repeat,
+      var(--puff) 45% 20% / 45% 100% no-repeat,
+      var(--puff) 85% 75% / 38% 76% no-repeat;
+    animation: drift var(--loop) linear infinite both;
+  }
+  .clouds i:nth-child(1) { inset-inline-start: -8%; --y: 170dvh; }
+  .clouds i:nth-child(2) { inset-inline-start: 55%; inset-block-start: -70%; --y: 230dvh; scale: 1.4; }
+  .clouds i:nth-child(3) { inset-inline-start: 20%; inset-block-start: -110%; --y: 290dvh; scale: 0.8; }
+  @keyframes drift { 0%, 18% { translate: 0 0; } 75%, 100% { translate: 0 var(--y); } }
+
+  .ground {
+    inset: auto 0 0;
+    block-size: 22%;
+    background: linear-gradient(#6b8a55, #3b5233 40%, #2a3a25);
+    animation: sink var(--loop) linear infinite both;
+  }
+  .ground::before { /* pad */
+    content: "";
+    position: absolute;
+    inset: -2vmin auto auto calc(50% - 14vmin);
+    inline-size: 28vmin;
+    block-size: 4vmin;
+    background: linear-gradient(#a2a6b0, #5a5d66);
+    clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%);
+  }
+  .tower {
+    inset: auto auto 100% calc(50% + 7vmin);
+    inline-size: 5vmin;
+    block-size: 48vmin;
+    border-inline: 0.6vmin solid #b8372b;
+    background:
+      repeating-linear-gradient(45deg, #0000 0 1.2vmin, #b8372b 0 1.6vmin),
+      repeating-linear-gradient(-45deg, #0000 0 1.2vmin, #b8372b 0 1.6vmin);
+  }
+  @keyframes sink { 0%, 12% { translate: 0 0; } 45%, 100% { translate: 0 130dvh; } }
+
+  .smoke { inset: 0; }
+  .smoke i {
+    --dx: calc((var(--i) - 3.5) * 9);
+    inset: -7vmin auto auto calc(50% - 8vmin);
+    inline-size: 16vmin;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, #f6f6f8, #d6d7dd 60%, #d6d7dd00);
+    scale: 0;
+    animation: puff var(--loop) linear infinite both;
+  }
+  @supports (order: sibling-index()) {
+    .smoke i { --dx: calc((sibling-index() - 3.5) * 9); }
+  }
+  @keyframes puff {
+    0%, 6% { scale: 0; translate: 0 0; opacity: 1; }
+    20% { scale: 2.2; translate: calc(var(--dx) * 1vmin) -4vmin; opacity: 1; }
+    45%, 100% { scale: 3.2; translate: calc(var(--dx) * 1.8vmin) -10vmin; opacity: 0; }
+  }
+
+  .rocket {
+    inset: auto auto 22% calc(50% - 3.5vmin);
+    inline-size: 7vmin;
+    block-size: 44vmin;
+    animation: liftoff var(--loop) linear infinite both;
+  }
+  @keyframes liftoff {
+    0%, 12% { translate: 0 0; rotate: 0deg; animation-timing-function: ease-in; }
+    45% { translate: 0 calc(-33dvh + 22vmin); rotate: 0deg; }
+    100% { translate: 0 calc(-33dvh + 22vmin); rotate: 9deg; }
+  }
+  .upper {
+    inset: 0 0 55%;
+    background:
+      radial-gradient(circle at 50% 58%, #1b2a4a 0 1.3vmin, #b8c0d4 0 1.7vmin, #0000 0),
+      linear-gradient(#0000 80%, var(--c-accent) 0 86%, #0000 0),
+      var(--hull-grad);
+    clip-path: polygon(50% 0, 85% 25%, 100% 45%, 100% 100%, 0 100%, 0 45%, 15% 25%);
+    clip-path: shape(from 50% 0%, curve to 100% 45% with 100% 12%, vline to 100%, hline to 0%, vline to 45%, curve to 50% 0% with 0% 12%, close);
+  }
+  .booster {
+    inset: 45% 0 0;
+    border-radius: 0 0 0.6vmin 0.6vmin;
+    background: linear-gradient(#0000 8%, var(--c-accent) 0 13%, #0000 0), var(--hull-grad);
+    animation: separate var(--loop) linear infinite both;
+  }
+  .booster::before, .booster::after { /* fins */
+    content: "";
+    position: absolute;
+    inset: auto auto 0 -3vmin;
+    inline-size: 3.5vmin;
+    block-size: 9vmin;
+    background: var(--c-accent);
+    clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  }
+  .booster::after { inset-inline-start: calc(100% - 0.5vmin); scale: -1 1; }
+  @keyframes separate {
+    0%, 58% { translate: 0 0; rotate: 0deg; opacity: 1; }
+    80%, 100% { translate: -8vmin 70dvh; rotate: -35deg; opacity: 0; }
+  }
+
+  .flame, .engine { transform-origin: 50% 0; background: var(--fire); scale: 1 0; }
+  .flame {
+    inset: 100% 10% auto;
+    block-size: 18vmin;
+    animation: ignite var(--loop) linear infinite both, flicker 90ms linear infinite alternate;
+  }
+  .engine {
+    inset: 45% 25% auto;
+    block-size: 11vmin;
+    animation: burn var(--loop) linear infinite both, flicker 90ms linear infinite alternate;
+  }
+  @keyframes ignite { 0%, 5% { scale: 1 0; } 12%, 57% { scale: 1 1; } 59%, 100% { scale: 1 0; } }
+  @keyframes burn { 0%, 61% { scale: 1 0; } 65%, 100% { scale: 1 1; } }
+  @keyframes flicker { to { transform: scale(1.06, 0.86); } }
+
+  .hud, .hint {
+    margin: 0;
+    color: #fff;
+    text-shadow: 0 1px 3px #0009;
+    font: 600 clamp(0.8rem, 2.6vmin, 1.4rem)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.08em;
+  }
+  .hud {
+    inset: 4vmin auto auto 4vmin;
+    padding: 0.4em 0.8em;
+    border-radius: 0.5em;
+    background: #000a; /* keeps white text above 4.5:1 on every sky state */
+    counter-reset: t var(--t) alt var(--alt);
+    animation: telemetry var(--loop) linear infinite both; /* paint-ok: counter text changes; tiny box */
+  }
+  .hud::before { content: "T\2212 " counter(t, decimal-leading-zero); display: block; }
+  .hud::after { content: "ALT " counter(alt) " KM"; display: block; }
+  @keyframes telemetry {
+    0% { --t: 10; --alt: 0; }
+    12% { --t: 0; --alt: 0; }
+    100% { --t: 0; --alt: 420; }
+  }
+  .hint { display: none; inset: auto 0 5vmin; text-align: center; animation: fade var(--loop) linear both; }
+  @keyframes fade { 3%, 100% { opacity: 0; } }
+
+  @supports (animation-timeline: scroll()) {
+    body { overflow: auto; }
+    .runway { display: block; block-size: 600dvh; }
+    .hint { display: block; }
+    .sky, .stars, .clouds i, .ground, .smoke i, .rocket, .booster, .hud, .hint {
+      animation-duration: auto;
+      animation-iteration-count: 1;
+      animation-timeline: scroll(root);
+    }
+    .flame, .engine {
+      animation-duration: auto, 90ms;
+      animation-iteration-count: 1, infinite;
+      animation-timeline: scroll(root), auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage *, .stage *::before, .stage *::after { animation: none !important; } /* beats .clouds i / .smoke i */
+    .runway, .hint { display: none; }
+    body { overflow: clip; }
+  }
+}

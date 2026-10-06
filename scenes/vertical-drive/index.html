@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Vertical Drive</title>
+<!--css-->
+<main class="stage" aria-label="A top-down race circuit over a contour map. Scrolling drives a lime race car around three laps, passing three rivals, while a lap counter, position and race clock count up.">
+<div class="board" aria-hidden="true">
+<svg viewBox="0 0 100 160">
+<path id="t" d="M82 130L82 34C82 14 56 14 56 32C56 46 40 50 30 42C18 32 14 46 18 62C20 80 40 84 42 100C44 116 18 112 18 132C18 150 40 152 52 146C64 140 82 150 82 130Z"/>
+<use href="#t" class="kerb"/><use href="#t" class="tarmac"/><use href="#t" class="centre"/>
+<path class="grid" d="M77.5 120h9"/>
+</svg>
+<i class="car rival" style="--i:1"></i><i class="car rival" style="--i:2"></i><i class="car rival" style="--i:3"></i><i class="car you"></i>
+</div>
+<p class="hud" aria-hidden="true"></p>
+<p class="hint">Scroll to drive</p>
+</main>
+<div class="runway" aria-hidden="true"></div>
