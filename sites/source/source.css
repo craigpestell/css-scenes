@@ -111,4 +111,12 @@
   .t-fn { color: var(--t-fn); }
   .t-str { color: var(--t-str); }
   .t-num { color: var(--t-num); }
+
+  /* Embedded in the scene's source dialog (source.html#embed): the dialog carries the way back */
+  :root:has(#embed:target) {
+    body { padding: 1rem clamp(1rem, 3vw, 1.75rem) 1.5rem; }
+    nav { display: none; }
+    h1 { font-size: clamp(1.5rem, 4vw, 2.25rem); }
+    .masthead { margin-block-end: 1.25rem; }
+  }
 }

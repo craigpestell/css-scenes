@@ -45,7 +45,7 @@ async function build() {
   };
   const sourceCss = await bundleCss(await readFile(path.join(root, 'sites/source/source.css'), 'utf8'), tokensCss, 'source.css');
 
-  for (const slug of slugs) {
+  const scenes = await Promise.all(slugs.map(async (slug) => {
     const dir = path.join(root, 'scenes', slug);
     const [html, css, meta, js] = await Promise.all([
       readFile(path.join(dir, 'index.html'), 'utf8'),
@@ -53,13 +53,22 @@ async function build() {
       readFile(path.join(dir, 'meta.json'), 'utf8').then(JSON.parse),
       readFile(path.join(dir, 'scene.js'), 'utf8').catch(() => null), // optional; most scenes are CSS only
     ]);
+    return { slug, html, css, meta, js, title: meta.title };
+  }));
+
+  for (const [i, { slug, html, css, meta, js }] of scenes.entries()) {
+    // Previous/next wrap around, in the same order as the index cards
+    const prev = scenes.at(i - 1);
+    const next = scenes[(i + 1) % scenes.length];
+    const chrome = sceneChrome({ slug, title: meta.title, prev, next });
     const script = js ? `<script type="module">${js.replaceAll('</script', '<\\/script')}</script>` : '';
+    // The header goes straight after the styles so it comes first in focus order, ahead of the stage
     const minCss = await bundleCss(css, tokensCss);
-    const out = html.replace('<!--css-->', `<style>${minCss}</style>`) + script + sceneChrome(slug);
+    const out = html.replace('<!--css-->', () => `<style>${minCss}</style>${chrome}`) + script;
     const outDir = path.join(dist, 'scenes', slug);
     await mkdir(outDir, { recursive: true });
     const size = measure(slug, out, meta.exceptions?.extraBytes);
-    const markup = html.replace('<!--css-->', '') + sceneChrome(slug);
+    const markup = html.replace('<!--css-->', () => chrome);
     await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size })));
     const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
     await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, bundled, size, pageCss: sourceCss }));
