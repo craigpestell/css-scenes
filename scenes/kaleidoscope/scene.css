@@ -1,0 +1,161 @@
+@import "lib/stage";
+
+@layer scene {
+  .stage {
+    /* Eyepiece size; every wedge and glass piece is sized from --r so the scope scales as one */
+    --d: min(88vmin, 62rem);
+    --r: calc(var(--d) / 2);
+    --rim: max(10px, 1.8vmin);
+    /* Local glass colours (light-dark: daylight stained glass / lamp-lit jewels) */
+    --ruby: light-dark(#e8003dcc, #ff2d55);
+    --amber: light-dark(#ff9d00cc, #ffb000);
+    --teal: light-dark(#00a891cc, #00d1b2);
+    --cobalt: light-dark(#1f5bffbb, #3d7bff);
+    --violet: light-dark(#9a3dffbb, #b366ff);
+    --lime: light-dark(#8fd400cc, #c4ff3d);
+    --field: light-dark(#f7f2e6, #07060c);
+    --blend: screen; /* overlapping glass adds light on black... */
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle, light-dark(#0000, #2a1c4a66) 0 calc(var(--r) + var(--rim)), #0000 70%),
+      light-dark(#e6dfd0, #0d0b14);
+  }
+  @media (prefers-color-scheme: light) {
+    .stage { --blend: multiply; } /* ...and filters it like stained glass held up to a window */
+  }
+
+  /* Brass barrel: a static conic "brushed metal" ring around the turning view */
+  .tube {
+    position: relative;
+    padding: var(--rim);
+    border-radius: 50%;
+    background: conic-gradient(from 40deg, #7a5a24, #f0d48c, #8c6a2c, #5e4419, #e2bf6c, #7a5a24);
+    box-shadow: 0 2vmin 6vmin #0008, 0 0 0 1px #0006;
+  }
+  /* Eyepiece glint and depth shadow sit on the barrel, so they stay put while the view turns */
+  .tube::after {
+    content: "";
+    position: absolute;
+    inset: var(--rim);
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 26%, #fff4, #fff0 28%);
+    box-shadow: inset 0 0 calc(var(--r) * 0.18) #000a, inset 0 0 0 1px #0008;
+  }
+
+  .scope {
+    --n: 12; /* wedge count; sibling-count() reads it from the markup where supported */
+    position: relative;
+    inline-size: var(--d);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    overflow: clip;
+    background: radial-gradient(circle, light-dark(#fffdf6, #1a1430), var(--field) 75%);
+    rotate: 0deg;
+    animation: turn 150s linear infinite, tint 40s ease-in-out infinite alternate;
+  }
+  @keyframes turn { to { rotate: 1turn; } }
+  @keyframes tint { to { filter: hue-rotate(-50deg) saturate(1.2); } }
+
+  /* One wedge = a right triangle from the centre whose angle is 360deg / n.
+     Odd wedges sit at k * 2a; even ones are mirror images (scaleY(-1)) rotated one wedge further,
+     so every seam meets its own reflection. */
+  .scope b {
+    --a: calc(360deg / var(--n));
+    --k: 0;
+    position: absolute;
+    inset: 50% auto auto 50%;
+    inline-size: var(--r);
+    block-size: calc(var(--r) * tan(var(--a)));
+    transform-origin: 0 0;
+    transform: rotate(calc(var(--k) * 2 * var(--a)));
+    clip-path: polygon(0 0, 100% -1%, 100% 101%); /* a hair wider than the wedge hides anti-aliased seams */
+  }
+  .scope b:nth-child(even) { transform: rotate(calc((var(--k) * 2 + 2) * var(--a))) scaleY(-1); }
+  .scope b:nth-child(n + 3) { --k: 1; }
+  .scope b:nth-child(n + 5) { --k: 2; }
+  .scope b:nth-child(n + 7) { --k: 3; }
+  .scope b:nth-child(n + 9) { --k: 4; }
+  .scope b:nth-child(n + 11) { --k: 5; }
+  @supports (order: sibling-index()) {
+    .scope b { --n: sibling-count(); --k: round(down, (sibling-index() - 1) / 2); }
+  }
+
+  /* The object chamber: every wedge holds an identical copy, so identical animations stay in perfect symmetry.
+     Two layers orbit in opposite directions around off-centre origins, so the pieces slide past each other. */
+  .scope i,
+  .scope i::before {
+    position: absolute;
+    inset: calc(var(--r) * -0.5) auto auto calc(var(--r) * -0.18);
+    inline-size: calc(var(--r) * 1.45);
+    aspect-ratio: 1;
+    animation: orbit 38s linear infinite;
+  }
+  .scope i {
+    transform-origin: 52% 48%;
+    rotate: 35deg; /* the reduced-motion frame */
+    background:
+      radial-gradient(circle at 31% 35%, #fffb 0 0.9%, #fff0 1.3%),
+      radial-gradient(circle at 33% 37%, var(--ruby) 0 6%, #0000 6.4%),
+      radial-gradient(circle at 63% 61%, #fff9 0 0.6%, #fff0 1%),
+      radial-gradient(circle at 64% 62%, var(--teal) 0 4%, #0000 4.4%),
+      radial-gradient(circle at 47% 74%, var(--amber) 0 3.2%, #0000 3.6%),
+      radial-gradient(circle at 71% 29%, var(--lime) 0 2.2%, #0000 2.6%),
+      radial-gradient(circle at 52% 50%, #0000 0 9%, var(--amber) 9.3% 9.9%, #0000 10.2%),
+      conic-gradient(from 200deg at 56% 44%, var(--cobalt) 0 16deg, #0000 16.6deg 150deg, var(--violet) 150.6deg 166deg, #0000 166.6deg),
+      conic-gradient(from 12deg at 40% 58%, var(--amber) 0 20deg, #0000 20.6deg 190deg, var(--teal) 190.6deg 200deg, #0000 200.6deg);
+  }
+  .scope i::before {
+    content: "";
+    inset: -12%;
+    inline-size: auto;
+    transform-origin: 44% 58%;
+    rotate: -80deg;
+    mix-blend-mode: var(--blend);
+    animation-duration: 23s;
+    animation-direction: reverse;
+    background:
+      radial-gradient(circle at 38% 52%, var(--violet) 0 5%, #0000 5.4%),
+      radial-gradient(circle at 60% 40%, var(--ruby) 0 2.6%, #0000 3%),
+      radial-gradient(circle at 55% 66%, var(--lime) 0 3.6%, #0000 4%),
+      radial-gradient(ellipse 9% 3% at 44% 34%, var(--cobalt) 0 98%, #0000),
+      conic-gradient(from 90deg at 50% 50%, #0000 0 30deg, var(--teal) 30.6deg 44deg, #0000 44.6deg 210deg, var(--ruby) 210.6deg 222deg, #0000 222.6deg),
+      repeating-conic-gradient(from 0deg at 62% 54%, color-mix(in oklab, var(--amber) 45%, #0000) 0 2deg, #0000 2.8deg 24deg);
+  }
+  /* add a turn on top of each layer's own resting angle */
+  @keyframes orbit { to { transform: rotate(1turn); } }
+
+  .runway { display: none; }
+  .hint {
+    position: absolute;
+    inset: auto 0 3vmin;
+    display: none;
+    text-align: center;
+    color: light-dark(#14121fb3, #f4f1ffb3);
+    font: 600 clamp(0.75rem, 2vmin, 1rem)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.08em;
+  }
+
+  /* Scroll upgrade: the scrollbar turns the barrel (two full turns over the runway); the glass keeps tumbling on time */
+  @supports (animation-timeline: scroll()) {
+    body { overflow: auto; }
+    .runway { display: block; block-size: 400dvh; }
+    /* longhands only: Lightning CSS would fold a shorthand + animation-timeline into one invalid shorthand */
+    .hint { display: block; animation-name: fade; animation-fill-mode: both; animation-timeline: scroll(root); }
+    .scope {
+      animation-duration: auto, 40s;
+      animation-timing-function: linear, ease-in-out;
+      animation-iteration-count: 1, infinite;
+      animation-fill-mode: both, none;
+      animation-timeline: scroll(root), auto;
+    }
+    @keyframes turn { to { rotate: 2turn; } }
+  }
+  @keyframes fade { 4% { opacity: 0; } 100% { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage *, .stage *::before { animation: none !important; }
+    .runway, .hint { display: none; }
+    body { overflow: clip; }
+  }
+}
