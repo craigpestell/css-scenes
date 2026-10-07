@@ -1,0 +1,471 @@
+@import "lib/stage";
+
+@layer scene {
+  .stage {
+    --room: #dbcdb5;
+    --room-shadow: #ad9679;
+    --wood: #956345;
+    --wood-edge: #573c2b;
+    --brass: #a97832;
+    --brass-light: #f2d79c;
+    --copper: #a76145;
+    --paper: #f1e4c7;
+    --paper-ink: #30291f;
+    --glass: #82b3bd;
+    --sky: #101d38;
+    --star: #ecf1ff;
+    --panel: #f4f1ff;
+    --panel-ink: #14121f;
+    --focus: #6d4aff;
+    background: radial-gradient(ellipse at 50% 40%, var(--room), var(--room-shadow));
+    isolation: isolate;
+  }
+  @media (prefers-color-scheme: dark) {
+    .stage {
+      --room: #171c27;
+      --room-shadow: #0d111b;
+      --wood: #4c3028;
+      --wood-edge: #241a19;
+      --brass: #bf9450;
+      --brass-light: #e9c987;
+      --copper: #704636;
+      --paper: #c5b18b;
+      --glass: #376274;
+      --sky: #080f22;
+      --panel: #0b0a14;
+      --panel-ink: #f4f1ff;
+      --focus: #9d85ff;
+    }
+  }
+  @supports (color: light-dark(white, black)) {
+    .stage {
+      --room: light-dark(#dbcdb5, #171c27);
+      --room-shadow: light-dark(#ad9679, #0d111b);
+      --wood: light-dark(#956345, #4c3028);
+      --wood-edge: light-dark(#573c2b, #241a19);
+      --brass: light-dark(#a97832, #bf9450);
+      --brass-light: light-dark(#f2d79c, #e9c987);
+      --copper: light-dark(#a76145, #704636);
+      --paper: light-dark(#f1e4c7, #c5b18b);
+      --glass: light-dark(#82b3bd, #376274);
+      --sky: light-dark(#101d38, #080f22);
+      --panel: var(--c-paper);
+      --panel-ink: var(--c-ink);
+      --focus: var(--c-accent);
+    }
+  }
+
+  .scene-title {
+    position: absolute;
+    z-index: 2;
+    inset: 4% auto auto 4%;
+    color: var(--panel-ink);
+    font: 400 clamp(1rem, 1.6vw, 1.6rem)/1.25 Georgia, serif;
+    letter-spacing: 0.03em;
+  }
+  .scene-title span { font-style: italic; }
+  .scene-title small {
+    display: block;
+    margin-block-start: 0.8em;
+    font: 500 0.55em/1.5 system-ui, sans-serif;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .room {
+    position: absolute;
+    inset: 48% auto auto 50%;
+    inline-size: 100em;
+    block-size: 66em;
+    font-size: min(0.9vw, 1.18dvh, 12px);
+    translate: -50% -50%;
+  }
+  .room div, .room i, .room b, .room svg { position: absolute; }
+  .room i { font-style: normal; }
+  .room svg { inline-size: 100%; block-size: 100%; fill: none; stroke: currentColor; stroke-width: 0.7; }
+  .room div::before, .room div::after, .room i::before, .room i::after {
+    content: "";
+    position: absolute;
+  }
+
+  .dome {
+    inset: 0 0 auto;
+    block-size: 50em;
+    border: 0.8em solid var(--copper);
+    border-block-end-width: 1.6em;
+    border-radius: 50em 50em 0 0;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 100%, #0000 60%, #ffffff0a 61%, #0000 62%),
+      repeating-linear-gradient(0deg, #0000 0 9em, #0002 9em 9.3em),
+      linear-gradient(90deg, var(--room-shadow), var(--room) 50%, var(--room-shadow));
+    box-shadow: inset 0 0 0 0.25em var(--brass-light), 0 1em 0 var(--wood-edge);
+  }
+  .dome::after { inset: 40% 5%; border: 0.15em solid #ffffff18; border-radius: 50%; }
+  .rib {
+    inset: auto auto 0 49.5%;
+    inline-size: 0.65em;
+    block-size: 60em;
+    transform-origin: 50% 100%;
+    rotate: var(--angle);
+    background:
+      repeating-linear-gradient(#0000 0 5em, var(--brass-light) 5em 5.25em, #0000 5.25em 6em),
+      linear-gradient(90deg, #0005, var(--copper) 50%, var(--brass-light));
+    box-shadow: 0.35em 0 0 #0003;
+  }
+  .sky-window {
+    inset: 2em auto auto 28em;
+    inline-size: 44em;
+    block-size: 39em;
+    border: 1em solid var(--wood-edge);
+    border-radius: 24em 24em 0 0;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 18% 30%, var(--star) 0 0.1em, #0000 0.16em),
+      radial-gradient(circle at 74% 18%, var(--star) 0 0.12em, #0000 0.18em),
+      radial-gradient(circle at 83% 62%, var(--star) 0 0.12em, #0000 0.18em),
+      radial-gradient(circle at 25% 80%, var(--star) 0 0.08em, #0000 0.13em),
+      radial-gradient(circle at 65% 76%, var(--star) 0 0.1em, #0000 0.16em),
+      radial-gradient(circle at 48% 9%, var(--star) 0 0.1em, #0000 0.16em),
+      radial-gradient(circle at 90% 40%, var(--star) 0 0.08em, #0000 0.14em),
+      linear-gradient(135deg, #0000 30%, #7183b126 52%, #0000 66%),
+      var(--sky);
+    box-shadow: 0 0 0 0.2em var(--brass), inset 0 0 6em #0005;
+  }
+  .sky-window::after { inset: auto 0 0; block-size: 2em; background: var(--copper); box-shadow: 0 -0.2em var(--brass-light); }
+  .moon {
+    inset: 7em auto auto 28em;
+    inline-size: 5em;
+    block-size: 5em;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 28% 60%, #8a98ad66 0 12%, #0000 13%),
+      radial-gradient(circle at 65% 30%, #8a98ad55 0 9%, #0000 10%),
+      radial-gradient(circle at 45% 42%, #faf1d3, #b7c7da);
+    box-shadow: 0 0 3em #c8d5ff30, inset -0.8em -0.2em 0 #4b648e40;
+  }
+  .constellation { inset: 15% 34% 20% 6%; color: #cedbff; }
+  .constellation svg { stroke: #cedbff55; stroke-width: 0.4; }
+  .constellation circle { fill: var(--star); stroke: none; }
+  .wall {
+    inset: 40em 0 auto;
+    block-size: 19em;
+    border: 0.4em solid var(--wood-edge);
+    background:
+      linear-gradient(#0003, #0000 50%),
+      repeating-linear-gradient(90deg, #0000 0 9.7em, var(--wood-edge) 9.7em 10em),
+      var(--room);
+    box-shadow: inset 0 1em 0 var(--wood), inset 0 1.2em 0 var(--brass);
+  }
+  .floor {
+    inset: 54em 0 auto;
+    block-size: 15em;
+    transform: perspective(45em) rotateX(35deg);
+    transform-origin: 50% 0;
+    border: 0.4em solid var(--wood-edge);
+    background:
+      repeating-linear-gradient(0deg, #0000 0 4.7em, #0004 4.7em 5em),
+      repeating-linear-gradient(90deg, var(--wood) 0 9.7em, var(--wood-edge) 9.7em 10em);
+  }
+
+  .wall-clock {
+    inset: 14em auto auto 7em;
+    inline-size: 11em;
+    block-size: 22em;
+    border: 0.5em solid var(--wood-edge);
+    border-radius: 6em 6em 1.5em 1.5em;
+    background: linear-gradient(90deg, var(--wood-edge), var(--wood), var(--wood-edge));
+    box-shadow: 0.5em 1em 1em #0003, inset 0 0 0 0.2em var(--brass);
+  }
+  .wall-clock::after { inset: 11em 2em 2em; border: 0.2em solid var(--brass); border-radius: 4em; background: #080f2299; }
+  .clock-face {
+    z-index: 1;
+    inset: 1em 0.7em auto;
+    block-size: 8.6em;
+    border: 0.4em solid var(--brass);
+    border-radius: 50%;
+    background: var(--paper);
+    color: var(--paper-ink);
+    box-shadow: 0 0 0 0.2em var(--wood-edge);
+  }
+  @supports (background: conic-gradient(#000, #fff)) {
+    .clock-face { background: radial-gradient(circle, var(--paper) 58%, #0000 59% 68%, var(--paper) 69%), repeating-conic-gradient(var(--paper-ink) 0 1deg, var(--paper) 1deg 6deg); }
+  }
+  .clock-face b { font: 700 1em/1 Georgia, serif; }
+  .clock-face b:nth-child(1) { inset: 0.7em auto auto 35%; }
+  .clock-face b:nth-child(2) { inset: 42% 0.65em auto auto; }
+  .clock-face b:nth-child(3) { inset: auto auto 0.6em 39%; }
+  .clock-face b:nth-child(4) { inset: 42% auto auto 0.6em; }
+  .hour-hand, .minute-hand { inset: auto auto 50% calc(50% - 0.13em); inline-size: 0.26em; block-size: 2em; background: var(--paper-ink); transform-origin: 50% 100%; rotate: -55deg; }
+  .minute-hand { block-size: 2.8em; rotate: 38deg; }
+  .clock-face::after { inset: calc(50% - 0.35em); border-radius: 50%; background: var(--brass); }
+  .pendulum { z-index: 1; inset: 10em auto auto calc(50% - 0.13em); inline-size: 0.26em; block-size: 8em; background: var(--brass); transform-origin: 50% 0; rotate: 0deg; animation: pendulum var(--t-swing) ease-in-out infinite alternate; }
+  .pendulum i { inset: auto auto 0 -1.3em; inline-size: 2.8em; block-size: 2.8em; border: 0.3em solid var(--brass); border-radius: 50%; background: radial-gradient(circle at 30% 25%, var(--brass-light), var(--brass)); }
+  .clock-plaque { position: absolute; z-index: 2; inset: auto 0 0.6em; color: var(--brass-light); font: 0.6em/1 system-ui, sans-serif; text-align: center; letter-spacing: 0.08em; }
+  @keyframes pendulum { from { rotate: -7deg; } to { rotate: 7deg; } }
+  .astrolabe { inset: 23em auto auto 21em; inline-size: 10em; block-size: 12em; }
+  .astrolabe::before { inset: 1em 4em auto; block-size: 2em; border: 0.25em solid var(--brass); border-radius: 50%; }
+  .astrolabe i { inset: 3em 0 auto; aspect-ratio: 1; border: 0.5em solid var(--brass); border-radius: 50%; background: repeating-conic-gradient(var(--brass-light) 0 1deg, #0000 1deg 15deg); box-shadow: inset 0 0 0 0.2em var(--brass-light); }
+  .astrolabe i::before { inset: 15%; border: 0.2em solid var(--brass); border-radius: 50%; }
+  .astrolabe b { inset: 4.4em 3em 0; border: 0.22em solid var(--brass-light); border-radius: 50%; rotate: 40deg; }
+  .astrolabe span { position: absolute; inset: 7.8em -1em auto; block-size: 0.25em; background: var(--brass-light); rotate: -30deg; box-shadow: 0 0.2em #0003; }
+  .star-chart {
+    inset: 9em auto auto 73em;
+    inline-size: 18em;
+    block-size: 15em;
+    border: 0.6em solid var(--wood-edge);
+    background: var(--paper);
+    color: var(--paper-ink);
+    rotate: 3deg;
+    box-shadow: 0.4em 0.7em 0 #0003, inset 0 0 0 0.15em var(--brass);
+  }
+  .star-chart span, .star-chart small { position: absolute; inset: 0.8em 0 auto; text-align: center; font: 0.8em/1 Georgia, serif; letter-spacing: 0.12em; }
+  .star-chart small { inset: auto 0 1em; font-size: 0.55em; }
+  .star-chart svg { inset: 1.8em 0 auto; block-size: 10.5em; }
+  .chart-grid { stroke: #30291f55; stroke-width: 0.4; }
+  .chart-stars { fill: currentColor; }
+  .chalkboard { inset: 29em auto auto 61em; inline-size: 11em; block-size: 9em; border: 0.5em solid var(--wood); background: #253c3c; color: #ede7c6; rotate: -4deg; }
+  .chalkboard span, .chalkboard small { position: absolute; inset: 0.8em 0 auto; font: 0.7em/1 system-ui, sans-serif; text-align: center; letter-spacing: 0.1em; }
+  .chalkboard small { inset: auto 0 1em; font-size: 0.65em; }
+  .chalkboard i { inset: 3em 2em auto; block-size: 3em; border: 0.1em solid #ede7c680; border-radius: 50%; rotate: -20deg; }
+  .chalkboard i::after { inset: 0.4em 1.2em; border: 0.1em solid #ede7c680; border-radius: 50%; rotate: 50deg; }
+
+  .shelves { inset: 27em auto auto 77em; inline-size: 20em; block-size: 19em; border-inline: 0.7em solid var(--wood-edge); background: linear-gradient(#0002, #0000), var(--room-shadow); box-shadow: 0.6em 0.6em 0 #0002; }
+  .shelves::before { inset: 9em -1.2em auto; block-size: 0.8em; background: var(--wood); box-shadow: 0 9em var(--wood), 0 0.2em var(--brass), 0 9.2em var(--brass); }
+  .books { inset: 0 0.4em auto; block-size: 9em; display: flex; align-items: end; gap: 0.25em; }
+  .book { position: relative !important; flex: 1; block-size: var(--height); border: 0.15em solid #0003; border-radius: 0.25em 0.25em 0 0; background: linear-gradient(90deg, #0004, #0000 30%, #fff2 65%, #0002), var(--book); box-shadow: 0.2em 0 #0003; }
+  .book::after { inset: 0.8em 0 auto; block-size: 0.15em; background: var(--brass-light); box-shadow: 0 0.35em var(--brass-light), 0 calc(var(--height) - 2em) var(--brass-light); }
+  .book b { inset: 2.4em 0 auto; color: #fff2cd; font: 0.6em/1 Georgia, serif; writing-mode: vertical-rl; margin: auto; letter-spacing: 0.2em; }
+  .book:nth-child(6) { rotate: -8deg; transform-origin: 50% 100%; margin-inline: 0.2em; }
+  .bottles { inset: 11em auto auto 1em; inline-size: 11em; block-size: 7em; }
+  .bottle { inset: auto auto 0 0; inline-size: 2.8em; block-size: 5em; border: 0.15em solid #c1eeeb70; border-radius: 0.5em 0.5em 0.3em 0.3em; background: linear-gradient(90deg, #fff2, #0000 35%, #0003), linear-gradient(#0000 38%, var(--glass) 39%), #8cbac22a; box-shadow: inset 0.3em 0 0 #e5ffef30; }
+  .bottle::before { inset: -1em 0.7em auto; block-size: 1em; background: var(--brass); border-radius: 0.2em; box-shadow: 0 0.3em 0 #1a2426; }
+  .bottle::after { inset: 2.5em 0.2em auto; block-size: 1.3em; background: var(--paper); box-shadow: inset 0 0 0 0.15em #0002; }
+  .bottle:nth-child(2) { inset-inline-start: 3.6em; block-size: 4.2em; }
+  .bottle:nth-child(3) { inset-inline-start: 7.2em; block-size: 5.8em; }
+  .plant { inset: 11em auto auto 14em; inline-size: 4em; block-size: 7em; }
+  .plant b { inset: auto 0 0; block-size: 3em; border-radius: 0.3em 0.3em 1em 1em; background: linear-gradient(90deg, #0003, #0000, #fff2), #ad7350; border-block-start: 0.5em solid #ce9368; }
+  .plant i { inset: auto auto 2em 2em; inline-size: 0.15em; block-size: 4em; background: #537b63; rotate: -35deg; transform-origin: 50% 100%; }
+  .plant i::before { inset: 0 -1.3em auto; inline-size: 1.5em; block-size: 2.6em; border-radius: 100% 0 100% 0; background: linear-gradient(45deg, #48705b, #78a278); }
+  .plant i:nth-child(2) { rotate: 35deg; block-size: 5em; }
+  .plant i:nth-child(3) { rotate: 2deg; block-size: 6em; }
+  .shelf-label { position: absolute; inset: auto 0 -1.9em; color: var(--brass-light); font: 0.6em/1 system-ui, sans-serif; text-align: center; letter-spacing: 0.16em; }
+
+  .workbench { inset: 52em auto auto 4em; inline-size: 92em; block-size: 11em; border-block-start: 1.6em solid var(--wood); background: repeating-linear-gradient(0deg, #0000 0 0.7em, #ffffff04 0.7em 0.8em), linear-gradient(var(--wood-edge), var(--wood)); box-shadow: 0 -0.25em 0 var(--brass), 0 0.5em 0 #0005; }
+  .workbench::before { inset: 0 -1.2em auto; block-size: 0.8em; background: var(--wood-edge); box-shadow: 0 -1.5em 0 var(--wood), 0 -1.7em 0 #ffffff25; }
+  .workbench::after { inset: auto 2em -4em; block-size: 4em; border-inline: 2em solid var(--wood-edge); }
+  .drawer { inset: 1.5em auto auto 3em; inline-size: 26em; block-size: 6em; border: 0.25em solid var(--wood-edge); background: linear-gradient(90deg, #0001, #fff1 45%, #0001), var(--wood); box-shadow: inset 0 0.2em #ffffff18; }
+  .drawer:nth-child(2) { inset-inline-start: 33em; }
+  .drawer:nth-child(3) { inset-inline-start: 63em; }
+  .drawer::before { inset: 2em calc(50% - 2em) auto; block-size: 1em; border: 0.22em solid var(--brass); border-radius: 0.5em; background: #0002; }
+  .drawer span { position: absolute; inset: 1em auto auto 1.2em; color: var(--brass-light); font: 0.85em/1 Georgia, serif; }
+  .stool { z-index: 1; inset: 59em auto auto 12em; inline-size: 13em; block-size: 10em; }
+  .stool b { inset: 0 0 auto; block-size: 2.8em; border-radius: 50%; background: radial-gradient(ellipse at 45% 25%, var(--wood), var(--wood-edge)); box-shadow: 0 0.5em var(--wood-edge); }
+  .stool i { inset: 2em auto auto 2em; inline-size: 1em; block-size: 8em; background: var(--wood-edge); rotate: 10deg; }
+  .stool i:nth-child(2) { inset-inline-start: 10em; rotate: -10deg; }
+  .stool::after { inset: 7em 2em auto; block-size: 0.6em; background: var(--wood-edge); }
+  .tools { inset: -7em 0 auto; block-size: 7em; }
+  .drawing { inset: 1.5em auto auto 2em; inline-size: 16em; block-size: 7em; background: var(--paper); color: var(--paper-ink); rotate: -8deg; box-shadow: 0.2em 0.3em #0003; }
+  .drawing svg { inset: 0 1em auto; inline-size: calc(100% - 2em); block-size: 6em; stroke-width: 0.5; }
+  .drawing span { position: absolute; inset: auto 1em 0.5em; font: 0.5em/1 system-ui, sans-serif; letter-spacing: 0.15em; }
+  .notebook { inset: 3em auto auto 20em; inline-size: 11em; block-size: 5em; border: 0.35em solid #48616c; border-inline-start: 0.8em solid #304653; border-radius: 0.2em 0.7em 0.7em 0.2em; background: var(--paper); rotate: 8deg; box-shadow: 0 0.4em #304653; }
+  .notebook i { inset: 0.5em 1.5em; background: repeating-linear-gradient(#0000 0 0.6em, #30291f44 0.6em 0.7em); border-inline-start: 0.1em solid #ac6b4c; }
+  .compass { inset: 0 auto auto 32em; inline-size: 5em; block-size: 5em; border: 0.5em solid var(--brass); border-radius: 50%; background: repeating-conic-gradient(var(--paper-ink) 0 1deg, var(--paper) 1deg 30deg); box-shadow: 0.2em 0.2em #0004; }
+  .compass i { inset: 0.7em 1.4em; background: linear-gradient(#a45649 50%, #384d60 50%); rotate: 28deg; }
+  @supports (clip-path: polygon(0 0, 100% 0, 50% 100%)) {
+    .compass i { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  }
+  .calipers { inset: 5.7em auto auto 32em; inline-size: 10em; block-size: 0.5em; border-radius: 0.2em; background: linear-gradient(#d9cba9, var(--brass)); rotate: -7deg; }
+  .calipers::before, .calipers::after { inset: -1.7em auto auto 1em; inline-size: 0.5em; block-size: 2.2em; background: var(--brass-light); border-block-start: 0.4em solid var(--brass); }
+  .calipers::after { inset-inline-start: 5em; border-inline-end: 1.2em solid var(--brass); }
+  .winding-key { inset: 6em auto auto 70em; inline-size: 4em; block-size: 0.6em; background: var(--brass); rotate: -16deg; }
+  .winding-key::before { inset: -0.8em auto auto -1.4em; inline-size: 3em; block-size: 2.2em; border: 0.4em solid var(--brass); border-radius: 50%; }
+  .winding-key::after { inset: 0 auto auto 3.3em; inline-size: 0.7em; block-size: 1.3em; background: var(--brass); }
+  .magnifier { inset: 2em auto auto 66em; inline-size: 4em; block-size: 3em; border: 0.35em solid var(--brass); border-radius: 50%; background: #9ac2cf33; rotate: 15deg; box-shadow: inset 0.2em 0.2em #d0effc55; }
+  .magnifier::after { inset: 50% auto auto 100%; inline-size: 4em; block-size: 0.6em; background: var(--wood-edge); border-inline-end: 0.5em solid var(--brass); }
+  .ink-bottle { inset: 3.5em auto auto 79em; inline-size: 2.7em; block-size: 3.2em; border: 0.2em solid #82a4ba; border-radius: 0.3em; background: linear-gradient(90deg, #ffffff30, #0000), #18273a; }
+  .ink-bottle::before { inset: -0.7em 0.4em auto; block-size: 0.7em; background: var(--brass); }
+  .ink-bottle::after { inset: 1em 0.3em auto; block-size: 1em; background: var(--paper); }
+  .quill { inset: -1em auto auto 82em; inline-size: 0.15em; block-size: 6em; background: var(--paper); rotate: 23deg; transform-origin: 50% 100%; }
+  .quill::before { inset: -0.4em auto auto -0.8em; inline-size: 1.8em; block-size: 4.5em; border-radius: 100% 0 100% 0; background: repeating-linear-gradient(-35deg, #e2cfb0 0 0.4em, #f6ead0 0.4em 0.5em); }
+  .mug { inset: 1em auto auto 86em; inline-size: 4em; block-size: 4.5em; border-radius: 0.4em 0.4em 1em 1em; background: linear-gradient(90deg, #384954, #80908e 40%, #3b4c56); border-block-start: 0.4em solid #bbc3af; box-shadow: 0.3em 0.3em #0003; }
+  .mug::before { inset: 0.8em auto auto 90%; inline-size: 1.6em; block-size: 2.5em; border: 0.45em solid #63777a; border-radius: 0 1em 1em 0; }
+  .loose-cog { inset: 2em auto auto 39em; inline-size: 2.5em; block-size: 2.5em; border: 0.5em dotted var(--brass); border-radius: 50%; background: radial-gradient(circle, #0000 0 20%, var(--brass-light) 21% 50%, #0000 51%); rotate: 8deg; }
+  .loose-cog:nth-last-child(2) { inset: 5.6em auto auto 44em; inline-size: 2em; block-size: 2em; }
+  .loose-cog:nth-last-child(1) { inset: 5.4em auto auto 61em; inline-size: 3em; block-size: 3em; }
+
+  .telescope { inset: 30em auto auto 17em; inline-size: 26em; block-size: 24em; }
+  .tripod { inset: 8em auto auto 9em; inline-size: 12em; block-size: 16em; }
+  .tripod i { inset: 0 auto auto 5em; inline-size: 1.1em; block-size: 16em; background: linear-gradient(90deg, var(--wood-edge), var(--wood), var(--brass)); transform-origin: 50% 0; rotate: 23deg; border-block-end: 1em solid var(--brass); }
+  .tripod i:nth-child(2) { rotate: -23deg; }
+  .tripod i:nth-child(3) { rotate: 0deg; block-size: 13em; opacity: 0.7; }
+  .tripod b { inset: 11em 1em auto; block-size: 0.4em; background: var(--brass); }
+  .telescope-mount { inset: 3em auto auto 12em; inline-size: 5em; block-size: 6em; border: 0.7em solid var(--brass); border-block-start: none; border-radius: 0 0 2em 2em; }
+  .telescope-mount::before { inset: auto auto -2.7em 1em; inline-size: 0.8em; block-size: 2.3em; background: var(--brass-light); }
+  .telescope-mount i { inset: 0.8em auto auto -1.5em; inline-size: 1.8em; block-size: 1.8em; border: 0.4em solid var(--brass-light); border-radius: 50%; background: var(--wood-edge); }
+  .barrel { inset: 0 auto auto 0; inline-size: 27em; block-size: 4.5em; border: 0.2em solid var(--brass); border-radius: 0.6em; transform-origin: 50% 50%; rotate: -28deg; background: linear-gradient(var(--brass-light), var(--brass) 18%, #684b2b 42%, var(--brass) 64%, var(--brass-light) 76%, var(--brass) 95%); box-shadow: 0 0.5em 0 #0003; }
+  .barrel::before { inset: -0.2em 22% -0.2em auto; inline-size: 1em; background: var(--brass-light); box-shadow: -12em 0 var(--brass-light), 0.2em 0 #5b3b22, -11.8em 0 #5b3b22; }
+  .eyepiece { inset: 0.8em 100% auto auto; inline-size: 4em; block-size: 2.5em; border-radius: 0.3em; background: linear-gradient(#242a2c, #607475, #242a2c); box-shadow: -0.6em 0 0 #1b252c; }
+  .collar { inset: -0.5em auto -0.5em 93%; inline-size: 2em; border: 0.2em solid var(--brass-light); background: linear-gradient(var(--brass), var(--brass-light), var(--brass)); border-radius: 0.4em; }
+  .lens { inset: -0.25em auto auto 100%; inline-size: 1.4em; block-size: 4.6em; border: 0.25em solid var(--brass-light); border-radius: 50%; background: linear-gradient(120deg, #233747, #83c2cb 40%, #1a2943 60%); box-shadow: inset -0.2em 0 0 #0005; }
+  .focus-wheel { inset: auto auto -1.2em 7em; inline-size: 2em; block-size: 2em; border: 0.4em dotted var(--brass-light); border-radius: 50%; background: var(--wood-edge); }
+  .barrel b { inset: 2em auto auto 10em; color: var(--brass-light); font: 0.6em/1 Georgia, serif; letter-spacing: 0.1em; }
+
+  .orrery { inset: 31em auto auto 43em; inline-size: 28em; block-size: 21em; }
+  .orrery-foot { inset: auto 4em -0.4em; block-size: 2em; border-radius: 50%; background: var(--wood-edge); box-shadow: 0 0.4em #0004, inset 0 0.2em var(--brass); }
+  .orrery-base { inset: auto 4.5em 0.5em; block-size: 5em; border: 0.3em solid var(--brass); border-radius: 50% / 20%; background: linear-gradient(var(--brass-light) 0 12%, #203a42 13% 80%, var(--brass) 81%); box-shadow: inset 0 -0.4em #0003; }
+  .orrery-base span { position: absolute; inset: 2em 0 auto; color: #f2d79c; font: 0.6em/1 Georgia, serif; text-align: center; letter-spacing: 0.17em; }
+  .bolt { inset: var(--y) auto auto var(--x); inline-size: 0.45em; block-size: 0.45em; translate: -50% -50%; border-radius: 50%; background: linear-gradient(45deg, #0000 43%, #664728 44% 56%, #0000 57%), var(--brass-light); }
+  @supports (width: calc(sin(1rad) * 1px)) {
+    .bolt { inset-inline-start: calc(50% + cos(var(--angle)) * 40%); inset-block-start: calc(50% + sin(var(--angle)) * 40%); }
+  }
+  .shaft { inset: 3em auto auto 13.4em; inline-size: 1.2em; block-size: 14em; background: linear-gradient(90deg, #634c2f, var(--brass-light), var(--brass)); }
+  .shaft::after { inset: 8em -1.2em auto; block-size: 0.8em; border: 0.2em solid var(--brass); border-radius: 50%; background: var(--brass-light); }
+  .drive { z-index: 1; inset: 13em auto auto 7em; inline-size: 14em; block-size: 7em; }
+  .gear { inset: 0.6em auto auto 0; inline-size: 4.6em; block-size: 4.6em; border: 0.35em dotted var(--brass); border-radius: 50%; background: var(--brass); rotate: 0deg; animation: gear-turn calc(var(--t-drift) / 2) linear infinite; }
+  .gear::before { inset: 12%; border: 0.15em solid var(--brass-light); border-radius: 50%; background: radial-gradient(circle, #273536 0 13%, var(--brass-light) 14% 22%, var(--brass) 23% 60%, #76552c 61%); }
+  .gear-large { inset: -0.4em auto auto 4.4em; inline-size: 6.9em; block-size: 6.9em; animation-duration: calc(var(--t-drift) * 0.75); animation-direction: reverse; }
+  @supports (background: repeating-conic-gradient(#000 0deg 5deg, #0000 5deg 10deg)) {
+    .gear { border: 0; background: repeating-conic-gradient(var(--brass) 0deg 7.5deg, #0000 7.5deg 15deg); }
+    .gear-large { background: repeating-conic-gradient(var(--brass) 0deg 5deg, #0000 5deg 10deg); }
+  }
+  @supports (mask-image: radial-gradient(#000, #0000)) {
+    .gear { mask-image: radial-gradient(circle, #0000 0 7%, #000 8%); }
+  }
+  .crank { inset: 3em auto auto 10em; inline-size: 3em; block-size: 0.6em; background: var(--brass-light); rotate: -20deg; }
+  .crank::after { content: ""; position: absolute; inset: -0.3em 0 auto auto; inline-size: 1em; block-size: 1.5em; border-radius: 0.3em; background: var(--wood); }
+  @keyframes gear-turn { to { rotate: 360deg; } }
+  .orbital-space { inset: -7em 0 auto; inline-size: 28em; block-size: 28em; }
+  .orbital-plane { inset: 0; transform: scaleY(0.47); }
+  .carrier {
+    inset: calc(50% - var(--diameter) / 2) auto auto calc(50% - var(--diameter) / 2);
+    inline-size: var(--diameter);
+    block-size: var(--diameter);
+    border: 0.18em solid var(--brass);
+    border-radius: 50%;
+    transform: rotateZ(var(--phase));
+    animation: orbit var(--period) linear infinite;
+  }
+  .carrier::before { inset: calc(50% - 0.08em) 0 auto 50%; block-size: 0.16em; background: var(--brass); }
+  .planet { inset: calc(50% - 1em) -1em auto auto; inline-size: 2em; block-size: 2em; border: 0.12em solid #fff3; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #e5cfac, #87735e 60%, #443d35); transform: rotateZ(calc(-1 * var(--phase))) scaleY(2.13); animation: planet-face var(--period) linear infinite; }
+  .venus { inline-size: 2.7em; block-size: 2.7em; inset-block-start: calc(50% - 1.35em); background: radial-gradient(circle at 30% 25%, #f5d8a5, #c38b54 60%, #73503d); }
+  .earth { inline-size: 3.2em; block-size: 3.2em; inset-block-start: calc(50% - 1.6em); background: radial-gradient(ellipse at 35% 30%, #abc69a 0 15%, #0000 16%), radial-gradient(ellipse at 60% 70%, #6f9b82 0 18%, #0000 19%), radial-gradient(circle at 30% 25%, #a5c7d5, #497c9d 60%, #233a59); }
+  .saturn { inline-size: 3.7em; block-size: 3.7em; inset-block-start: calc(50% - 1.85em); background: repeating-linear-gradient(10deg, #ffffff18 0 0.3em, #0000 0.3em 0.7em), radial-gradient(circle at 30% 25%, #ead3a0, #b39770 60%, #6b5745); }
+  .saturn::after { inset: 0.6em -1.2em; border: 0.5em solid #c7b088; border-radius: 50%; rotate: -20deg; box-shadow: 0 0 0 0.15em #edd9b866; }
+  .sun { inset: calc(50% - 2em); border-radius: 50%; background: radial-gradient(circle at 30% 25%, #fff0bb, #dcaa52 60%, #a77835); transform: scaleY(2.13); box-shadow: 0 0 2em #eacb6b30; }
+  @keyframes orbit { from { transform: rotateZ(var(--phase)); } to { transform: rotateZ(calc(var(--phase) + 360deg)); } }
+  @keyframes planet-face { from { transform: rotateZ(calc(-1 * var(--phase))) scaleY(2.13); } to { transform: rotateZ(calc(-1 * var(--phase) - 360deg)) scaleY(2.13); } }
+  @supports (transform-style: preserve-3d) and (perspective: 1px) {
+    .orbital-space { perspective: 70em; }
+    .orbital-plane { transform: rotateX(62deg); transform-style: preserve-3d; }
+    .carrier { transform-style: preserve-3d; }
+    .planet { transform: rotateZ(calc(-1 * var(--phase))) rotateX(-62deg); animation-name: planet-face-3d; }
+    .sun { transform: rotateX(-62deg); }
+    @keyframes planet-face-3d { from { transform: rotateZ(calc(-1 * var(--phase))) rotateX(-62deg); } to { transform: rotateZ(calc(-1 * var(--phase) - 360deg)) rotateX(-62deg); } }
+  }
+
+  .desk-lamp { inset: 37em auto auto 71em; inline-size: 12em; block-size: 15em; }
+  .lamp-foot { inset: auto 1em 0; block-size: 1.8em; border: 0.3em solid var(--brass); border-radius: 50%; background: #244143; box-shadow: 0 0.3em #0004; }
+  .lamp-stem { inset: 3em auto auto 5.5em; inline-size: 0.7em; block-size: 11em; background: linear-gradient(90deg, var(--brass), var(--brass-light), var(--brass)); }
+  .lamp-stem::before { inset: -2em -2em auto; block-size: 3em; border: 0.5em solid var(--brass); border-block-end: 0; border-radius: 3em 3em 0 0; }
+  .lamp-shade { inset: 0 -1em auto; block-size: 5em; border: 0.3em solid var(--brass); border-radius: 6em 6em 0.8em 0.8em; background: linear-gradient(90deg, #1c3837, #4b7b6a 35%, #294c43 75%, #142f31); box-shadow: inset 0 0.4em #ffffff20; }
+  .bulb { inset: auto 1em -0.6em; block-size: 1em; border-radius: 50%; background: var(--c-lamp, #ffe9b0); opacity: 0.15; transition: opacity var(--t-base) var(--ease-out); }
+  /* Keep the transparent falloff inside the box so the light has no rectangular edge. */
+  .lamp-glow { pointer-events: none; inset: 34em auto auto 60em; inline-size: 35em; block-size: 27em; background: radial-gradient(ellipse 48% 48% at 50% 50%, #ffd1842b, #ffc1740a 50%, #0000 100%); opacity: 0; transition: opacity var(--t-base) var(--ease-out); }
+  #lamp:checked ~ .room .lamp-glow, #lamp:checked ~ .room .bulb { opacity: 1; }
+  .room-mark { position: absolute; inset: auto 0 -3em; color: var(--panel-ink); font: 0.65em/1 system-ui, sans-serif; letter-spacing: 0.25em; }
+  .room-mark span { float: right; }
+
+  .control-input { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .controls {
+    position: absolute;
+    z-index: 3;
+    inset: auto auto max(1rem, env(safe-area-inset-bottom)) 50%;
+    translate: -50% 0;
+    inline-size: max-content;
+    max-inline-size: calc(100% - 2rem);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0.25rem;
+    gap: 0.25rem;
+    border: 1px solid var(--panel-ink);
+    border-radius: 1rem;
+    background: var(--panel);
+    color: var(--panel-ink);
+    box-shadow: 0 0.4rem 1.5rem #0002;
+    font: 500 0.8rem/1.3 system-ui, sans-serif;
+  }
+  .controls label { display: flex; align-items: center; gap: 0.6em; min-block-size: 44px; min-inline-size: 44px; padding: 0.5rem 0.75rem; border: 1px solid transparent; border-radius: 0.7rem; cursor: pointer; }
+  .check-mark { inline-size: 1.1em; block-size: 1.1em; border: 1.5px solid currentColor; border-radius: 0.2em; flex: none; }
+  #pause:checked ~ .controls [for="pause"] .check-mark, #lamp:checked ~ .controls [for="lamp"] .check-mark { background: var(--panel-ink); box-shadow: inset 0 0 0 0.15em var(--panel); }
+  #pause:focus-visible ~ .controls [for="pause"], #lamp:focus-visible ~ .controls [for="lamp"] { outline: 3px solid var(--focus); outline-offset: -3px; }
+  @supports selector(:has(*)) {
+    .stage:has(#pause:checked) .controls [for="pause"] { border-color: currentColor; }
+  }
+  #pause:checked ~ .room *, #pause:checked ~ .room *::before, #pause:checked ~ .room *::after { animation-play-state: paused; }
+  .motion-note { display: none; flex-basis: 100%; padding: 0 0.75rem 0.5rem; font-size: 0.75em; text-align: center; }
+
+  @media (aspect-ratio < 1/1) {
+    .scene-title { inset: max(4rem, env(safe-area-inset-top)) auto auto 5%; max-inline-size: 90%; font-size: clamp(1rem, 4vw, 1.4rem); }
+    .scene-title small { font-size: 0.48em; }
+    .room { inset-block-start: calc(50% - 0.25rem); block-size: 172em; font-size: min(0.92vw, calc((100dvh - 14rem) / 172)); }
+    .dome { block-size: 80em; }
+    .rib { block-size: 90em; }
+    .sky-window { inset: 3em auto auto 20em; inline-size: 62em; block-size: 72em; border-radius: 32em 32em 0 0; }
+    .moon { inset: 12em auto auto 36em; inline-size: 7em; block-size: 7em; }
+    .constellation { inset: 25% 15% 30% 8%; }
+    .wall { inset-block-start: 73em; block-size: 81em; }
+    .floor { inset-block-start: 148em; block-size: 22em; }
+    .wall-clock { inset: 28em auto auto 3em; scale: 1.4; transform-origin: 0 0; }
+    .astrolabe { inset: 65em auto auto 79em; scale: 1.2; transform-origin: 0 0; }
+    .star-chart { inset: 34em auto auto 52em; inline-size: 30em; block-size: 23em; }
+    .star-chart svg { block-size: 17em; }
+    .star-chart span { font-size: 1.2em; }
+    .star-chart small { font-size: 0.8em; }
+    .chalkboard { inset: 81em auto auto 60em; inline-size: 18em; block-size: 12em; }
+    .chalkboard span { font-size: 1em; }
+    .chalkboard small { font-size: 0.9em; }
+    .chalkboard i { inset: 4em 4em auto; block-size: 4em; }
+    .shelves { inset: 62em auto auto 9em; inline-size: 43em; block-size: 24em; }
+    .books { block-size: 12em; gap: 0.6em; }
+    .book { block-size: calc(var(--height) * 1.35); }
+    .book b { font-size: 0.95em; }
+    .shelves::before { inset-block-start: 12em; box-shadow: 0 11em var(--wood), 0 0.2em var(--brass), 0 11.2em var(--brass); }
+    .bottles { inset: 16em auto auto 3em; scale: 1.3; transform-origin: 0 100%; }
+    .plant { inset: 16em auto auto 32em; scale: 1.3; transform-origin: 0 100%; }
+    .shelf-label { font-size: 0.9em; }
+    .telescope { inset: 97em auto auto 9em; scale: 1.5; transform-origin: 0 0; }
+    .orrery { inset: 102em auto auto 54em; scale: 1.45; transform-origin: 0 0; }
+    .desk-lamp { inset: 119em auto auto 78em; scale: 1; transform-origin: 0 0; }
+    .workbench { inset-block-start: 134em; block-size: 20em; }
+    .drawer { inline-size: 26em; block-size: 12em; }
+    .drawer::before { inset-block-start: 5em; block-size: 1.5em; }
+    .drawer span { font-size: 1.5em; }
+    .tools { inset-block-start: -6em; }
+    .drawing { inset: 0 auto auto 1em; inline-size: 23em; block-size: 10em; }
+    .drawing svg { block-size: 8em; }
+    .drawing span { font-size: 0.8em; }
+    .notebook { inset: 3em auto auto 27em; inline-size: 16em; block-size: 7em; }
+    .compass { inset: 0 auto auto 45em; }
+    .calipers { inset: 7em auto auto 46em; }
+    .loose-cog { inset-inline-start: 51em; }
+    .loose-cog:nth-last-child(2) { inset: 8em auto auto 57em; }
+    .loose-cog:nth-last-child(1) { inset: 7em auto auto 62em; }
+    .magnifier { inset: 3em auto auto 67em; }
+    .winding-key { inset: 9em auto auto 71em; }
+    .ink-bottle { inset: 5em auto auto 80em; }
+    .quill { inset: 1em auto auto 82em; }
+    .mug { inset: 4em auto auto 87em; }
+    .stool { inset: 151em auto auto 12em; scale: 1.6; transform-origin: 0 0; }
+    .lamp-glow { inset: 112em auto auto 60em; block-size: 42em; }
+    .room-mark { font-size: 1em; }
+  }
+  @media (height < 650px) and (aspect-ratio >= 1/1) {
+    .scene-title small { display: none; }
+    .room { font-size: min(0.9vw, 1.05dvh); inset-block-start: 46%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .room *, .room *::before, .room *::after { animation: none !important; transition: none !important; }
+    .motion-note { display: block; }
+  }
+}
