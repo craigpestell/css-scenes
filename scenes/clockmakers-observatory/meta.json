@@ -1,0 +1,29 @@
+{
+  "title": "Clockmaker's Observatory",
+  "tags": ["css-art", "clockwork", "3d", "interactive", "no-js"],
+  "techniques": [
+    "Scoped 3D orbits",
+    "Layered material gradients",
+    "Masked conic gears",
+    "Trigonometric fasteners",
+    "CSS-only state controls",
+    "Portrait recomposition"
+  ],
+  "features": [
+    { "name": "3D transforms (perspective / preserve-3d)", "baseline": "widely available; scoped to the orrery, with a composed 2D fallback" },
+    { "name": "mask-image", "baseline": "widely available (2023-12-07); radial cutouts enhance complete gear discs" },
+    { "name": "clip-path: polygon()", "baseline": "widely available (2021-01-21); base silhouettes retained" },
+    { "name": "CSS trigonometric functions (sin() / cos())", "baseline": "widely available (2023-03-13); explicit coordinate fallback" },
+    { "name": "individual transforms (rotate / translate)", "baseline": "widely available (2022-08-05)" },
+    { "name": "light-dark()", "baseline": "newly available (2024-05-13); explicit scheme-based palette fallback" },
+    { "name": ":has()", "baseline": "widely available (2023-12-19); optional label styling only, controls use sibling selectors" },
+    { "name": "prefers-reduced-motion", "baseline": "widely available; separated static planets, resting pendulum and instant lamp changes" }
+  ],
+  "inspiration": [
+    { "title": "Orrery: clockmaking origins and orbital mechanisms", "url": "https://en.wikipedia.org/wiki/Orrery", "author": "Wikipedia contributors" }
+  ],
+  "exceptions": {
+    "localColors": "Scene-local material palette approved in the session plan; shared UI and timing tokens reused, tokens.json unchanged.",
+    "extraBytes": 0
+  }
+}
