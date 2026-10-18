@@ -65,7 +65,7 @@
   .rival { /* each starts ahead and runs a little slower; you pass them at 27%, 43% and 64% of the race */
     --body: var(--rival);
     --s: calc(var(--i) * var(--i) * 1.5% + 2.5%);
-    --e: calc(var(--s) + 290% - var(--i) * 5%);
+    --e: calc(var(--s) + (290% - var(--i) * 5%) * var(--pace, 1));
     transform: translateY(1.8cqi);
   }
   @keyframes drive { from { offset-distance: var(--s, 0%); } to { offset-distance: var(--e); } } /* closed path: past 100% it wraps into the next lap */

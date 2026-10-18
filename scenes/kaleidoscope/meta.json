@@ -18,5 +18,9 @@
   ],
   "exceptions": {
     "localColors": "Glass, field and brass colours are local custom properties; Accepted by the user on 2026-10-06; tokens.json unchanged."
-  }
+  },
+  "params": [
+    { "type": "count", "label": "Mirrors", "selector": ".scope b", "min": 4, "max": 48, "step": 2 },
+    { "type": "count", "label": "Glass layers per mirror", "selector": ".scope b > i", "min": 1, "max": 6 }
+  ]
 }

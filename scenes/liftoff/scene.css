@@ -99,7 +99,7 @@
     animation: puff var(--loop) linear infinite both;
   }
   @supports (order: sibling-index()) {
-    .smoke i { --dx: calc((sibling-index() - 3.5) * 9); }
+    .smoke i { --dx: calc((sibling-index() - (sibling-count() + 1) / 2) * 54 / sibling-count()); }
   }
   @keyframes puff {
     0%, 6% { scale: 0; translate: 0 0; opacity: 1; }

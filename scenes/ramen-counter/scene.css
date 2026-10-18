@@ -175,6 +175,7 @@
   .steam i:nth-child(1) { inset-inline-start: 6%; }
   .steam i:nth-child(2) { inset-inline-start: 40%; }
   .steam i:nth-child(3) { inset-inline-start: 70%; }
+  .steam i:nth-child(n + 4) { inset-inline-start: calc(mod(var(--i) * 29, 70) * 1% + 4%); } /* extra wisps from the controls panel */
   @supports (clip-path: shape(from 0 0, line to 1px 1px)) {
     .steam i { border-radius: 0; inline-size: 14vmin; }
   }
