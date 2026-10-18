@@ -110,7 +110,7 @@
   .straps i {
     position: absolute;
     inset-block-start: 6px;
-    inset-inline-start: calc(var(--i) * 11% + 1%);
+    inset-inline-start: calc(var(--i) * 88% / var(--n, 8) + 1%);
     inline-size: 4vmin;
     block-size: 20vh;
     transform-origin: 50% 0;

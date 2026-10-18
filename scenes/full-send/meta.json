@@ -13,5 +13,8 @@
   ],
   "exceptions": {
     "localColors": "Lime #d2ff00 and near-black #111112 are local custom properties under the local-colours exception the user accepted on 2026-10-03; tokens.json unchanged."
-  }
+  },
+  "params": [
+    { "type": "range", "label": "Loop length", "var": "--loop", "min": 2, "max": 40, "step": 1, "value": 9, "unit": "s", "when": "time" }
+  ]
 }

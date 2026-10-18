@@ -41,6 +41,7 @@ export function sceneStats({ meta, markup, css, js, size }) {
       baseline: f.baseline,
       test: TESTS.find(([re]) => re.test(f.name))?.[1] ?? null,
     })),
+    params: meta.params ?? [], // controls panel; shapes documented in panel.js
   };
 }
 

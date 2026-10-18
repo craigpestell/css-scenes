@@ -43,7 +43,8 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `sites/index/`: gallery shell, card renderer, and gallery styling.
 - `sites/source/`: generated source viewer and syntax highlighting.
 - `sites/stats/stats.js`: build-time stats and feature-test mapping.
-- `sites/stats/panel.js`: browser-only performance, size, compatibility, and environment panel.
+- `sites/stats/panel.js`: browser-only stats panel (performance, size, compatibility, environment) and
+  Controls panel (scroll dial, auto-play, animation speed, colour scheme, scene `params`).
 - `.claude/`: scene design/build/review/write-up workflow; `/new-scene` is the
   human-approval-gated orchestrator.
 - `vercel.json`: static deployment of `dist/`; no framework runtime or serverless functions.
@@ -70,6 +71,8 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `features[].name` is pattern-matched in `sites/stats/stats.js` for live support checks.
 - `inspiration` renders credits; relative URLs are re-rooted from the scene directory.
 - `exceptions.extraBytes` raises only that scene's size budget.
+- `params` declares the stats panel's scene controls (`range`, `count`, `color`); shapes are documented
+  at the top of the Controls block in `sites/stats/panel.js`. `count` sets `--i`/`--n` inline on each element.
 
 ## Change workflows
 

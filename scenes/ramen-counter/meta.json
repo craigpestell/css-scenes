@@ -15,5 +15,8 @@
   ],
   "exceptions": {
     "localColors": "Scene palette is local light-dark() custom properties; no --c-* tokens are used. Accepted by the user on 2026-10-03; tokens.json unchanged."
-  }
+  },
+  "params": [
+    { "type": "count", "label": "Steam wisps", "selector": ".steam i", "min": 1, "max": 16 }
+  ]
 }

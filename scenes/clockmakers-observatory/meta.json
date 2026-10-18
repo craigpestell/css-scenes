@@ -25,5 +25,8 @@
   "exceptions": {
     "localColors": "Scene-local material palette approved in the session plan; shared UI and timing tokens reused, tokens.json unchanged.",
     "extraBytes": 0
-  }
+  },
+  "params": [
+    { "type": "range", "label": "Orrery period", "var": "--t-drift", "min": 2, "max": 90, "step": 1, "value": 24, "unit": "s" }
+  ]
 }

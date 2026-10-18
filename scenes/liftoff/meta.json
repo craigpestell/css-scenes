@@ -13,5 +13,9 @@
   ],
   "exceptions": {
     "localColors": "Sky, hull, flame and HUD colours are local custom properties (only --c-accent is a token). Accepted by the user on 2026-10-03; tokens.json unchanged."
-  }
+  },
+  "params": [
+    { "type": "count", "label": "Smoke puffs", "selector": ".smoke i", "min": 1, "max": 40 },
+    { "type": "range", "label": "Launch length", "var": "--loop", "min": 4, "max": 60, "step": 1, "value": 16, "unit": "s", "when": "time" }
+  ]
 }
