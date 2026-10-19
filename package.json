@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@9.15.1",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "build": "node packages/build/src/cli.js build",
     "dev": "node packages/build/src/cli.js dev"
