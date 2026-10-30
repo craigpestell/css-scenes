@@ -9,109 +9,249 @@
 }
 
 @layer base {
-  html { color-scheme: light dark; }
+  html { color-scheme: light dark; scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   body {
+    /* Gallery surfaces, derived from the shared tokens so scenes stay the most colourful thing on the page */
+    --surface: color-mix(in oklab, var(--c-ink) 4%, var(--c-paper));
+    --line: color-mix(in oklab, var(--c-ink) 12%, transparent);
+    --dim: color-mix(in oklab, var(--c-ink) 62%, var(--c-paper));
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --wrap: 82rem;
+    --gutter: max(1rem, 4vw);
     min-block-size: 100dvh;
     background: var(--c-paper);
     color: var(--c-ink);
     font: 1rem/1.55 system-ui, sans-serif;
-    padding: clamp(2rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem) 4rem;
   }
   a { color: inherit; }
-  code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace; }
+  code { font: 0.9em var(--mono); }
+  :focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+  .sr { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 
 @layer index {
-  .masthead, main { max-inline-size: 76rem; margin-inline: auto; }
-
-  .masthead { margin-block-end: clamp(2rem, 5vw, 3.5rem); }
-  h1 {
-    font-size: clamp(2.6rem, 9vw, 5.5rem);
-    line-height: 0.95;
-    letter-spacing: -0.04em;
-    text-wrap: balance;
+  .topbar, .hero, .gallery, .colophon {
+    inline-size: min(100% - 2 * var(--gutter), var(--wrap));
+    margin-inline: auto;
   }
-  .lede { max-inline-size: 38rem; margin-block-start: 1rem; font-size: 1.15rem; text-wrap: pretty; }
-  .count {
-    margin-block-start: 1rem;
-    color: var(--c-accent);
-    font: 600 0.8rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-    letter-spacing: 0.12em;
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-block: 1.25rem;
+    font: 600 0.8rem/1 var(--mono);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
   }
+  .wordmark { text-decoration: none; }
+  .wordmark::before {
+    content: "";
+    display: inline-block;
+    inline-size: 0.7em;
+    aspect-ratio: 1;
+    margin-inline-end: 0.55em;
+    border-radius: 50%;
+    background: conic-gradient(from 210deg, var(--c-accent), #ff7ac6, #ffc27a, var(--c-accent));
+    vertical-align: -0.05em;
+  }
+  .jump { color: var(--dim); text-decoration: none; }
+  .jump:hover { color: var(--c-ink); }
 
+  /* Hero: the pitch beside a live, interactive scene in a mat */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+    align-items: center;
+    padding-block: clamp(1.5rem, 5vw, 4.5rem) clamp(3rem, 7vw, 6rem);
+  }
+  .eyebrow {
+    color: var(--c-accent);
+    font: 600 0.75rem/1 var(--mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin-block-start: 1rem;
+    font-size: clamp(2.6rem, 5.6vw, 4.75rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+  .lede { max-inline-size: 34rem; margin-block-start: 1.4rem; font-size: 1.1rem; color: var(--dim); text-wrap: pretty; }
+  .lede code { color: var(--c-ink); }
+
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    gap: 0 clamp(1.25rem, 3vw, 2.25rem);
+    margin-block-start: 2.25rem;
+    padding-block-start: 1.25rem;
+    border-block-start: 1px solid var(--line);
+  }
+  .figures div { display: flex; flex-direction: column-reverse; gap: 0.3rem; }
+  .figures dt { color: var(--dim); font: 600 0.68rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .figures dd { font-size: 1.75rem; font-weight: 700; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .figures small { font-size: 0.8rem; font-weight: 600; color: var(--dim); }
+
+  .hero-scene { display: grid; gap: 0.9rem; }
+  .mat {
+    aspect-ratio: 4 / 3;
+    max-inline-size: 100%;
+    padding: clamp(0.4rem, 1vw, 0.7rem);
+    border: 1px solid var(--line);
+    border-radius: 1.25rem;
+    background: var(--surface);
+    box-shadow: 0 2rem 4rem -2rem color-mix(in oklab, var(--c-accent) 45%, transparent);
+    view-transition-name: scene-hero;
+  }
+  .mat iframe { display: block; inline-size: 100%; block-size: 100%; border: 0; border-radius: 0.8rem; background: var(--c-ink); }
+  .hero-scene figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 1rem;
+    padding-inline: 0.4rem;
+    font-size: 0.9rem;
+  }
+  .plate b { margin-inline-end: 0.5rem; color: var(--c-accent); font: 600 0.7rem/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+  .plate { font-weight: 600; }
+  .plate-meta { color: var(--dim); font: 0.78rem var(--mono); }
+  .enter { margin-inline-start: auto; font-weight: 600; text-decoration: none; color: var(--c-accent); }
+  .enter span { display: inline-block; transition: translate var(--t-fast) var(--ease-out); }
+  .enter:hover span { translate: 0.25rem 0; }
+
+  /* Filters: radios, and :has() hides the cards that don't match */
+  .gallery { scroll-margin-block-start: 1rem; }
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding-block-end: 1.5rem;
+    margin-block-end: clamp(1.5rem, 3vw, 2.25rem);
+    border-block-end: 1px solid var(--line);
+  }
+  .filters label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.95rem;
+    border: 1px solid var(--line);
+    border-radius: 99rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+  }
+  .filters label:hover { border-color: var(--c-accent); }
+  .filters small { color: var(--dim); font: 600 0.75rem/1 var(--mono); }
+  .filters label:has(:checked) { background: var(--c-ink); border-color: var(--c-ink); color: var(--c-paper); }
+  .filters label:has(:checked) small { color: inherit; opacity: 0.7; }
+  .filters label:has(:focus-visible) { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  .filters input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .gallery:has([value="scroll"]:checked) .card:not([data-mode="scroll"]),
+  .gallery:has([value="interactive"]:checked) .card:not([data-mode="interactive"]),
+  .gallery:has([value="loop"]:checked) .card:not([data-mode="loop"]) { display: none; }
+
+  /* Cards: the scene is the card; words sit underneath like a gallery label */
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
-    gap: clamp(1rem, 3vw, 2rem);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: clamp(2rem, 4vw, 3rem) clamp(1rem, 2.5vw, 1.75rem);
     padding: 0;
     list-style: none;
   }
-
-  .card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 0.75rem 0.75rem 1.1rem;
-    border: 1px solid color-mix(in oklab, var(--c-ink) 12%, transparent);
-    border-radius: 1.1rem;
-    background: color-mix(in oklab, var(--c-ink) 3%, var(--c-paper));
-    transition: border-color var(--t-fast) var(--ease-out), translate var(--t-base) var(--ease-out);
-  }
-  .card:hover, .card:has(h2 a:focus-visible) {
-    border-color: var(--c-accent);
-    translate: 0 -3px;
-  }
-  .card:has(h2 a:focus-visible) { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+  .card { position: relative; display: flex; flex-direction: column; gap: 0.9rem; }
 
   /* Live preview: the scene itself, rendered at card size. Scenes size in vmin/dvh, so they recompose for the frame. */
   .preview {
+    position: relative;
     aspect-ratio: 16 / 10;
-    margin-block-end: 0.4rem;
-    border-radius: 0.7rem;
+    border-radius: 1rem;
     overflow: clip;
     background: var(--c-ink);
+    box-shadow: 0 0 0 1px var(--line);
+    transition: box-shadow var(--t-base) var(--ease-out), translate var(--t-base) var(--ease-out);
+    content-visibility: auto; /* off-screen previews skip rendering */
   }
-  .preview iframe {
-    display: block;
-    inline-size: 100%;
-    block-size: 100%;
-    border: 0;
-    pointer-events: none;
+  .preview iframe { display: block; inline-size: 100%; block-size: 100%; border: 0; pointer-events: none; }
+  .card:is(:hover, :has(h2 a:focus-visible)) .preview {
+    translate: 0 -4px;
+    box-shadow: 0 0 0 2px var(--c-accent), 0 1.5rem 3rem -1.5rem color-mix(in oklab, var(--c-accent) 70%, transparent);
+  }
+  /* Hovering one card quiets the rest */
+  @media (hover: hover) {
+    .grid:has(.card:hover) .card:not(:hover) .preview { opacity: 0.6; }
+    .preview { transition-property: box-shadow, translate, opacity; }
   }
 
-  h2 { padding-inline: 0.35rem; font-size: 1.35rem; line-height: 1.2; letter-spacing: -0.01em; }
-  /* the title link covers the whole card; details and credits sit above it */
+  .body { display: grid; gap: 0.45rem; }
+  .kicker { display: flex; justify-content: space-between; gap: 1rem; color: var(--dim); font: 600 0.7rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
+  .kicker span:first-child { color: var(--c-ink); }
+  h2 { font-size: 1.3rem; line-height: 1.2; letter-spacing: -0.015em; }
+  /* the title link covers the whole card; the footer sits above it */
   h2 a { text-decoration: none; outline: none; }
-  h2 a::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+  h2 a::after { content: ""; position: absolute; inset: 0; border-radius: 1rem; }
+  .desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    color: var(--dim);
+    font-size: 0.95rem;
+    text-wrap: pretty;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; padding: 0; list-style: none; }
+  .tags li { color: var(--c-accent); font: 600 0.72rem/1.5 var(--mono); }
+  .tags li::before { content: "#"; opacity: 0.55; }
 
-  .desc, .credits, .source, details { padding-inline: 0.35rem; }
-  .desc { font-size: 0.95rem; text-wrap: pretty; opacity: 0.85; }
-
-  .tags {
+  .foot {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    padding: 0 0.35rem;
-    list-style: none;
+    align-items: baseline;
+    gap: 0.4rem 1.25rem;
+    margin-block-start: auto;
+    padding-block-start: 0.75rem;
+    border-block-start: 1px solid var(--line);
+    font-size: 0.85rem;
   }
-  .tags li {
-    padding: 0.15rem 0.55rem;
-    border-radius: 99rem;
-    background: color-mix(in oklab, var(--c-accent) 14%, transparent);
-    font: 600 0.72rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-
-  details, .credits, .source { position: relative; z-index: 1; }
-  details { margin-block-start: auto; font-size: 0.88rem; }
-  summary { cursor: pointer; inline-size: fit-content; font-weight: 600; color: var(--c-accent); }
-  details h3 { margin-block: 0.7rem 0.2rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+  summary { cursor: pointer; inline-size: fit-content; font-weight: 600; }
+  summary:hover, .source:hover { color: var(--c-accent); }
+  details[open] { flex-basis: 100%; order: 1; }
+  details h3 { margin-block: 0.7rem 0.2rem; color: var(--dim); font: 600 0.68rem/1.2 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
   details ul { padding-inline-start: 1.1rem; }
-  .features small { opacity: 0.7; }
-  .credits { font-size: 0.8rem; opacity: 0.75; }
-  .source { inline-size: fit-content; font-size: 0.88rem; }
-  .source a { font-weight: 600; color: var(--c-accent); }
+  .features small { color: var(--dim); }
+  .source { font-weight: 600; text-decoration: none; }
+  .credits { color: var(--dim); font-size: 0.78rem; }
+
+  .colophon {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: 1rem 3rem;
+    margin-block-start: clamp(4rem, 8vw, 7rem);
+    padding-block: 2rem 3rem;
+    border-block-start: 1px solid var(--line);
+    color: var(--dim);
+    font-size: 0.9rem;
+  }
+  .colophon b { color: var(--c-ink); }
+
+  @media (width < 56rem) {
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .mat { aspect-ratio: 16 / 11; }
+  }
+  @media (width < 34rem) {
+    .figures { grid-template-columns: repeat(2, auto); gap: 1rem 2rem; }
+    .jump { display: none; }
+  }
 
   /* Cards rise into place as they scroll in */
   @supports (animation-timeline: view()) {
@@ -119,9 +259,9 @@
       .card {
         animation: rise linear both;
         animation-timeline: view();
-        animation-range: entry 0% entry 70%;
+        animation-range: entry 0% entry 60%;
       }
-      @keyframes rise { from { opacity: 0; transform: translateY(2rem) scale(0.96); } } /* transform, so it composes with the hover translate */
+      @keyframes rise { from { opacity: 0; transform: translateY(2rem) scale(0.97); } }
     }
   }
 }

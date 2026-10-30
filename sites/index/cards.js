@@ -11,29 +11,74 @@ function href(url, slug) {
   return new URL(url, `http://x/scenes/${slug}/`).pathname.slice(1);
 }
 
-export function renderCard({ slug, meta, description, hasJs }) {
-  const tags = (meta.tags ?? []).map((t) => `<li>${esc(t)}</li>`).join('');
+/** How a visitor drives the scene; the gallery filters on it. */
+export function modeOf(meta) {
+  const tags = meta.tags ?? [];
+  if (tags.includes('scroll-driven')) return 'scroll';
+  if (tags.some((t) => t === 'interactive' || t === 'state-toggle')) return 'interactive';
+  return 'loop';
+}
+
+export const MODES = {
+  scroll: { label: 'Scroll-driven', hint: 'Scroll to play' },
+  interactive: { label: 'Interactive', hint: 'Interactive' },
+  loop: { label: 'Ambient loops', hint: 'Loops' },
+};
+
+const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
+const techTags = (meta) => (meta.tags ?? []).filter((t) => t !== 'no-js');
+
+/** The featured scene opens the gallery, live and interactive, in a large frame. */
+export function renderHero({ slug, meta, description, size }) {
+  return `<figure class="hero-scene">
+    <div class="mat"><iframe src="scenes/${esc(slug)}/#preview" title="${esc(meta.title)}, live" loading="eager" scrolling="no"></iframe></div>
+    <figcaption>
+      <span class="plate"><b>Now showing</b> ${esc(meta.title)}</span>
+      <span class="plate-meta">${esc(kb(size.br))} brotli · ${esc(MODES[modeOf(meta)].hint)}</span>
+      <a class="enter" href="scenes/${esc(slug)}/">Enter scene <span aria-hidden="true">→</span></a>
+    </figcaption>
+    <p class="sr">${esc(description)}</p>
+  </figure>`;
+}
+
+export function renderCard({ slug, meta, description, hasJs, size }) {
+  const mode = modeOf(meta);
+  const tags = techTags(meta).slice(0, 4).map((t) => `<li>${esc(t)}</li>`).join('');
   const techniques = (meta.techniques ?? []).map((t) => `<li>${esc(t)}</li>`).join('');
   const features = (meta.features ?? [])
     .map((f) => `<li><span>${esc(f.name)}</span> <small>${esc(f.baseline)}</small></li>`).join('');
   const credits = (meta.inspiration ?? [])
     .map((c) => `<a href="${esc(href(c.url, slug))}">${esc(c.title)}</a> by ${esc(c.author)}`).join(', ');
 
-  return `    <li class="card">
+  return `    <li class="card" data-mode="${mode}">
       <div class="preview" style="view-transition-name: scene-${esc(slug)}" inert>
         <iframe src="scenes/${esc(slug)}/#preview" title="${esc(meta.title)} preview" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
       </div>
-      <h2><a href="scenes/${esc(slug)}/">${esc(meta.title)}</a></h2>
-      ${description ? `<p class="desc">${esc(description)}</p>` : ''}
-      ${tags ? `<ul class="tags" role="list">${tags}</ul>` : ''}
-      ${techniques || features ? `<details>
-        <summary>How it's made</summary>
-        ${techniques ? `<h3>Techniques</h3><ul>${techniques}</ul>` : ''}
-        ${features ? `<h3>Features</h3><ul class="features">${features}</ul>` : ''}
-      </details>` : ''}
-      <p class="source"><a href="scenes/${esc(slug)}/source.html">View source</a>${hasJs ? ' · uses JavaScript' : ''}</p>
-      ${credits ? `<p class="credits">Inspired by ${credits}</p>` : ''}
+      <div class="body">
+        <p class="kicker"><span>${esc(MODES[mode].hint)}</span> <span>${esc(kb(size.br))}${hasJs ? ' · uses JS' : ''}</span></p>
+        <h2><a href="scenes/${esc(slug)}/">${esc(meta.title)}</a></h2>
+        ${description ? `<p class="desc">${esc(description)}</p>` : ''}
+        ${tags ? `<ul class="tags" role="list">${tags}</ul>` : ''}
+        ${credits ? `<p class="credits">Inspired by ${credits}</p>` : ''}
+      </div>
+      <div class="foot">
+        ${techniques || features ? `<details>
+          <summary>How it's made</summary>
+          ${techniques ? `<h3>Techniques</h3><ul>${techniques}</ul>` : ''}
+          ${features ? `<h3>Features</h3><ul class="features">${features}</ul>` : ''}
+        </details>` : ''}
+        <a class="source" href="scenes/${esc(slug)}/source.html">Source<span class="sr"> for ${esc(meta.title)}</span></a>
+      </div>
     </li>`;
+}
+
+/** Filter chips for the gallery: radios, so :has() filters the grid without JavaScript. */
+export function renderFilters(modes) {
+  const counts = Object.fromEntries(Object.keys(MODES).map((m) => [m, modes.filter((x) => x === m).length]));
+  const chip = (value, label, n, checked = false) =>
+    `<label><input type="radio" name="mode" value="${value}"${checked ? ' checked' : ''}> ${esc(label)} <small>${n}</small></label>`;
+  return [chip('all', 'All scenes', modes.length, true),
+    ...Object.entries(MODES).filter(([m]) => counts[m]).map(([m, { label }]) => chip(m, label, counts[m]))].join('\n      ');
 }
 
 /** Chrome added to every scene page, generated from the scene list: a header with breadcrumbs, previous/next scene

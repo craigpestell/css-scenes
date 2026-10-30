@@ -4,15 +4,35 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>CSS Scenes</title>
-<meta name="description" content="Full-window scenes and animations built with modern CSS. No JavaScript.">
+<meta name="description" content="Full-window scenes and animations built with modern CSS. No images, and no JavaScript unless a scene needs it.">
 <!--css-->
-<header class="masthead">
-  <h1>CSS Scenes</h1>
-  <p class="lede">Full-window scenes built with modern CSS: scroll timelines, <code>shape()</code>, <code>@property</code>, <code>sibling-index()</code> and friends. No JavaScript, no images.</p>
-  <p class="count"><!--count--></p>
+<header class="topbar">
+  <a class="wordmark" href="./" aria-current="page">CSS Scenes</a>
+  <a class="jump" href="#gallery">Browse <!--count--> scenes</a>
 </header>
-<main>
+<section class="hero" aria-labelledby="hero-title">
+  <div class="pitch">
+    <p class="eyebrow">A gallery of animated scenes</p>
+    <h1 id="hero-title">Whole worlds, drawn in&nbsp;CSS.</h1>
+    <p class="lede">Each scene is one HTML file and one stylesheet: scroll timelines, <code>shape()</code>, <code>@property</code>, <code>sibling-index()</code> and friends. No images, and no JavaScript unless a scene truly needs it.</p>
+    <dl class="figures">
+      <div><dt>Scenes</dt><dd><!--count--></dd></div>
+      <div><dt>Average page</dt><dd><!--avg--> <small>KB</small></dd></div>
+      <div><dt>Budget, brotli</dt><dd><!--budget--> <small>KB</small></dd></div>
+      <div><dt>Image files</dt><dd>0</dd></div>
+    </dl>
+  </div>
+  <!--hero:clockmakers-observatory-->
+</section>
+<main id="gallery" class="gallery">
+  <div class="filters" role="radiogroup" aria-label="Show scenes">
+      <!--filters-->
+  </div>
   <ul class="grid" role="list">
 <!--cards-->
   </ul>
 </main>
+<footer class="colophon">
+  <p>Every page here, scene and stylesheet together, ships under <!--budget--> KB compressed. Scenes respect reduced motion and fall back gracefully where a feature isn't supported yet.</p>
+  <p>Open any scene and press <b>Source</b> to read exactly how it's built, or take it to CodePen.</p>
+</footer>
