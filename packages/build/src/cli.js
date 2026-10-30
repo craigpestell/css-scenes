@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transform, browserslistToTargets } from 'lightningcss';
 import { generateTokens } from './tokens.js';
-import { renderCard, describe, sceneChrome } from '../../../sites/index/cards.js';
+import { renderCard, renderHero, renderFilters, modeOf, describe, sceneChrome } from '../../../sites/index/cards.js';
 import { renderSource } from '../../../sites/source/source.js';
 import { sceneStats, statsTags } from '../../../sites/stats/stats.js';
 
@@ -36,6 +36,7 @@ async function build() {
     .filter((d) => d.isDirectory()).map((d) => d.name);
   const report = [];
   const cards = [];
+  const shown = []; // what the index needs from each scene
   const measure = (slug, out, extra = 0) => {
     const br = brotliCompressSync(Buffer.from(out)).length;
     const budget = BUDGET + extra;
@@ -72,7 +73,8 @@ async function build() {
     await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size })));
     const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
     await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, bundled, size, pageCss: sourceCss }));
-    cards.push(renderCard({ slug, meta, description: describe(html), hasJs: Boolean(js) }));
+    shown.push({ slug, meta, description: describe(html), hasJs: Boolean(js), size });
+    cards.push(renderCard(shown.at(-1)));
   }
 
   // Index page: one card per scene, generated from the scenes above
@@ -81,10 +83,17 @@ async function build() {
     readFile(path.join(site, 'index.html'), 'utf8'),
     readFile(path.join(site, 'index.css'), 'utf8'),
   ]);
+  // <!--hero:slug--> in the template picks the featured scene; it falls back to the first
+  const featured = shown.find((s) => s.slug === indexHtml.match(/<!--hero:([\w-]+)-->/)?.[1]) ?? shown[0];
+  const avg = shown.reduce((t, s) => t + s.size.br, 0) / shown.length;
   const index = indexHtml
     .replace('<!--css-->', `<style>${await bundleCss(indexCss, tokensCss, 'index.css')}</style>`)
-    .replace('<!--count-->', `${cards.length} scenes`)
-    .replace('<!--cards-->', cards.join('\n'));
+    .replace(/<!--hero:[\w-]*-->/, () => renderHero(featured))
+    .replaceAll('<!--count-->', String(cards.length))
+    .replace('<!--avg-->', (avg / 1024).toFixed(1))
+    .replaceAll('<!--budget-->', String(BUDGET / 1024))
+    .replace('<!--filters-->', () => renderFilters(shown.map((s) => modeOf(s.meta))))
+    .replace('<!--cards-->', () => cards.join('\n'));
   await writeFile(path.join(dist, 'index.html'), index);
   await writeFile(path.join(dist, 'stats.js'), await readFile(path.join(root, 'sites/stats/panel.js')));
   measure('(index)', index);
