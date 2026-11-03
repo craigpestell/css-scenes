@@ -1,4 +1,5 @@
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
 import path from 'node:path';
@@ -36,7 +37,9 @@ async function bundleCss(source, tokensCss, filename = 'scene.css', minify = tru
 async function build() {
   const tokensCss = await generateTokens(path.join(root, 'packages/tokens/tokens.json'));
   const slugs = (await readdir(path.join(root, 'scenes'), { withFileTypes: true }))
-    .filter((d) => d.isDirectory()).map((d) => d.name);
+    .filter((d) => d.isDirectory()).map((d) => d.name)
+    // A folder holding only a brief is a scene awaiting approval: skip it until it has an index.html.
+    .filter((slug) => existsSync(path.join(root, 'scenes', slug, 'index.html')));
   const report = [];
   const cards = [];
   const shown = []; // what the index needs from each scene
