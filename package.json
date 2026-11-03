@@ -5,7 +5,8 @@
   "packageManager": "pnpm@9.15.1",
   "scripts": {
     "build": "node packages/build/src/cli.js build",
-    "dev": "node packages/build/src/cli.js dev"
+    "dev": "node packages/build/src/cli.js dev",
+    "og": "node packages/build/src/og.js"
   },
   "devDependencies": {
     "lightningcss": "^1.30.0"

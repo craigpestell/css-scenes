@@ -1,0 +1,23 @@
+@import "site/site";
+@layer reset, tokens, base, lost;
+
+@layer lost {
+  body { display: grid; place-items: center; padding: clamp(2rem, 8vw, 6rem) var(--gutter); }
+  .lost { display: grid; gap: 1.1rem; inline-size: min(100%, 40rem); }
+  .label { margin-block-start: 2.5rem; color: var(--c-accent); }
+  h1 { font-size: clamp(2.4rem, 7vw, 4rem); font-weight: 800; line-height: 1; letter-spacing: -0.045em; text-wrap: balance; }
+  .lede { color: var(--dim); font-size: 1.1rem; text-wrap: pretty; }
+  .scenes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+    gap: 0;
+    padding: 0;
+    list-style: none;
+    border-block-start: 1px solid var(--line);
+  }
+  .scenes li { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.7rem 0.2rem; border-block-end: 1px solid var(--line); }
+  .scenes a { font-weight: 600; text-decoration: none; }
+  .scenes a:hover { color: var(--c-accent); }
+  .scenes small { color: var(--dim); font: 600 0.68rem/1.2 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .back { color: var(--c-accent); font-weight: 600; text-decoration: none; }
+}
