@@ -81,34 +81,39 @@ export function renderFilters(modes) {
     ...Object.entries(MODES).filter(([m]) => counts[m]).map(([m, { label }]) => chip(m, label, counts[m]))].join('\n      ');
 }
 
-/** Chrome added to every scene page, generated from the scene list: a header with breadcrumbs, previous/next scene
- * links (wrapping at the ends) and a source link, plus the view transition back to the scene's card. The header dims
- * after a few seconds on hover devices and wakes on hover or focus. Card previews load the scene at #preview, which
- * hides it.
+/** Chrome added to every scene page, generated from the scene list: one dock at the top right holding the way home,
+ * previous/next scene links (wrapping at the ends) around the title and how to play the scene, and the scene's tools.
+ * Without JavaScript the tools are just Source; the shared panel script (dist/stats.js) adds About, Controls and Stats,
+ * which open one tabbed sheet below the dock. ← and → move between scenes. The dock dims after a few seconds on hover
+ * devices and wakes on hover or focus. Card previews load the scene at #preview, which hides it.
  *
- * The source link toggles source.html in a <dialog> below the header. It's non-modal so the header stays usable: the
- * dialog dims the scene with a spread shadow, and Escape or a click outside the dialog and header closes it. Previous/next
- * carry it to the next scene (#source opens it on load). The iframe gets its src on first hover, focus or open, so
- * the source page costs nothing until it's wanted; modified clicks and no-JS visitors get the page. */
-export const sceneChrome = ({ slug, title, prev, next }) => `<style>
+ * Source toggles source.html in a <dialog> below the dock. It's non-modal so the dock stays usable: the dialog dims the
+ * scene with a spread shadow, and Escape or a click outside the dialog and dock closes it. Previous/next carry it to the
+ * next scene (#source opens it on load). The iframe gets its src on first hover, focus or open, so the source page costs
+ * nothing until it's wanted; modified clicks and no-JS visitors get the page. The dialog and the sheet close each other. */
+export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 @media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}
 .stage{view-transition-name:scene-${esc(slug)}}
-.scene-nav{position:fixed;inset:max(.75rem,env(safe-area-inset-top)) max(.75rem,env(safe-area-inset-right)) auto auto;z-index:9;display:flex;align-items:center;gap:.25rem;padding:.25rem;border-radius:99rem;background:light-dark(#fffc,#0009);color:light-dark(#14121f,#f4f1ff);box-shadow:0 0 0 1px light-dark(#14121f1f,#fff2);backdrop-filter:blur(8px);font:600 .8rem/1 system-ui,sans-serif;white-space:nowrap;view-transition-name:scene-nav}
-.scene-nav :is(ol,nav){display:flex;align-items:center;margin:0;padding:0;list-style:none}
-.scene-nav li+li::before{content:"/"/"";margin-inline-start:-.3rem;opacity:.5}
-.scene-nav a,.scene-nav [aria-current]{display:inline-block;padding:.45rem .6rem;border-radius:99rem;color:inherit;text-decoration:none}
-.scene-nav [aria-current]{padding-inline-start:.3rem}
-.scene-nav a:hover{background:light-dark(#14121f14,#fff2)}
-.scene-nav a:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
-.scene-nav [rel]{min-inline-size:1.9rem;text-align:center}
-.scene-nav nav:last-child{border-inline-start:1px solid light-dark(#14121f26,#fff3);padding-inline-start:.25rem}
-/* Narrow screens keep the current crumb for screen readers only, so the header clears scene HUDs */
-@media (width<34rem){.scene-nav :is(.home,li+li){position:absolute;clip-path:inset(50%);inline-size:1px;overflow:hidden;white-space:nowrap}}
-@media (hover:hover){.scene-nav{animation:scene-nav-idle .6s 3s both}.scene-nav:is(:hover,:focus-within){animation:none}}
-@media (prefers-reduced-motion:reduce){.scene-nav{animation-duration:0s}}
-@keyframes scene-nav-idle{to{opacity:.35}}
-:root:has(#preview:target) .scene-nav{display:none}
-.scene-source{position:fixed;z-index:8;inset:calc(max(.75rem,env(safe-area-inset-top)) + 3rem) 0 auto;inline-size:min(76rem,100% - 2rem);block-size:min(52rem,100dvh - max(.75rem,env(safe-area-inset-top)) - 4rem);max-inline-size:none;max-block-size:none;margin:0 auto;padding:0;border:0;border-radius:1rem;background:var(--c-paper,Canvas);color:var(--c-ink,CanvasText);box-shadow:0 1.5rem 4rem #0008,0 0 0 100vmax #0007;overflow:hidden;font:600 .8rem/1 system-ui,sans-serif}
+.scene-dock{--dock-line:light-dark(#14121f26,#fff3);position:fixed;inset:max(.75rem,env(safe-area-inset-top)) max(.75rem,env(safe-area-inset-right)) auto auto;z-index:9;display:flex;align-items:center;gap:.15rem;padding:.25rem;border-radius:99rem;background:light-dark(#fffd,#0b0a14cc);color:light-dark(#14121f,#f4f1ff);box-shadow:0 0 0 1px light-dark(#14121f1f,#fff2),0 .5rem 1.5rem #0003;backdrop-filter:blur(10px);font:600 .8rem/1 system-ui,sans-serif;white-space:nowrap;view-transition-name:scene-nav}
+.scene-dock nav{display:flex;align-items:center;gap:.15rem}
+.scene-dock nav+nav{border-inline-start:1px solid var(--dock-line);padding-inline-start:.25rem;margin-inline-start:.1rem}
+.scene-dock :is(a,button){display:inline-flex;align-items:center;gap:.4em;padding:.5rem .65rem;border:0;border-radius:99rem;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.scene-dock :is(a,button):hover{background:light-dark(#14121f14,#fff2)}
+.scene-dock :is(a,button):focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+.scene-dock :is([aria-expanded=true],[aria-pressed=true]){background:light-dark(#14121f,#f4f1ff);color:light-dark(#f4f1ff,#14121f)}
+.scene-dock .home::before{content:"";inline-size:.7em;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 210deg,#9d85ff,#ff7ac6,#ffc27a,#9d85ff)}
+.scene-dock [rel]{min-inline-size:2rem;justify-content:center}
+.scene-dock .now{display:grid;gap:.2rem;padding-inline:.35rem;line-height:1.1}
+.scene-dock .fps{font-variant-numeric:tabular-nums}.scene-dock .fps output{min-inline-size:1.3em;text-align:end}.scene-dock .unit{margin-inline-start:-.15em;opacity:.65}.scene-dock .fps-dot{inline-size:.5em;aspect-ratio:1;border-radius:50%;background:var(--state,#5fd38d)}
+.scene-dock .now small{font:500 .68rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;opacity:.65}
+/* Narrow screens keep the home dot, the arrows, Source and Controls, so the dock clears scene HUDs; the title stays for
+   screen readers, and About and Stats stay one tap away as tabs in the sheet */
+@media (width<40rem){.scene-dock :is(.home span,.now){position:absolute;clip-path:inset(50%);inline-size:1px;overflow:hidden}.scene-dock :is([data-tab=about],.fps){display:none}.scene-dock :is(a,button){padding:.5rem .5rem}}
+@media (hover:hover){.scene-dock{animation:scene-dock-idle .6s 3s both}.scene-dock:is(:hover,:focus-within){animation:none}}
+@media (prefers-reduced-motion:reduce){.scene-dock{animation-duration:0s}}
+@keyframes scene-dock-idle{to{opacity:.35}}
+:root:has(#preview:target) .scene-dock{display:none}
+.scene-source{position:fixed;z-index:8;inset:calc(max(.75rem,env(safe-area-inset-top)) + 3.4rem) 0 auto;inline-size:min(82rem,100% - 1.5rem);block-size:min(52rem,100dvh - max(.75rem,env(safe-area-inset-top)) - 4.4rem);max-inline-size:none;max-block-size:none;margin:0 auto;padding:0;border:0;border-radius:1.25rem;background:var(--c-paper,Canvas);color:var(--c-ink,CanvasText);box-shadow:0 1.5rem 4rem #0008,0 0 0 1px light-dark(#14121f1f,#fff2),0 0 0 100vmax #0007;overflow:hidden;font:600 .8rem/1 system-ui,sans-serif}
 .scene-source[open]{display:flex;flex-direction:column}
 .scene-source form{display:flex;justify-content:end;gap:.25rem;padding:.4rem;border-block-end:1px solid light-dark(#14121f1f,#fff2)}
 .scene-source :is(a,button){padding:.45rem .7rem;border:0;border-radius:99rem;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
@@ -117,30 +122,32 @@ export const sceneChrome = ({ slug, title, prev, next }) => `<style>
 .scene-source iframe{flex:1;inline-size:100%;border:0}
 @media (prefers-reduced-motion:no-preference){.scene-source[open]{animation:scene-source-in .2s ease-out}}
 @keyframes scene-source-in{from{opacity:0;translate:0 .5rem}}
-/* While the source is open the header stays awake above it, and Source shows as pressed */
-:root:has(.scene-source[open]) .scene-nav{animation:none}
-:root:has(.scene-source[open]) .scene-nav [href="source.html"]{background:light-dark(#14121f1f,#fff3)}
+/* While the source is open the dock stays awake above it */
+:root:has(.scene-source[open]) .scene-dock,.scene-dock.awake{animation:none}
 :root:has(.scene-source[open]){overflow:hidden}
 </style>
-<header class="scene-nav">
-<nav aria-label="Breadcrumb"><ol role="list"><li><a href="../../"><span class="home">CSS </span>Scenes</a></li><li><span aria-current="page">${esc(title)}</span></li></ol></nav>
-<nav aria-label="Scenes"><a href="../${esc(prev.slug)}/" rel="prev" title="Previous: ${esc(prev.title)}" aria-label="Previous scene: ${esc(prev.title)}">←</a><a href="source.html">Source</a><a href="../${esc(next.slug)}/" rel="next" title="Next: ${esc(next.title)}" aria-label="Next scene: ${esc(next.title)}">→</a></nav>
+<header class="scene-dock">
+<nav aria-label="Site"><a class="home" href="../../" aria-label="All scenes"><span>CSS Scenes</span></a></nav>
+<nav aria-label="Scenes"><a href="../${esc(prev.slug)}/" rel="prev" title="Previous: ${esc(prev.title)} (←)" aria-label="Previous scene: ${esc(prev.title)}">←</a><span class="now"><span aria-current="page">${esc(title)}</span><small>${esc(MODES[mode].hint)}</small></span><a href="../${esc(next.slug)}/" rel="next" title="Next: ${esc(next.title)} (→)" aria-label="Next scene: ${esc(next.title)}">→</a></nav>
+<nav aria-label="Scene tools" class="tools"><a href="source.html">Source</a></nav>
 </header>
 <dialog class="scene-source" id="scene-source" aria-label="${esc(title)} source" closedby="closerequest">
 <form method="dialog"><a href="source.html">Open as page</a><button autofocus>Close</button></form>
 <iframe title="${esc(title)} source"></iframe>
 </dialog>
 <script type="module">
-const d=document.getElementById('scene-source'),f=d.querySelector('iframe'),n=document.querySelector('.scene-nav'),a=n.querySelector('[href="source.html"]');
-const load=()=>{f.src||=a.href+'#embed'},open=()=>{load();d.show();a.setAttribute('aria-expanded',true)};
+const d=document.getElementById('scene-source'),f=d.querySelector('iframe'),n=document.querySelector('.scene-dock'),a=n.querySelector('[href="source.html"]');
+const load=()=>{f.src||=a.href+'#embed'},open=()=>{load();document.querySelector('scene-stats')?.close();d.show();a.setAttribute('aria-expanded',true)};
 a.setAttribute('aria-expanded',false);a.setAttribute('aria-controls',d.id);
 a.addEventListener('pointerenter',load);a.addEventListener('focus',load);
 a.addEventListener('click',e=>{if(e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();d.open?d.close():open()});
-// Escape closes it (closedby); so does a click outside it and the header
+// Escape closes it (closedby); so does a click outside it and the dock
 addEventListener('pointerdown',(e)=>{if(d.open&&!e.composedPath().some((el)=>el===d||el===n))d.close()});
 d.addEventListener('close',()=>a.setAttribute('aria-expanded',false));
-// Previous/next keep the source open on the next scene
-n.querySelectorAll('[rel]').forEach((l)=>l.addEventListener('click',()=>{if(d.open)l.hash='source'}));
+// Previous/next keep the source open on the next scene; ← and → follow them unless a control has the keys
+const [p,x]=n.querySelectorAll('[rel]');
+[p,x].forEach((l)=>l.addEventListener('click',()=>{if(d.open)l.hash='source'}));
+addEventListener('keydown',(e)=>{const l={ArrowLeft:p,ArrowRight:x}[e.key];if(!l||e.defaultPrevented||e.altKey||e.metaKey||e.ctrlKey||e.shiftKey||e.composedPath().some((el)=>el.matches?.('input,select,textarea,[role=slider],[contenteditable]')))return;l.click()});
 if(location.hash==='#source')open();
 </script>
 <b id="preview" hidden></b>`;

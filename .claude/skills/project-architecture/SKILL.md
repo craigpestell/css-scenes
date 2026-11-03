@@ -24,10 +24,11 @@ scenes/<slug>/* ------------> packages/build/src/cli.js -> dist/scenes/<slug>/
 sites/source/* -------------/                         \-> index.html + source.html
 sites/stats/stats.js -> embedded per-scene JSON
 sites/stats/panel.js -> dist/stats.js shared runtime panel
+sites/shared/site.css -> imported by index.css and source.css (never by scenes)
 sites/index/* + all scene metadata -> dist/index.html
 ```
 
-Lightning CSS inlines tokens and `@import "lib/<name>"`, lowers to Chrome 120+, Safari 17.4+,
+Lightning CSS inlines tokens, `@import "lib/<name>"` and (site pages only) `@import "site/<name>"`, lowers to Chrome 120+, Safari 17.4+,
 and Firefox 128+, and minifies shipping CSS. Each scene page is measured as Brotli-compressed
 HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.extraBytes`.
 
@@ -40,11 +41,13 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `packages/build/src/tokens.js`: converts token JSON into registered properties and root values.
 - `packages/tokens/tokens.json`: shared colors, durations, easings, and registered angles.
 - `packages/lib/src/`: reusable CSS snippets resolved only through `lib/<name>` imports.
-- `sites/index/`: gallery shell, card renderer, and gallery styling.
+- `sites/shared/`: styles shared by the gallery and source page (surfaces, type, radii, focus, wordmark).
+- `sites/index/`: gallery shell, card renderer, gallery styling, and the scene dock (`sceneChrome`).
 - `sites/source/`: generated source viewer and syntax highlighting.
 - `sites/stats/stats.js`: build-time stats and feature-test mapping.
-- `sites/stats/panel.js`: browser-only stats panel (performance, size, compatibility, environment) and
-  Controls panel (scroll dial, auto-play, animation speed, colour scheme, scene `params`).
+- `sites/stats/panel.js`: browser-only scene sheet below the dock, with About, Controls (scroll dial, auto-play,
+  animation speed, colour scheme, scene `params`) and Stats (performance, size, compatibility, environment) tabs. It adds
+  its tab buttons to the dock's tools.
 - `.claude/`: scene design/build/review/write-up workflow; `/new-scene` is the
   human-approval-gated orchestrator.
 - `vercel.json`: static deployment of `dist/`; no framework runtime or serverless functions.

@@ -49,7 +49,7 @@ export function renderSource({ slug, meta, html, css, js, bundled, size, pageCss
 if (frameElement && location.hash === '#embed') addEventListener('keydown', (e) => e.key === 'Escape' && frameElement.closest('dialog')?.close());
 </script>
 <header class="masthead">
-  <nav><a href="../../">All scenes</a> / <a href="./">${esc(meta.title)}</a></nav>
+  <nav><a class="wordmark" href="../../">CSS Scenes</a> <span aria-hidden="true">/</span> <a href="./">${esc(meta.title)}</a></nav>
   <h1>${esc(meta.title)} <span>source</span></h1>
   <ul class="facts" role="list">
     <li class="${js ? 'js' : 'no-js'}">${js ? 'Uses JavaScript' : 'No JavaScript'}</li>
