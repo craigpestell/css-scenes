@@ -63,7 +63,7 @@ const aboutSection = {
       ${a.description ? `<p class="lede">${esc(a.description)}</p>` : ''}
       ${a.techniques?.length ? `<h3>Techniques</h3>${list(a.techniques.map((t) => `<li>${esc(t)}</li>`))}` : ''}
       ${a.inspiration?.length ? `<h3>Inspired by</h3>${list(a.inspiration.map((c) => `<li><a href="${esc(c.url)}">${esc(c.title)}</a> by ${esc(c.author)}</li>`))}` : ''}
-      <p class="more"><a href="source.html" data-a="source">Read the source <span aria-hidden="true">→</span></a></p>`;
+      <p class="more"><a href="source.html" data-a="source">How it's made <span aria-hidden="true">→</span></a></p>`;
     // The link opens the source dialog like the dock's Source; modified clicks get the page
     el.querySelector('[data-a=source]').addEventListener('click', (e) => {
       const dock = document.querySelector('.scene-dock [href="source.html"]');

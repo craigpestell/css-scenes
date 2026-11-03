@@ -20,7 +20,7 @@ Do not edit `dist/`; every build regenerates it.
 ```text
 packages/tokens/tokens.json -> packages/build/src/tokens.js -> generated token CSS
 packages/lib/src/*.css ----\
-scenes/<slug>/* ------------> packages/build/src/cli.js -> dist/scenes/<slug>/
+scenes/<slug>/* ------------> packages/build/src/cli.js -> dist/scenes/<slug>/ (writeup.md -> source.html)
 sites/source/* -------------/                         \-> index.html + source.html
 sites/stats/stats.js -> embedded per-scene JSON
 sites/stats/panel.js -> dist/stats.js shared runtime panel
@@ -43,7 +43,8 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `packages/lib/src/`: reusable CSS snippets resolved only through `lib/<name>` imports.
 - `sites/shared/`: styles shared by the gallery and source page (surfaces, type, radii, focus, wordmark).
 - `sites/index/`: gallery shell, card renderer, gallery styling, and the scene dock (`sceneChrome`).
-- `sites/source/`: generated source viewer and syntax highlighting.
+- `sites/source/`: the generated How it's made page (write-up beside the code), syntax highlighting, and a small
+  Markdown renderer (`markdown.js`) for `writeup.md`. It supports only what write-ups use; extend it when one needs more.
 - `sites/stats/stats.js`: build-time stats and feature-test mapping.
 - `sites/stats/panel.js`: browser-only scene sheet below the dock, with About, Controls (scroll dial, auto-play,
   animation speed, colour scheme, scene `params`) and Stats (performance, size, compatibility, environment) tabs. It adds
