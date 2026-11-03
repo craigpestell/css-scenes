@@ -1,19 +1,21 @@
 /**
- * Floating stats panel for scene pages: live frame rate, code sizes against the budget, feature support in this
- * browser, and the viewing environment. Loaded as one shared script (dist/stats.js) and kept out of every scene's
- * budget; it reads its build-time data from <script id="scene-stats">. Skipped inside the index page's previews.
+ * The scene sheet for scene pages: one tabbed panel below the scene dock. About describes the scene; Stats shows live frame
+ * rate, code sizes against the budget, feature support in this browser and the viewing environment; Controls drives the
+ * page. Loaded as one shared script (dist/stats.js) and kept out of every scene's budget; it reads its build-time data from
+ * <script id="scene-stats">. Skipped inside the index page's previews.
  *
- * Each section is a { title, render(el), update?(el) } entry in SECTIONS, so new sections slot in without touching the shell.
+ * The tab buttons go into the dock's tools (light DOM, styled by the dock) and the sheet lives in a shadow root. Each tab
+ * holds { title, render(el), update?(el) } sections, so new sections slot in without touching the shell.
  *
- * A second sheet, Controls, drives the page: a dial that scrolls it (scroll-driven scenes run on the scrollbar), auto-play,
- * a speed multiplier for time-based animations, a colour-scheme override, and the scene's own meta.json `params`.
- * Nothing in Controls persists; Reset restores the page as authored.
+ * Controls: a dial that scrolls the page (scroll-driven scenes run on the scrollbar), auto-play, a speed multiplier for
+ * time-based animations, a colour-scheme override, and the scene's own meta.json `params`. Nothing in Controls persists;
+ * Reset restores the page as authored. The open tab is remembered per browser.
  */
 const data = JSON.parse(document.getElementById('scene-stats')?.textContent ?? 'null');
 const html = document.documentElement;
 const store = {
-  get: (k) => { try { return localStorage.getItem(`scene-stats:${k}`) === '1'; } catch { return false; } },
-  set: (k, v) => { try { localStorage.setItem(`scene-stats:${k}`, v ? '1' : '0'); } catch {} },
+  get: (k) => { try { return localStorage.getItem(`scene-stats:${k}`) ?? ''; } catch { return ''; } },
+  set: (k, v) => { try { localStorage.setItem(`scene-stats:${k}`, v); } catch {} },
 };
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
@@ -49,6 +51,27 @@ const supports = (test) => {
   if (!test) return null;
   if (test.startsWith('window.')) return test.slice(7) in window;
   try { return CSS.supports(test); } catch { return false; }
+};
+
+/* About: what the scene is, how to play it, how it's made and who inspired it. */
+const aboutSection = {
+  title: 'About',
+  render: (el) => {
+    const a = data.about ?? {};
+    const list = (items) => `<ul class="bullets">${items.join('')}</ul>`;
+    el.innerHTML = `<p class="kicker">${esc(a.hint ?? '')} · ${kb(data.sizes.total)} of ${kb(data.sizes.budget)}</p>
+      ${a.description ? `<p class="lede">${esc(a.description)}</p>` : ''}
+      ${a.techniques?.length ? `<h3>Techniques</h3>${list(a.techniques.map((t) => `<li>${esc(t)}</li>`))}` : ''}
+      ${a.inspiration?.length ? `<h3>Inspired by</h3>${list(a.inspiration.map((c) => `<li><a href="${esc(c.url)}">${esc(c.title)}</a> by ${esc(c.author)}</li>`))}` : ''}
+      <p class="more"><a href="source.html" data-a="source">Read the source <span aria-hidden="true">→</span></a></p>`;
+    // The link opens the source dialog like the dock's Source; modified clicks get the page
+    el.querySelector('[data-a=source]').addEventListener('click', (e) => {
+      const dock = document.querySelector('.scene-dock [href="source.html"]');
+      if (!dock || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      dock.click();
+    });
+  },
 };
 
 const SECTIONS = [
@@ -335,26 +358,33 @@ const controlsSection = {
 };
 
 const CSS_TEXT = `
-:host{all:initial;color-scheme:light dark;--bg:light-dark(#fffd,#111d);--fg:light-dark(#111,#eee);--dim:light-dark(#555,#aaa);
-  --line:light-dark(#0002,#fff2);--yes:light-dark(#08703a,#5fd38d);--no:light-dark(#b3261e,#ff8a80);
-  font:12px/1.4 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--fg)}
+:host{all:initial;color-scheme:inherit;--bg:light-dark(#fffe,#0f0e18f0);--fg:light-dark(#14121f,#f4f1ff);--dim:light-dark(#5d5a70,#a29fb8);
+  --line:light-dark(#14121f1f,#fff2);--accent:var(--c-accent,#9d85ff);--yes:light-dark(#08703a,#5fd38d);--no:light-dark(#b3261e,#ff8a80);
+  font:12px/1.45 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--fg)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 button,select{font:inherit;color:inherit;cursor:pointer}
-.bar{position:fixed;inset:auto auto 1rem 1rem;z-index:2147483646;display:flex;gap:.4rem}
-.toggle{display:flex;gap:.4em;align-items:center;
-  padding:.35rem .75rem;border:0;border-radius:99rem;background:#000a;color:#fff;font-weight:600;opacity:.35}
-.toggle:hover,.toggle:focus-visible,.toggle[aria-expanded=true]{opacity:1}
 :focus-visible{outline:2px solid currentColor;outline-offset:2px}
-.toggle i{width:.5em;height:.5em;border-radius:50%;background:var(--state,#5fd38d)}
-.toggle svg{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
-[popover]{position:fixed;inset:auto auto 3.5rem 1rem;margin:0;width:min(20rem,calc(100vw - 2rem));
-  max-height:calc(100dvh - 5rem);overflow:auto;padding:0;border:1px solid var(--line);border-radius:.75rem;
-  background:var(--bg);color:var(--fg);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:0 8px 32px #0004}
-#c{inset:auto 1rem 3.5rem auto}
-@media (width < 44rem){#c{inset:auto auto 3.5rem 1rem}}
-header{display:flex;justify-content:space-between;align-items:center;padding:.6rem .8rem;border-bottom:1px solid var(--line)}
-h2{margin:0;font-size:13px}
-.close{border:0;background:none;padding:.1rem .4rem;font-size:16px;line-height:1;border-radius:.3rem}
+[popover]{position:fixed;inset:calc(max(.75rem,env(safe-area-inset-top)) + 3.4rem) max(.75rem,env(safe-area-inset-right)) auto auto;margin:0;
+  width:min(22rem,calc(100vw - 1.5rem));max-height:min(calc(100dvh - 5rem),40rem);overflow:auto;padding:0;
+  border:0;border-radius:1rem;background:var(--bg);color:var(--fg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  box-shadow:0 0 0 1px var(--line),0 1rem 3rem #0005}
+@media (width < 40rem){[popover]{max-height:58dvh}}
+@media (prefers-reduced-motion:no-preference){[popover]:popover-open{animation:in .18s ease-out}}
+@keyframes in{from{opacity:0;translate:0 -.4rem}}
+header{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:.25rem;padding:.4rem;border-bottom:1px solid var(--line);background:var(--bg)}
+[role=tablist]{display:flex;gap:.2rem;flex:1}
+[role=tab]{padding:.4rem .7rem;border:0;border-radius:99rem;background:none;font-weight:600;color:var(--dim)}
+[role=tab]:hover{color:var(--fg)}
+[role=tab][aria-selected=true]{background:light-dark(#14121f14,#fff2);color:var(--fg)}
+.close{border:0;background:none;padding:.3rem .55rem;font-size:16px;line-height:1;border-radius:99rem}
+.close:hover{background:light-dark(#14121f14,#fff2)}
+[role=tabpanel]:not(.on){display:none}
+.kicker{margin:0 0 .5rem;color:var(--accent);font:600 10.5px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}
+.lede{margin:0 0 .8rem;font-size:13px;line-height:1.5}
+.bullets{display:block;margin:0 0 .8rem;padding-left:1rem;list-style:disc}
+.bullets li{display:list-item;margin:.2rem 0}
+a{color:inherit;text-underline-offset:2px}
+.more{margin:.2rem 0 0}.more a{color:var(--accent);font-weight:600;text-decoration:none}
 section{padding:.6rem .8rem;border-bottom:1px solid var(--line)}
 section:last-child{border:0}
 h3{margin:0 0 .4rem;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)}
@@ -395,55 +425,107 @@ select{padding:.2rem .3rem;border:1px solid var(--line);border-radius:.3rem;back
 
 let panel;
 
-const sheet = (id, title, sections) => `<div id="${id}" popover="manual" role="dialog" aria-label="${title}">
-  <header><h2>${esc(title)}</h2><button class="close" popovertarget="${id}" popovertargetaction="hide" aria-label="Close ${title.toLowerCase()}">×</button></header>
-  ${sections.map((s) => `<section aria-label="${s.title}"><h3>${s.title}</h3><div></div></section>`).join('')}
-</div>`;
+const TABS = [
+  { id: 'about', label: 'About', sections: [aboutSection] },
+  { id: 'controls', label: 'Controls', sections: [controlsSection] },
+  { id: 'stats', label: 'Stats', sections: SECTIONS },
+];
 
 class SceneStats extends HTMLElement {
   connectedCallback() {
     const root = this.attachShadow({ mode: 'open' });
     data.params ??= [];
-    this.sections = [...SECTIONS, controlsSection];
+    this.sections = TABS.flatMap((t) => t.sections);
     root.innerHTML = `<style>${CSS_TEXT}</style>
-      <div class="bar">
-        <button class="toggle" popovertarget="p" aria-expanded="false"><i></i><output>– fps</output><span class="sr"> scene stats</span></button>
-        <button class="toggle" popovertarget="c" aria-expanded="false" aria-label="Scene controls">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Controls</button>
-      </div>
-      ${sheet('p', `${data.title} stats`, SECTIONS)}
-      ${sheet('c', `${data.title} controls`, [controlsSection])}`;
+      <div id="sheet" popover="manual" role="dialog" aria-label="${esc(data.title)}">
+        <header><div role="tablist" aria-label="${esc(data.title)}">${TABS.map((t) =>
+          `<button role="tab" id="tab-${t.id}" aria-controls="panel-${t.id}" aria-selected="false" tabindex="-1">${t.label}</button>`).join('')}</div>
+          <button class="close" aria-label="Close">×</button></header>
+        ${TABS.map((t) => `<div role="tabpanel" id="panel-${t.id}" aria-labelledby="tab-${t.id}">${t.sections.map((s) =>
+          `<section aria-label="${s.title}">${t.sections.length > 1 ? `<h3>${s.title}</h3>` : ''}<div></div></section>`).join('')}</div>`).join('')}
+      </div>`;
     const bodies = [...root.querySelectorAll('section > div')];
     this.sections.forEach((s, i) => { s.body = bodies[i]; s.render(s.body); });
-    this.fps = root.querySelector('.toggle output');
-    this.stateDot = root.querySelector('.toggle i');
-    this.sheets = [...root.querySelectorAll('[popover]')];
+    this.sheet = root.getElementById('sheet');
+    this.tabs = [...root.querySelectorAll('[role=tab]')];
 
-    for (const sh of this.sheets) {
-      const btn = root.querySelector(`[popovertarget="${sh.id}"]`);
-      sh.addEventListener('toggle', (e) => {
-        const open = e.newState === 'open';
-        btn.setAttribute('aria-expanded', open);
-        store.set(sh.id === 'p' ? 'open' : 'controls', open);
-        // Narrow screens stack both sheets in one place, so opening one closes the other.
-        if (open && matchMedia('(width < 44rem)').matches) this.sheets.forEach((o) => o !== sh && o.hidePopover());
-        if (open) this.update();
+    // The dock buttons: About before Source, Controls and the live fps (Stats) after it
+    const tools = document.querySelector('.scene-dock .tools');
+    const make = (t, html) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.tab = t.id; b.innerHTML = html;
+      b.setAttribute('aria-expanded', 'false');
+      b.addEventListener('click', () => (this.tab === t.id && this.sheet.matches(':popover-open') ? this.close() : this.open(t.id)));
+      return b;
+    };
+    this.buttons = {
+      about: make(TABS[0], 'About'),
+      controls: make(TABS[1], 'Controls'),
+      stats: make(TABS[2], '<i class="fps-dot"></i><output>–</output><span class="unit">fps</span>'),
+    };
+    this.buttons.stats.classList.add('fps');
+    this.buttons.stats.setAttribute('aria-label', 'Stats');
+    tools?.prepend(this.buttons.about);
+    tools?.append(this.buttons.controls, this.buttons.stats);
+    this.fps = this.buttons.stats.querySelector('output');
+
+    this.tabs.forEach((b, i) => {
+      b.addEventListener('click', () => this.open(TABS[i].id));
+      // Arrow keys move along the tabs, as tablists do
+      b.addEventListener('keydown', (e) => {
+        const d = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+        if (!d) return;
+        e.preventDefault(); e.stopPropagation();
+        const n = this.tabs[(i + d + this.tabs.length) % this.tabs.length];
+        n.focus(); n.click();
       });
-      // Manual popovers don't light-dismiss; Escape still closes them.
-      sh.addEventListener('keydown', (e) => { if (e.key === 'Escape') sh.hidePopover(); });
-    }
-    if (store.get('open')) this.sheets[0].showPopover();
-    if (store.get('controls')) this.sheets[1].showPopover();
+    });
+    root.querySelector('.close').addEventListener('click', () => this.close());
+    this.sheet.addEventListener('toggle', (e) => {
+      const open = e.newState === 'open';
+      store.set('tab', open ? this.tab : '');
+      this.sync();
+      if (open) this.update();
+    });
+    // Manual popovers don't light-dismiss, so the scene stays usable with the sheet open; Escape closes it.
+    addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.sheet.matches(':popover-open') && !document.getElementById('scene-source')?.open) this.close();
+    });
+    const saved = store.get('tab');
+    if (TABS.some((t) => t.id === saved)) this.open(saved);
     addEventListener('resize', () => this.update());
   }
 
+  open(id) {
+    this.tab = id;
+    document.getElementById('scene-source')?.close(); // one panel at a time
+    if (!this.sheet.matches(':popover-open')) this.sheet.showPopover();
+    store.set('tab', id);
+    this.sync();
+    this.update();
+  }
+
+  close() { if (this.sheet?.matches(':popover-open')) this.sheet.hidePopover(); }
+
+  sync() {
+    const open = this.sheet.matches(':popover-open');
+    TABS.forEach((t, i) => {
+      const on = t.id === this.tab;
+      this.tabs[i].setAttribute('aria-selected', on);
+      this.tabs[i].tabIndex = on ? 0 : -1;
+      this.sheet.querySelector(`#panel-${t.id}`).classList.toggle('on', on);
+      this.buttons[t.id].setAttribute('aria-expanded', open && on);
+    });
+    document.querySelector('.scene-dock')?.classList.toggle('awake', open); // the dock stays lit while the sheet is open
+  }
+
   update() {
-    this.fps.value = `${frames.fps} fps`;
+    this.fps.value = frames.fps;
     // Green at 55+ fps, amber at 30+, red below.
-    this.stateDot.style.setProperty('--state', frames.fps >= 55 ? '#5fd38d' : frames.fps >= 30 ? '#f5c451' : '#ff8a80');
+    this.buttons.stats.style.setProperty('--state', frames.fps >= 55 ? '#5fd38d' : frames.fps >= 30 ? '#f5c451' : '#ff8a80');
     applyRate(); // CSS restarts animations when their properties change; keep new ones at the chosen speed
-    const [stats, controls] = this.sheets.map((sh) => sh.matches(':popover-open'));
-    this.sections.forEach((s) => { if (s === controlsSection ? controls : stats) s.update?.(s.body); });
+    if (!this.sheet.matches(':popover-open')) return;
+    TABS.find((t) => t.id === this.tab)?.sections.forEach((s) => s.update?.(s.body));
   }
 }
 

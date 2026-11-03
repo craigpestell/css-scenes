@@ -1,23 +1,12 @@
+@import "site/site";
 @layer reset, tokens, base, source;
 
-@layer reset {
-  *, ::before, ::after { box-sizing: border-box; margin: 0; }
-}
-
 @layer base {
-  html { color-scheme: light dark; }
-  body {
-    min-block-size: 100dvh;
-    background: var(--c-paper);
-    color: var(--c-ink);
-    font: 1rem/1.55 system-ui, sans-serif;
-    padding: clamp(1.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem) 4rem;
-  }
-  a { color: inherit; }
+  body { padding: clamp(1.25rem, 4vw, 3rem) var(--gutter) 4rem; }
 }
 
 @layer source {
-  .masthead, .tabs { max-inline-size: 76rem; margin-inline: auto; }
+  .masthead, .tabs { max-inline-size: var(--wrap); margin-inline: auto; }
 
   .masthead {
     display: flex;
@@ -26,8 +15,10 @@
     gap: 0.75rem 1.5rem;
     margin-block-end: 2rem;
   }
-  nav { flex-basis: 100%; font-size: 0.9rem; opacity: 0.75; }
-  h1 { font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1; letter-spacing: -0.03em; }
+  nav { flex-basis: 100%; display: flex; gap: 0.6rem; align-items: center; color: var(--dim); font-size: 0.85rem; }
+  nav a { text-decoration: none; }
+  nav a:hover { color: var(--c-ink); }
+  h1 { font-size: clamp(2rem, 6vw, 3.5rem); font-weight: 800; line-height: 1; letter-spacing: -0.04em; }
   h1 span { color: var(--c-accent); }
 
   .facts {
@@ -39,9 +30,10 @@
     font: 600 0.75rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   .facts li {
-    padding: 0.2rem 0.6rem;
+    padding: 0.25rem 0.65rem;
+    border: 1px solid var(--line);
     border-radius: 99rem;
-    background: color-mix(in oklab, var(--c-ink) 8%, transparent);
+    color: var(--dim);
   }
   .facts .no-js, .facts .js { background: color-mix(in oklab, var(--c-accent) 18%, transparent); }
 
@@ -63,7 +55,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem;
-    border-block-end: 1px solid color-mix(in oklab, var(--c-ink) 15%, transparent);
+    border-block-end: 1px solid var(--line);
   }
   .tablist label {
     padding: 0.5rem 0.9rem;
@@ -86,7 +78,7 @@
   .note { padding: 0.75rem 1rem 0; background: var(--code-bg); font-size: 0.85rem; opacity: 0.8; }
 
   .tabs {
-    --code-bg: color-mix(in oklab, var(--c-ink) 5%, var(--c-paper));
+    --code-bg: var(--surface);
     --t-com: light-dark(#6b6880, #8d89a6);
     --t-kw: light-dark(#b0127a, #ff7ac6);
     --t-prop: light-dark(#0b6bcb, #7cc4ff);
@@ -99,7 +91,7 @@
     overflow: auto;
     max-block-size: 75dvh;
     padding: 1rem;
-    border-radius: 0 0 0.8rem 0.8rem;
+    border-radius: 0 0 var(--r-2) var(--r-2);
     background: var(--code-bg);
     font: 0.85rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
     tab-size: 2;

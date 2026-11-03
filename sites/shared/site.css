@@ -1,0 +1,51 @@
+/* The site around the scenes: shared by the gallery and the source page (via @import "site/site").
+ * Scene pages never import it, so it costs scene budgets nothing; their header carries a compact copy of the same values. */
+@layer reset, tokens, base;
+
+@layer reset {
+  *, ::before, ::after { box-sizing: border-box; margin: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+
+@layer base {
+  html { color-scheme: light dark; }
+  body {
+    /* Surfaces derive from the colour tokens so scenes stay the most colourful thing on the page */
+    --surface: color-mix(in oklab, var(--c-ink) 4%, var(--c-paper));
+    --line: color-mix(in oklab, var(--c-ink) 12%, transparent);
+    --dim: color-mix(in oklab, var(--c-ink) 62%, var(--c-paper));
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    --r-1: 0.6rem;
+    --r-2: 1rem;
+    --r-3: 1.25rem;
+    --wrap: 82rem;
+    --gutter: max(1rem, 4vw);
+    min-block-size: 100dvh;
+    background: var(--c-paper);
+    color: var(--c-ink);
+    font: 1rem/1.55 system-ui, sans-serif;
+  }
+  a { color: inherit; }
+  code { font: 0.9em var(--mono); }
+  :focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+  .sr { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* Small uppercase mono labels: eyebrows, kickers, figure captions */
+  .label { font: 600 0.72rem/1.2 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* The wordmark: a conic dot and the name */
+  .wordmark { font: 600 0.8rem/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; }
+  .wordmark::before {
+    content: "";
+    display: inline-block;
+    inline-size: 0.7em;
+    aspect-ratio: 1;
+    margin-inline-end: 0.55em;
+    border-radius: 50%;
+    background: conic-gradient(from 210deg, var(--c-accent), #ff7ac6, #ffc27a, var(--c-accent));
+    vertical-align: -0.05em;
+  }
+}

@@ -14,11 +14,14 @@ const dist = path.join(root, 'dist');
 const targets = browserslistToTargets(['chrome >= 120', 'safari >= 17.4', 'firefox >= 128']);
 const BUDGET = 14 * 1024; // brotli bytes, HTML + CSS + JS
 
-/** Inline `@import "lib/<name>"` lines, then run Lightning CSS. */
+/** Where build-time imports resolve: `lib/<name>` for scene snippets, `site/<name>` for the site's shared styles. */
+const IMPORTS = { lib: 'packages/lib/src', site: 'sites/shared' };
+
+/** Inline `@import "lib/<name>"` and `@import "site/<name>"` lines, then run Lightning CSS. */
 async function bundleCss(source, tokensCss, filename = 'scene.css', minify = true) {
   const parts = [tokensCss];
-  for (const m of source.matchAll(/@import\s+["']lib\/([\w-]+)["'];?/g)) {
-    parts.push(await readFile(path.join(root, 'packages/lib/src', `${m[1]}.css`), 'utf8'));
+  for (const m of source.matchAll(/@import\s+["'](lib|site)\/([\w-]+)["'];?/g)) {
+    parts.push(await readFile(path.join(root, IMPORTS[m[1]], `${m[2]}.css`), 'utf8'));
   }
   parts.push(source.replace(/@import[^;]+;/g, ''));
   const { code } = transform({
@@ -61,7 +64,7 @@ async function build() {
     // Previous/next wrap around, in the same order as the index cards
     const prev = scenes.at(i - 1);
     const next = scenes[(i + 1) % scenes.length];
-    const chrome = sceneChrome({ slug, title: meta.title, prev, next });
+    const chrome = sceneChrome({ slug, title: meta.title, prev, next, mode: modeOf(meta) });
     const script = js ? `<script type="module">${js.replaceAll('</script', '<\\/script')}</script>` : '';
     // The header goes straight after the styles so it comes first in focus order, ahead of the stage
     const minCss = await bundleCss(css, tokensCss);
@@ -70,7 +73,7 @@ async function build() {
     await mkdir(outDir, { recursive: true });
     const size = measure(slug, out, meta.exceptions?.extraBytes);
     const markup = html.replace('<!--css-->', () => chrome);
-    await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size })));
+    await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size, description: describe(html) })));
     const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
     await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, bundled, size, pageCss: sourceCss }));
     shown.push({ slug, meta, description: describe(html), hasJs: Boolean(js), size });
