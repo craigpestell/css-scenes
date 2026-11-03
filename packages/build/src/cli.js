@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transform, browserslistToTargets } from 'lightningcss';
 import { generateTokens } from './tokens.js';
-import { renderCard, renderHero, renderFilters, modeOf, describe, sceneChrome } from '../../../sites/index/cards.js';
+import { renderCard, renderHero, renderFilters, modeOf, MODES, describe, sceneChrome } from '../../../sites/index/cards.js';
 import { renderSource } from '../../../sites/source/source.js';
 import { sceneStats, statsTags } from '../../../sites/stats/stats.js';
 
@@ -51,16 +51,17 @@ async function build() {
 
   const scenes = await Promise.all(slugs.map(async (slug) => {
     const dir = path.join(root, 'scenes', slug);
-    const [html, css, meta, js] = await Promise.all([
+    const [html, css, meta, js, writeup] = await Promise.all([
       readFile(path.join(dir, 'index.html'), 'utf8'),
       readFile(path.join(dir, 'scene.css'), 'utf8'),
       readFile(path.join(dir, 'meta.json'), 'utf8').then(JSON.parse),
       readFile(path.join(dir, 'scene.js'), 'utf8').catch(() => null), // optional; most scenes are CSS only
+      readFile(path.join(dir, 'writeup.md'), 'utf8').catch(() => null), // optional; shown on the source page
     ]);
-    return { slug, html, css, meta, js, title: meta.title };
+    return { slug, html, css, meta, js, writeup, title: meta.title };
   }));
 
-  for (const [i, { slug, html, css, meta, js }] of scenes.entries()) {
+  for (const [i, { slug, html, css, meta, js, writeup }] of scenes.entries()) {
     // Previous/next wrap around, in the same order as the index cards
     const prev = scenes.at(i - 1);
     const next = scenes[(i + 1) % scenes.length];
@@ -75,7 +76,7 @@ async function build() {
     const markup = html.replace('<!--css-->', () => chrome);
     await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size, description: describe(html) })));
     const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
-    await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, bundled, size, pageCss: sourceCss }));
+    await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, writeup, bundled, size, pageCss: sourceCss, hint: MODES[modeOf(meta)].hint }));
     shown.push({ slug, meta, description: describe(html), hasJs: Boolean(js), size });
     cards.push(renderCard(shown.at(-1)));
   }
