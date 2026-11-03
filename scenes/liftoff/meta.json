@@ -1,9 +1,8 @@
 {
   "title": "Liftoff",
-  "tags": ["scroll-driven", "scrollytelling", "counters", "shape", "no-js"],
-  "techniques": ["one keyframe script on two timelines (time fallback, scroll(root) upgrade)", "@property <integer> countdown and altimeter via counter()", "composed scale + transform flame flicker", "shape() nose cone with polygon fallback", "sibling-index() smoke spread with --i fallback"],
+  "tags": ["story", "counters", "shape", "no-js"],
+  "techniques": ["the whole launch as keyframe percentages on one --loop clock", "@property <integer> countdown and altimeter via counter()", "composed scale + transform flame flicker", "shape() nose cone with polygon fallback", "sibling-index() smoke spread with --i fallback"],
   "features": [
-    { "name": "scroll-driven animations (animation-timeline: scroll())", "baseline": "limited availability (Chrome/Edge 115, Safari 26; not Firefox) per web-features 3.40.1; time-based loop fallback" },
     { "name": "@property", "baseline": "newly available (2024-07-09)" },
     { "name": "shape()", "baseline": "newly available (2026-02-24); polygon() fallback" },
     { "name": "sibling-index()", "baseline": "newly available (2026-08-18); --i fallback" }
@@ -16,6 +15,6 @@
   },
   "params": [
     { "type": "count", "label": "Smoke puffs", "selector": ".smoke i", "min": 1, "max": 40 },
-    { "type": "range", "label": "Launch length", "var": "--loop", "min": 4, "max": 60, "step": 1, "value": 16, "unit": "s", "when": "time" }
+    { "type": "range", "label": "Launch length", "var": "--loop", "min": 4, "max": 60, "step": 1, "value": 16, "unit": "s" }
   ]
 }

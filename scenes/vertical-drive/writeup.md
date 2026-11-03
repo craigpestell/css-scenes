@@ -4,11 +4,11 @@ slug: vertical-drive
 ---
 ## The idea
 
-A race circuit seen from above, laid over faint contour lines. Scroll down and a lime car drives three laps, slipping past three grey rivals one by one, while the HUD ticks through LAP 1/3 → 3/3, P4 → P1 and a race clock. The track is portrait-shaped, so on a phone it fills the screen. No JavaScript: the scrollbar is the accelerator.
+A race circuit seen from above, laid over faint contour lines. A lime car drives three laps, slipping past three grey rivals one by one, while the HUD ticks through LAP 1/3 → 3/3, P4 → P1 and a race clock. The track is portrait-shaped, so on a phone it fills the screen. No JavaScript in the scene; the playback tab on the edge of the window is the throttle, and with loop off the race runs once and holds at the flag.
 
 ## Techniques
 
-### offset-path car on a scroll(root) timeline
+### offset-path car on a keyframe clock
 
 Each car is an `<i>` drawn nose-right, because `offset-rotate: auto` points the element's +x axis along the direction of travel. The track is a closed path, so `offset-distance` past 100% wraps into the next lap. One keyframe from 0% to 300% is three laps:
 
@@ -44,22 +44,9 @@ Rivals reuse the same keyframes. Each starts a little ahead (`--s`) and covers a
 
 `shape()` is newly available (2026-02-24). Without it, the board stays a fixed 250 × 400 px and the cars use the same route as `path()` at 2.5 px per unit. That is still readable on a 320 px phone.
 
-### One keyframe script on two timelines
+### One keyframe script on one clock
 
-As in Liftoff, everything plays on a 30s time loop by default, and one block hands the same keyframes to the scrollbar where scroll timelines exist (not Firefox, per web-features 3.40.1):
-
-```css
-@supports (animation-timeline: scroll()) {
-  body { overflow: auto; }
-  .runway { display: block; block-size: 900dvh; }
-  .hint { display: block; }
-  .car, .hud, .hint {
-    animation-duration: auto;
-    animation-iteration-count: 1;
-    animation-timeline: scroll(root);
-  }
-}
-```
+As in Liftoff, the cars and the HUD share one 30s `--loop` clock, so the whole race is keyframe percentages and the Race length control is a single custom property. The page never scrolls.
 
 ### @property integer race clock split into counter()
 
@@ -86,7 +73,7 @@ The cars animate only `offset-distance`, which is a transform. The contour backg
 
 ## Accessibility
 
-- `prefers-reduced-motion: reduce` turns every animation off and stops the page scrolling. It shows a composed frame: you lead out of the last corner of lap 3, and the HUD reads LAP 3/3 P1 4:16.11. Checked in headless Chromium at 1280 and 390 px wide, light and dark.
+- `prefers-reduced-motion: reduce` turns every animation off. It shows a composed frame: you lead out of the last corner of lap 3, and the HUD reads LAP 3/3 P1 4:16.11. Checked in headless Chromium at 1280 and 390 px wide, light and dark.
 - HUD text is lime on a near-black backing, about 17:1 in both schemes. The HUD is `aria-hidden`; the stage's `aria-label` describes the scene.
 - Colours are local custom properties under the local-colours exception (no token changes). The light scheme uses a deeper lime (`#9fbf00`) for the track edges so they read on paper.
 

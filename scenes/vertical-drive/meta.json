@@ -1,9 +1,8 @@
 {
   "title": "Vertical Drive",
-  "tags": ["scroll-driven", "motion-path", "counters", "shape", "no-js"],
-  "techniques": ["offset-path car on a scroll(root) timeline", "shape() motion path that scales with the board, path() fallback", "one keyframe script on two timelines (time fallback, scroll(root) upgrade)", "@property <integer> race clock split with round() and mod() into counter()", "SVG <use> layers for kerbs, tarmac and centreline from one path"],
+  "tags": ["story", "motion-path", "counters", "shape", "no-js"],
+  "techniques": ["offset-path car driven round the circuit by keyframes", "shape() motion path that scales with the board, path() fallback", "the whole race as keyframe percentages on one --loop clock", "@property <integer> race clock split with round() and mod() into counter()", "SVG <use> layers for kerbs, tarmac and centreline from one path"],
   "features": [
-    { "name": "scroll-driven animations (animation-timeline: scroll())", "baseline": "limited availability (Chrome/Edge 115, Safari 26; not Firefox) per web-features 3.40.1; time-based loop fallback" },
     { "name": "motion path (offset-path, offset-distance, offset-rotate)", "baseline": "widely available (2025-03-12)" },
     { "name": "shape() in offset-path", "baseline": "shape() newly available (2026-02-24); fixed-size path() fallback" },
     { "name": "@property", "baseline": "newly available (2024-07-09)" },
@@ -19,6 +18,6 @@
   "params": [
     { "type": "count", "label": "Rival cars", "selector": ".board .rival", "min": 0, "max": 12 },
     { "type": "range", "label": "Rival pace", "var": "--pace", "min": 0.5, "max": 1.3, "step": 0.01, "value": 1, "unit": "×" },
-    { "type": "range", "label": "Race length", "var": "--loop", "min": 5, "max": 120, "step": 1, "value": 30, "unit": "s", "when": "time" }
+    { "type": "range", "label": "Race length", "var": "--loop", "min": 5, "max": 120, "step": 1, "value": 30, "unit": "s" }
   ]
 }

@@ -120,7 +120,7 @@
   .filters label:has(:focus-visible) { outline: 2px solid var(--c-accent); outline-offset: 2px; }
   .filters input { position: absolute; opacity: 0; pointer-events: none; }
 
-  .gallery:has([value="scroll"]:checked) .card:not([data-mode="scroll"]),
+  .gallery:has([value="story"]:checked) .card:not([data-mode="story"]),
   .gallery:has([value="interactive"]:checked) .card:not([data-mode="interactive"]),
   .gallery:has([value="loop"]:checked) .card:not([data-mode="loop"]) { display: none; }
 

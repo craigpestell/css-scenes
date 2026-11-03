@@ -6,7 +6,7 @@
 
 @layer scene {
   .stage {
-    /* one launch. Time-based loop by default; the scrollbar drives it where scroll timelines exist */
+    /* one launch, on the clock; the playback tab sets speed and whether it repeats */
     --loop: 16s;
     --hull: #eceef4;
     --hull-shade: #8f97ad;
@@ -15,7 +15,6 @@
     background: #cdeaff;
   }
   .stage * { position: absolute; }
-  .runway { display: none; }
 
   /* The script lives in keyframe percentages, so the same keyframes play on either timeline:
      0-12% countdown + ignition, 12-45% liftoff, 58-64% staging, 55-90% night falls */
@@ -163,7 +162,7 @@
   @keyframes burn { 0%, 61% { scale: 1 0; } 65%, 100% { scale: 1 1; } }
   @keyframes flicker { to { transform: scale(1.06, 0.86); } }
 
-  .hud, .hint {
+  .hud {
     margin: 0;
     color: #fff;
     text-shadow: 0 1px 3px #0009;
@@ -185,28 +184,7 @@
     12% { --t: 0; --alt: 0; }
     100% { --t: 0; --alt: 420; }
   }
-  .hint { display: none; inset: auto 0 5vmin; text-align: center; animation: fade var(--loop) linear both; }
-  @keyframes fade { 3%, 100% { opacity: 0; } }
-
-  @supports (animation-timeline: scroll()) {
-    body { overflow: auto; }
-    .runway { display: block; block-size: 600dvh; }
-    .hint { display: block; }
-    .sky, .stars, .clouds i, .ground, .smoke i, .rocket, .booster, .hud, .hint {
-      animation-duration: auto;
-      animation-iteration-count: 1;
-      animation-timeline: scroll(root);
-    }
-    .flame, .engine {
-      animation-duration: auto, 90ms;
-      animation-iteration-count: 1, infinite;
-      animation-timeline: scroll(root), auto;
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .stage *, .stage *::before, .stage *::after { animation: none !important; } /* beats .clouds i / .smoke i */
-    .runway, .hint { display: none; }
-    body { overflow: clip; }
   }
 }
