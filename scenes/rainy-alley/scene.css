@@ -1,0 +1,230 @@
+@import "lib/stage";
+
+/*
+  Geometry (all in stage %): the vanishing point sits at 50% 36%.
+  The far end of the alley spans x 38–62%, and its ground line is y 51.4%.
+  That ground line is the mirror axis: .lights fills the stage above it,
+  and .reflect paints the same box again, flipped about its bottom edge.
+*/
+@layer scene {
+  .stage {
+    --tilt: 8deg;     /* rain angle (Controls) */
+    --stretch: 1.6;   /* reflection stretch (Controls) */
+
+    --sky: light-dark(#6f86b0, #2b3350);
+    --sky-top: light-dark(#34405e, #0c0e18);
+    --wall: light-dark(#3b4054, #1a1c26);
+    --mortar: light-dark(#2c3041, #12131b);
+    --far-wall: light-dark(#454a5f, #1e2130);
+    --asphalt: #0d0e14;
+    --sodium: #ffb347;
+    --win: light-dark(#ffd88acc, #ffd88a);
+    --pink: #ff3d8b;
+    --cyan: #3de0ff;
+    --rain: light-dark(#dbe4f5aa, #b8c6e099);
+
+    /* every light in the scene, as one background (box = stage above the ground line) */
+    --lights:
+      /* sodium lamp on the left wall, at the far end */
+      radial-gradient(circle at 40.5% 56%, #fff6dc 0 0.35vmin, #ffc46bdd 0.9vmin, #ffb34755 4vmin, #ffb34714 13vmin, #0000 24vmin),
+      /* bracket lamp on the right wall, close to us */
+      radial-gradient(circle at 85% 38%, #fff3d6 0 0.6vmin, #ffb347cc 1.6vmin, #ffb34740 7vmin, #ffb3470c 20vmin, #0000 34vmin),
+      /* cool lamp over the doorway on the left wall */
+      radial-gradient(circle at 14.5% 46%, #e6fbff 0 0.3vmin, #3de0ffaa 0.8vmin, #3de0ff24 4vmin, #0000 11vmin),
+      /* glow of the cross street beyond */
+      radial-gradient(ellipse 14% 26% at 50% 100%, #ffb34766, #0000),
+      /* lit windows on the far building */
+      linear-gradient(var(--win) 0 0) 41.6% 50% / 1.6vmin 2.6vmin no-repeat,
+      linear-gradient(var(--win) 0 0) 47% 50% / 1.6vmin 2.6vmin no-repeat,
+      linear-gradient(#ffd88a55 0 0) 53% 50% / 1.6vmin 2.6vmin no-repeat,
+      linear-gradient(var(--win) 0 0) 58.4% 67% / 1.6vmin 2.6vmin no-repeat,
+      linear-gradient(#9fd8ff88 0 0) 44.4% 67% / 1.6vmin 2.6vmin no-repeat,
+      linear-gradient(var(--win) 0 0) 52.6% 84% / 1.6vmin 2.6vmin no-repeat;
+
+    background: linear-gradient(var(--sky-top), var(--sky) 40%);
+  }
+  .stage *, .stage ::before, .stage ::after { position: absolute; }
+
+  /* the building across the far end */
+  .far {
+    inset: 8% 38% 48.6%;
+    background: linear-gradient(#0000 0 94%, #0006 0), var(--far-wall);
+  }
+
+  .ground {
+    inset: 51.4% 0 0;
+    background: linear-gradient(#1a1d2a, var(--asphalt) 40%);
+  }
+
+  /* wet areas: a thin sheen everywhere, puddles where it mirrors fully */
+  .wet {
+    inset: 0;
+    clip-path: polygon(38% 51.4%, 62% 51.4%, 100% 100%, 0 100%);
+    mask-image:
+      radial-gradient(ellipse 22% 6% at 45% 69%, #000 45%, #0000),
+      radial-gradient(ellipse 12% 3% at 57% 58%, #000 35%, #0000),
+      radial-gradient(ellipse 28% 8% at 38% 90%, #000 45%, #0000),
+      radial-gradient(ellipse 16% 5% at 72% 82%, #000 40%, #0000),
+      linear-gradient(#000 52%, #0007 62%, #0004);
+  }
+
+  /* the trick: one class, two elements. Both paint var(--lights) and the same signs */
+  .glow {
+    inset: 0 0 48.6%;
+    background: var(--lights);
+  }
+  .reflect {
+    transform-origin: 50% 100%;
+    scale: 1 calc(var(--stretch) * -1);
+    filter: blur(0.4vmin) saturate(1.4);
+  }
+
+  /* neon: a shape-only ring (::before) and a vertical BAR blade (::after) */
+  .glow::before {
+    content: "";
+    inset: 50% auto auto 29%;
+    inline-size: 3.6vmin;
+    block-size: 5.4vmin;
+    border: 0.45vmin solid #c8f6ff;
+    border-radius: 50%;
+    box-shadow: 0 0 0.6vmin var(--cyan), 0 0 2.4vmin var(--cyan), inset 0 0 1.2vmin var(--cyan);
+  }
+  .glow::after {
+    content: "BAR";
+    inset: 38% auto auto 64.5%;
+    padding: 0.8vmin 0.5vmin;
+    writing-mode: vertical-lr;
+    text-orientation: upright;
+    font: 700 3.4vmin/1 system-ui, sans-serif;
+    letter-spacing: -0.2vmin;
+    color: #ffe1ee;
+    border: 0.3vmin solid #ffb3d1;
+    border-radius: 0.6vmin;
+    text-shadow: 0 0 0.4vmin var(--pink), 0 0 1.6vmin var(--pink), 0 0 4vmin var(--pink);
+    box-shadow: 0 0 1vmin var(--pink), 0 0 4vmin #ff3d8b66, inset 0 0 1vmin #ff3d8b88;
+    animation: flicker 7s steps(1) infinite;
+  }
+  @keyframes flicker {
+    0%, 61%, 64%, 67%, 100% { opacity: 1; }
+    62%, 65.5% { opacity: 0.25; }
+  }
+
+  /* thin dark bands drifting down over the reflection, so the streaks waver */
+  .shimmer {
+    --band: 2.8vmin;
+    inset: calc(51.4% - var(--band)) 0 0;
+    background: repeating-linear-gradient(#0000 0 0.5vmin, #0b0c1250 0 0.75vmin, #0000 0 1.5vmin, #0b0c1238 0 1.65vmin, #0000 0 2.3vmin, #0b0c1260 0 var(--band));
+    animation: waver 6s linear infinite;
+  }
+  @keyframes waver { to { translate: 0 var(--band); } }
+
+  /* brick walls; mortar courses radiate from the vanishing point */
+  .alley { inset: 0; --course: 1.1deg; }
+  /* narrow screens squeeze the courses together; coarser ones avoid moiré swirls */
+  @media (max-width: 600px) { .alley { --course: 2.2deg; } }
+  .alley::before, .alley::after {
+    content: "";
+    inset: 0;
+    background:
+      linear-gradient(var(--dir), #000a, #0000 30%),
+      repeating-conic-gradient(from 0deg at 50% 36%, var(--wall) 0 var(--course), var(--mortar) 0 calc(var(--course) + 0.2deg));
+  }
+  .alley::before {
+    --dir: 90deg;
+    clip-path: polygon(0 0, 26.3% 0, 38% 17.8%, 38% 51.4%, 0 100%);
+  }
+  .alley::after {
+    --dir: -90deg;
+    clip-path: polygon(100% 0, 73.7% 0, 62% 17.8%, 62% 51.4%, 100% 100%);
+  }
+
+  /* a doorway on the left wall, lit from inside */
+  .alley i {
+    inset: 0;
+    background:
+      linear-gradient(90deg, #0000 0 18%, #3de0ff30 50%, #0000 82%),
+      linear-gradient(90deg, #070b10, #10262f);
+    clip-path: polygon(12% 26.9%, 17% 28.1%, 17% 77.8%, 12% 84.6%);
+  }
+
+  /* fire escape: inline SVG in stage coordinates (viewBox 0 0 100 100, stretched) */
+  .escape {
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    fill: none;
+    stroke: #06070b;
+    stroke-width: 2px;
+  }
+  .escape path { vector-effect: non-scaling-stroke; }
+  .escape .bars { stroke-width: 1px; }
+
+  .mist {
+    inset: 0;
+    background:
+      radial-gradient(ellipse 26% 16% at 50% 52%, light-dark(#b8c6e026, #8090b01c), #0000),
+      radial-gradient(ellipse 22% 30% at 85% 20%, #ffb34714, #0000);
+  }
+
+  /* rain: tiles of thin ellipse streaks, each layer moved down exactly one tile per loop */
+  .rain {
+    inset: -36%; /* enough overscan for a 20deg tilt on a portrait phone */
+    rotate: var(--tilt);
+  }
+  .rain::before, .rain::after {
+    content: "";
+    inset: calc(var(--h) * -1) 0 0;
+    animation: fall var(--d) linear infinite;
+  }
+  .rain::before {
+    --h: 24vmin;
+    --d: 0.9s;
+    opacity: 0.6;
+    background:
+      radial-gradient(0.08vmin 1.3vmin at 20% 30%, var(--rain), #0000) 0 0 / 5vmin var(--h),
+      radial-gradient(0.08vmin 1.1vmin at 70% 78%, var(--rain), #0000) 0 0 / 7vmin var(--h),
+      radial-gradient(0.08vmin 1.2vmin at 45% 55%, var(--rain), #0000) 0 0 / 11vmin var(--h);
+  }
+  .rain::after {
+    --h: 40vmin;
+    --d: 0.45s;
+    background:
+      radial-gradient(0.12vmin 3.2vmin at 30% 20%, var(--rain), #0000) 0 0 / 13vmin var(--h),
+      radial-gradient(0.12vmin 2.6vmin at 80% 65%, var(--rain), #0000) 0 0 / 19vmin var(--h);
+  }
+  @keyframes fall { to { translate: 0 var(--h); } }
+
+  /* ripples: rings scattered over the ground by sin()/cos() of their index */
+  .ripples { inset: 0; }
+  .ripples i {
+    --n: var(--i);
+    left: calc(50% + sin(var(--n) * 2.4rad) * 17%);
+    top: calc(73% + cos(var(--n) * 1.9rad) * 11%);
+    inline-size: calc(6vmin + cos(var(--n) * 1.9rad) * 2.4vmin);
+    aspect-ratio: 4;
+    translate: -50% -50%;
+    border: 0.18vmin solid #c8d6f08c;
+    border-radius: 50%;
+    opacity: 0;
+    animation: ripple 1.6s ease-out infinite;
+    animation-delay: calc(var(--n) * -0.53s);
+  }
+  @supports (order: sibling-index()) {
+    .ripples i { --n: sibling-index(); }
+  }
+  @keyframes ripple {
+    from { scale: 0.15; opacity: 0.8; }
+    to { scale: 1; opacity: 0; }
+  }
+
+  .vignette {
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 75% 70% at 50% 45%, #0000 55%, #000a);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rain::before, .rain::after, .shimmer, .glow::after { animation: none; }
+    .ripples i { animation: none; scale: 0.6; opacity: 0.35; }
+  }
+}
