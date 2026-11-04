@@ -138,6 +138,30 @@ Random positions per wedge would break the kaleidoscope: every mirror has to sho
 
 Each layer starts at a random resting angle and a random point in each of its cycles (negative delays), and the barrel's speed is picked between 60s and 100s a turn. `random()` is limited availability (Safari 26.2 as far as we know; not in Chrome 153, checked with `CSS.supports`). Without it, the scene starts from the same pattern on every visit and then never repeats.
 
+### Optional adaptive size: a small script fits the eyepiece to the frame rate
+
+The scene is CSS only until you turn on **Fit size to frame rate** in Controls. The switch sets `data-adaptive` on the stage, and a small `scene.js` starts counting frames. Once a second it compares the frame rate with the display's refresh rate. Below 90% of that rate, the eyepiece shrinks by 12% at once. After two smooth seconds in a row (at least 95%), it grows by 4%. It doesn't grow straight back to a size that dropped frames, but it tries again after thirty smooth seconds. Its size stays between 30% and 92% of the shorter window side.
+
+A page can't read the refresh rate, and the rate changes: a Mac on battery drops from 60 Hz to 30 Hz. So the script works it out:
+
+- **A faster display shows up in the frame gaps.** The shortest gaps in each second (the 10th percentile, rounded to a common rate such as 30, 60 or 120 Hz) reveal it.
+- **A slower display shows up when shrinking stops helping.** After two shrinks the frame rate hasn't risen and sits on a display rate, so that rate becomes the target and the size goes back to where it was.
+- **While the target is under 60 Hz, it sometimes checks for a faster display.** It runs one second at a smaller size, and if the frames get faster it switches. These checks get rarer each time they find nothing.
+
+I checked the logic with a simulated display and frame cost (60 Hz → 30 Hz → 60 Hz). It settles near the largest size that keeps up at 60 Hz, grows to full size at 30 Hz, and comes back down when plugged in again.
+
+The script writes the size to `--fit-d`, which the stage reads in place of its default size:
+
+```css
+--d: var(--fit-d, min(84vmin, 42rem));
+```
+
+Turn the switch off and the property is removed, so the eyepiece goes back to `min(84vmin, 42rem)`.
+
+### Extra glass layers and mirrors from Controls
+
+Controls can add mirrors and glass layers by cloning elements. A clone's CSS animations start when it is inserted, so before this fix added wedges ran behind the originals, and part of the circle stopped matching the rest. The panel now gives each clone's animations the start time of the matching animation on an existing sibling, so every wedge stays on the same clock. Each added glass layer is only loose beads (no rings or shards) turned to a new angle, so more layers add sparkle instead of clutter. The mirror count goes from 6 to 48, because 4 mirrors would need `tan(90deg)`.
+
 ## Performance notes
 
 | raw | gzip | brotli | budget | ok |
@@ -146,7 +170,7 @@ Each layer starts at a random resting angle and a random point in each of its cy
 
 All motion is `transform` or `opacity`. The costliest part is 36 clipped, composited glass layers plus one blend per wedge. An earlier requestAnimationFrame sample in Chrome, with the barrel scroll-driven, held 61 fps; the extra `translate` animations are compositor-only too, but the endless version has not been re-measured. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
 
-The eyepiece is capped at `min(88vmin, 62rem)` rather than filling the window, which keeps every wedge's layer small.
+The eyepiece is capped at `min(84vmin, 42rem)` (672px) rather than filling the window, which keeps every wedge's layer small.
 
 ## Accessibility
 

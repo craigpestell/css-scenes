@@ -319,6 +319,8 @@ let playback;
  *     clones or removes elements matching selector inside each of their parents, then sets --i (1-based index) and
  *     --n (count) inline on each, so --i-driven CSS keeps working where sibling-index() is missing.
  *   { "type": "color", "label", "var", "target"?, "value" }
+ *   { "type": "toggle", "label", "attr": "data-x", "target"?, "value"?: false }
+ *     adds or removes a boolean attribute on target; a scene script or CSS reacts to it.
  * Playback (speed, loop, pause) lives in the edge tab, not here.
  */
 const counts = new Map(); // selector -> { template, homes: [{ parent, anchor }], initial }
@@ -342,13 +344,31 @@ const setCount = (p, n) => {
     const own = () => [...parent.children].filter((e) => e.matches(p.selector));
     let kids = own();
     while (kids.length > n) kids.pop().remove();
+    const added = [];
     while (kids.length < n) {
       const clone = c.template.cloneNode(true);
       parent.insertBefore(clone, kids.at(-1)?.nextElementSibling ?? anchor);
       kids.push(clone);
+      added.push(clone);
     }
     kids.forEach((e, i) => { e.style.setProperty('--i', i + 1); e.style.setProperty('--n', n); });
+    if (added.length && kids.length > added.length) added.forEach((e) => inPhase(e, kids[0]));
   }
+};
+/** A clone's CSS animations start when it is inserted, so they would run behind the originals (a kaleidoscope
+ *  shows that as mismatched wedges). Copy each animation's clock from the matching one on an existing sibling;
+ *  both subtrees have the same structure, so getAnimations lists them in the same order. */
+const inPhase = (clone, source) => {
+  const from = source.getAnimations({ subtree: true });
+  clone.getAnimations({ subtree: true }).forEach((a, i) => {
+    const b = from[i];
+    if (!b || a.animationName !== b.animationName) return;
+    a.playbackRate = b.playbackRate;
+    // A running source: share its start time (a clone is still pending, and a copied current time would be held
+    // until it starts, leaving it a frame or more behind). A paused one (rate 0) has no usable start time.
+    if (b.startTime !== null && b.playbackRate) a.startTime = b.startTime;
+    else a.currentTime = b.currentTime;
+  });
 };
 const targets = (p) => document.querySelectorAll(p.target ?? '.stage');
 const fmt = (p, v) => `${v}${p.unit ?? ''}`; // the CSS value
@@ -367,6 +387,11 @@ const controlsSection = {
       if (p.type === 'count') p.value = counts.get(p.selector).initial;
       // A colour starts from what the page computes now, so the picker matches light or dark.
       if (p.type === 'color') p.value = hex(getComputedStyle(targets(p)[0] ?? html).getPropertyValue(p.var)) ?? p.value;
+      if (p.type === 'toggle') {
+        p.value = Boolean(p.value);
+        return `<div class="row" data-p="${i}"><label class="switch"><span>${esc(p.label)}</span>
+          <input type="checkbox" role="switch" id="${id(i)}"${p.value ? ' checked' : ''}></label></div>`;
+      }
       const input = p.type === 'color'
         ? `<input type="color" id="${id(i)}" value="${esc(p.value)}">`
         : `<input type="range" id="${id(i)}" min="${p.min}" max="${p.max}" step="${p.step ?? 1}" value="${p.value}">`;
@@ -386,7 +411,8 @@ const controlsSection = {
         // Counts nest (glass inside wedges), so every count is replayed in order to keep clones in step.
         p.current = +v;
         data.params.filter((q) => q.type === 'count' && counts.has(q.selector)).forEach((q) => setCount(q, q.current ?? q.value));
-      } else targets(p).forEach((t) => t.style.setProperty(p.var, fmt(p, v)));
+      } else if (p.type === 'toggle') targets(p).forEach((t) => t.toggleAttribute(p.attr, v));
+      else targets(p).forEach((t) => t.style.setProperty(p.var, fmt(p, v)));
       syncPlayback();
     };
 
@@ -396,6 +422,7 @@ const controlsSection = {
       else {
         const p = data.params[t.closest('[data-p]')?.dataset.p];
         if (!p) return;
+        if (p.type === 'toggle') return applyParam(p, t.checked);
         out(t.id, show(p, t.value));
         applyParam(p, t.value);
       }
@@ -408,6 +435,7 @@ const controlsSection = {
       data.params.forEach((p, i) => {
         const input = el.querySelector(`#${id(i)}`);
         if (!input) return;
+        if (p.type === 'toggle') { input.checked = p.value; return applyParam(p, p.value); }
         input.value = p.value;
         out(input.id, show(p, p.value));
         if (p.type === 'count') applyParam(p, p.value);
@@ -511,6 +539,8 @@ button{cursor:pointer}
 .switch input::before{content:"";position:absolute;inset:.15rem auto .15rem .15rem;aspect-ratio:1;border-radius:50%;background:var(--bg);box-shadow:0 1px 2px #0004;transition:translate .15s}
 .switch input:checked{background:var(--fg)}
 .switch input:checked::before{translate:.9rem 0}
+.row .switch{grid-column:1/-1}
+.row .switch input{width:2.1rem;margin:0;grid-column:auto}
 .progress{block-size:3px;border-radius:99rem;background:var(--line);overflow:hidden}
 .progress i{display:block;block-size:100%;background:var(--fg);transform-origin:0 50%;scale:0 1}
 .state,.reduced{margin:0;color:var(--dim)}
