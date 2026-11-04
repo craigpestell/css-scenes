@@ -140,7 +140,7 @@ Each layer starts at a random resting angle and a random point in each of its cy
 
 ### Optional adaptive size: a small script fits the eyepiece to the frame rate
 
-The scene is CSS only until you turn on **Fit size to frame rate** in Controls. The switch sets `data-adaptive` on the stage, and a 30-line `scene.js` starts counting frames. Once a second it compares the rate with the best rate it has seen, which stands in for the display's refresh rate. Below 90% of that, the eyepiece shrinks by 12% at once. After two smooth seconds in a row (at least 97%), it grows by 4%. It never grows back to a size that dropped frames, so it settles instead of see-sawing. Its size stays between 30% and 92% of the shorter window side.
+The scene is CSS only until you turn on **Fit size to frame rate** in Controls. The switch sets `data-adaptive` on the stage, and a 35-line `scene.js` starts counting frames. Once a second it compares the rate with the best rate it has seen, which stands in for the display's refresh rate. Below 90% of that, the eyepiece shrinks by 12% at once. After two smooth seconds in a row (at least 97%), it grows by 4%. It never grows back to a size that dropped frames, so it settles instead of see-sawing. Its size stays between 30% and 92% of the shorter window side.
 
 The script writes the size to `--fit-d`, which the stage reads in place of its default size:
 
