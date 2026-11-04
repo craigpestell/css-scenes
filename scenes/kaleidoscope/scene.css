@@ -6,7 +6,8 @@
     /* Sized from the stage's own box (cqmin), not the viewport: the gallery's controls column and an open sheet
        make the stage smaller than the window. --fit-d: set by scene.js when adaptive size is on. */
     container-type: size;
-    --d: var(--fit-d, min(84cqmin, 42rem));
+    --budget: 150MB; /* GPU memory budget; the Controls slider overrides it */
+    --d: min(var(--fit-d, min(84cqmin, 42rem)), var(--cap-d, 100cqmin)); /* --cap-d: set by scene.js from --budget */
     --r: calc(var(--d) / 2);
     --rim: max(10px, 1.8cqmin);
     /* Local glass colours (light-dark: daylight stained glass / lamp-lit jewels) */
