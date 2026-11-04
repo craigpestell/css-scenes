@@ -5,11 +5,23 @@
   The far end of the alley spans x 38–62%, and its ground line is y 51.4%.
   That ground line is the mirror axis: .lights fills the stage above it,
   and .reflect paints the same box again, flipped about its bottom edge.
+  The window, pole and fire-escape shapes are generated from the same vanishing point.
 */
 @layer scene {
   .stage {
-    --tilt: 8deg;     /* rain angle (Controls) */
-    --stretch: 1.6;   /* reflection stretch (Controls) */
+    /* Controls */
+    --tilt: 8deg;     /* rain angle */
+    --spread: 5deg;   /* extra angle between the three rain layers (gusts) */
+    --density: 1;     /* rain amount */
+    --speed: 1;       /* rain speed */
+    --stretch: 1.6;   /* reflection stretch */
+    /* Performance switches (Controls): 1 = on, 0 = off. Each one turns a costly effect off completely */
+    --reflection: 1;
+    --blur: 0.4;      /* reflection blur in vmin; 0 removes the filter */
+    --masks: 1;
+    --water: 1;
+    --bricks: 1;
+    --glow: 1;
 
     --sky: light-dark(#6f86b0, #2b3350);
     --sky-top: light-dark(#34405e, #0c0e18);
@@ -17,7 +29,6 @@
     --mortar: light-dark(#2c3041, #12131b);
     --far-wall: light-dark(#454a5f, #1e2130);
     --asphalt: #0d0e14;
-    --sodium: #ffb347;
     --win: light-dark(#ffd88acc, #ffd88a);
     --pink: #ff3d8b;
     --cyan: #3de0ff;
@@ -25,30 +36,39 @@
 
     /* every light in the scene, as one background (box = stage above the ground line) */
     --lights:
-      /* sodium lamp on the left wall, at the far end */
-      radial-gradient(circle at 40.5% 56%, #fff6dc 0 0.35vmin, #ffc46bdd 0.9vmin, #ffb34755 4vmin, #ffb34714 13vmin, #0000 24vmin),
+      /* the two street lights at the intersection, and their pools on the road */
+      radial-gradient(circle at 40.9% 55.8%, #fff6dc 0 0.35vmin, #ffc46bdd 0.9vmin, #ffb34755 4vmin, #ffb34714 13vmin, #0000 24vmin),
+      radial-gradient(circle at 59.1% 55.8%, #fff6dc 0 0.35vmin, #ffc46bdd 0.9vmin, #ffb34755 4vmin, #ffb34714 13vmin, #0000 24vmin),
+      radial-gradient(ellipse 4% 5% at 40.9% 94%, #ffb3474d, #0000),
+      radial-gradient(ellipse 4% 5% at 59.1% 94%, #ffb3474d, #0000),
       /* bracket lamp on the right wall, close to us */
       radial-gradient(circle at 85% 38%, #fff3d6 0 0.6vmin, #ffb347cc 1.6vmin, #ffb34740 7vmin, #ffb3470c 20vmin, #0000 34vmin),
       /* cool lamp over the doorway on the left wall */
       radial-gradient(circle at 14.5% 46%, #e6fbff 0 0.3vmin, #3de0ffaa 0.8vmin, #3de0ff24 4vmin, #0000 11vmin),
-      /* glow of the cross street beyond */
-      radial-gradient(ellipse 14% 26% at 50% 100%, #ffb34766, #0000),
+      /* lit windows on both walls, drawn in perspective (inline SVG, generated) */
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 51.4' preserveAspectRatio='none'%3E%3Cpath fill='%23ffb34788' d='M20 27.6L25 29L25 50L20 52.8Z'/%3E%3Cpath stroke='%23000a' d='M22.5 28.3V51.4'/%3E%3Cpath fill='%238fc4ff99' d='M20 -4.8L25 2L25 18L20 14.4Z'/%3E%3Cpath stroke='%23000a' d='M22.5 -1.4V16.2'/%3E%3Cpath fill='%23ffd88a' d='M28.5 6.8L31.5 10.8L31.5 22.7L28.5 20.5Z'/%3E%3Cpath stroke='%23000a' d='M30 8.8V21.6'/%3E%3Cpath fill='%23ffc46b99' d='M33.5 13.6L35.5 16.3L35.5 25.6L33.5 24.1Z'/%3E%3Cpath stroke='%23000a' d='M34.5 14.9V24.8'/%3E%3Cpath fill='%23ffd88a' d='M75 2L80 -4.8L80 14.4L75 18Z'/%3E%3Cpath stroke='%23000a' d='M77.5 -1.4V16.2'/%3E%3Cpath fill='%23ffd88acc' d='M64.5 16.3L66.5 13.6L66.5 24.1L64.5 25.6Z'/%3E%3Cpath stroke='%23000a' d='M65.5 14.9V24.8'/%3E%3Cpath fill='%231c0710' d='M64.6 34.5L71.4 33.9L71.4 52.3L64.6 47.1Z'/%3E%3Cpath fill='none' stroke='%23ff3d8b' stroke-width='3' vector-effect='non-scaling-stroke' d='M65.6 36.6L70.4 36.8L70.4 48.6L65.6 45.7Z'/%3E%3C/svg%3E") 0 0 / 100% 100%,
       /* lit windows on the far building */
       linear-gradient(var(--win) 0 0) 41.6% 50% / 1.6vmin 2.6vmin no-repeat,
       linear-gradient(var(--win) 0 0) 47% 50% / 1.6vmin 2.6vmin no-repeat,
       linear-gradient(#ffd88a55 0 0) 53% 50% / 1.6vmin 2.6vmin no-repeat,
       linear-gradient(var(--win) 0 0) 58.4% 67% / 1.6vmin 2.6vmin no-repeat,
       linear-gradient(#9fd8ff88 0 0) 44.4% 67% / 1.6vmin 2.6vmin no-repeat,
-      linear-gradient(var(--win) 0 0) 52.6% 84% / 1.6vmin 2.6vmin no-repeat;
+      linear-gradient(var(--win) 0 0) 52.6% 79% / 1.6vmin 2.6vmin no-repeat;
 
     background: linear-gradient(var(--sky-top), var(--sky) 40%);
   }
   .stage *, .stage ::before, .stage ::after { position: absolute; }
 
-  /* the building across the far end */
+  /* the building across the far end, and the street in front of it */
   .far {
-    inset: 8% 38% 48.6%;
+    inset: 8% 38% 53.2%;
     background: linear-gradient(#0000 0 94%, #0006 0), var(--far-wall);
+  }
+  .street {
+    inset: 46.8% 38% 48.6%;
+    background:
+      repeating-linear-gradient(90deg, #c9b88a40 0 3%, #0000 0 7%) 0 56% / 100% 4% no-repeat,
+      linear-gradient(#2a2d38 0 18%, #11131b 0 88%, #2a2d38 0);
   }
 
   .ground {
@@ -66,9 +86,12 @@
       radial-gradient(ellipse 28% 8% at 38% 90%, #000 45%, #0000),
       radial-gradient(ellipse 16% 5% at 72% 82%, #000 40%, #0000),
       linear-gradient(#000 52%, #0007 62%, #0004);
+    /* the floor plane below is seen from the same eye as the walls */
+    perspective: 100vmin;
+    perspective-origin: 50% 36%;
   }
 
-  /* the trick: one class, two elements. Both paint var(--lights) and the same signs */
+  /* the trick: one class, two elements. Both paint var(--lights), the same signs and the same cars */
   .glow {
     inset: 0 0 48.6%;
     background: var(--lights);
@@ -76,7 +99,7 @@
   .reflect {
     transform-origin: 50% 100%;
     scale: 1 calc(var(--stretch) * -1);
-    filter: blur(0.4vmin) saturate(1.4);
+    filter: blur(calc(var(--blur) * 1vmin)) saturate(1.4);
   }
 
   /* neon: a shape-only ring (::before) and a vertical BAR blade (::after) */
@@ -109,14 +132,71 @@
     62%, 65.5% { opacity: 0.25; }
   }
 
-  /* thin dark bands drifting down over the reflection, so the streaks waver */
-  .shimmer {
-    --band: 2.8vmin;
-    inset: calc(51.4% - var(--band)) 0 0;
-    background: repeating-linear-gradient(#0000 0 0.5vmin, #0b0c1250 0 0.75vmin, #0000 0 1.5vmin, #0b0c1238 0 1.65vmin, #0000 0 2.3vmin, #0b0c1260 0 var(--band));
-    animation: waver 6s linear infinite;
+  /* cars on the far street: full-width layers moved by translate, seen only through the alley mouth */
+  .cars { inset: 0; clip-path: inset(0 38%); }
+  .car {
+    --dx: 31%;
+    inset: 0;
+    animation: drive 12s infinite;
   }
-  @keyframes waver { to { translate: 0 var(--band); } }
+  .car::before, .car::after, .car b { inset-block-start: 93.2%; block-size: 2.6%; }
+  .car::before { /* body */
+    content: "";
+    inset-inline-start: 32%;
+    inline-size: 4.6%;
+    background: linear-gradient(#3a3f4e, #05060a 55%);
+    clip-path: polygon(0 55%, 6% 38%, 24% 32%, 36% 0, 66% 0, 80% 32%, 97% 40%, 100% 58%, 100% 92%, 0 92%);
+  }
+  .car::after { /* tail light, headlamp, and the beam on the wet road */
+    content: "";
+    inset-inline-start: 31.8%;
+    inline-size: 12%;
+    background:
+      radial-gradient(circle at 2.4% 58%, #ff4a3a 0 0.2vmin, #ff2a2a55 0.7vmin, #0000 1.4vmin),
+      radial-gradient(circle at 39.6% 55%, #fffbe8 0 0.25vmin, #ffe8b0aa 0.7vmin, #0000 1.6vmin),
+      radial-gradient(ellipse 32% 60% at 62% 82%, #fff1c440, #0000);
+  }
+  .car b { /* brake light */
+    inset-inline-start: 31%;
+    inline-size: 3vmin;
+    translate: 0 -30%;
+    background: radial-gradient(closest-side, #ff3b30 0 18%, #ff1e1e4d 50%, #0000);
+    opacity: 0;
+    animation: brake 12s infinite;
+  }
+  .car.back { /* the other lane: mirrored, nearer, slower, later */
+    --dx: -31%;
+    scale: -1 1;
+    animation-duration: 15s;
+    animation-delay: -7s;
+  }
+  .back::before, .back::after, .back b { inset-block-start: 95.8%; block-size: 3.1%; }
+  .back::before { inline-size: 5.2%; }
+  .back b { animation-duration: 15s; animation-delay: -7s; }
+  @keyframes drive {
+    0% { translate: 0; animation-timing-function: cubic-bezier(0.2, 0.6, 0.8, 0.4); } /* slows at the alley */
+    34%, 100% { translate: var(--dx); }
+  }
+  @keyframes brake {
+    0%, 12%, 23%, 100% { opacity: 0; }
+    13%, 22% { opacity: 1; }
+  }
+
+  /* the wet floor as a real plane in perspective: broken streaks that flow toward us over the reflection */
+  .floor {
+    inset: 51.4% 38% auto;
+    block-size: 80vmin;
+    transform-origin: 50% 0;
+    rotate: x 90deg;
+    overflow: clip;
+  }
+  .floor i {
+    --tile: 6vmin;
+    inset: calc(var(--tile) * -1) -100% 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 30' fill='none' stroke-linecap='round'%3E%3Cpath stroke='%230a0b1199' stroke-width='0.5' d='M34.2 1.2q1.3 -0.1 2.5 0t2.5 0M35.3 7.4q1.4 -0.1 2.7 0t2.7 0M16.1 11.1q1.3 -0.3 2.6 0t2.6 0M5.9 19.0q2.3 -0.5 4.6 0t4.6 0M16.7 19.0q1.5 -0.5 2.9 0t2.9 0M1.0 23.0q1.1 0.5 2.1 0t2.1 0M31.8 23.0q3.1 -0.3 6.2 0t6.2 0M26.1 26.0q1.6 -0.0 3.2 0t3.2 0M17.5 29.3q2.4 0.6 4.9 0t4.9 0'/%3E%3Cpath stroke='%230a0b1199' stroke-width='0.8' d='M0.9 1.2q3.0 -0.5 5.9 0t5.9 0M48.3 5.3q2.5 0.0 5.0 0t5.0 0M1.9 11.1q3.1 0.1 6.2 0t6.2 0M23.1 11.1q3.1 0.2 6.2 0t6.2 0M1.3 13.5q1.9 0.3 3.7 0t3.7 0M10.7 13.5q2.3 0.1 4.7 0t4.7 0M26.3 13.5q1.8 -0.1 3.7 0t3.7 0M1.7 16.0q1.4 0.0 2.9 0t2.9 0M24.4 19.0q1.6 -0.1 3.2 0t3.2 0M35.7 19.0q2.4 -0.5 4.8 0t4.8 0M38.3 26.0q2.4 -0.4 4.8 0t4.8 0'/%3E%3Cpath stroke='%230a0b1199' stroke-width='1.2' d='M18.5 7.4q2.5 -0.2 5.0 0t5.0 0M14.2 16.0q3.1 0.0 6.1 0t6.1 0M32.0 16.0q2.4 0.4 4.7 0t4.7 0M49.5 19.0q1.9 -0.4 3.9 0t3.9 0M10.5 23.0q3.7 0.3 7.5 0t7.5 0M47.6 23.0q1.7 0.0 3.3 0t3.3 0M5.9 26.0q3.6 0.4 7.1 0t7.1 0'/%3E%3Cpath stroke='%23c8d6f022' stroke-width='0.5' d='M0.3 5.3q3.6 -0.3 7.2 0t7.2 0M35.0 5.3q2.1 0.1 4.2 0t4.2 0M40.5 13.5q1.5 -0.4 2.9 0t2.9 0M5.7 29.3q2.1 -0.3 4.2 0t4.2 0M45.4 29.3q2.2 0.3 4.3 0t4.3 0'/%3E%3Cpath stroke='%23c8d6f022' stroke-width='0.8' d='M17.4 1.2q3.7 -0.3 7.5 0t7.5 0M38.5 11.1q2.2 0.2 4.3 0t4.3 0'/%3E%3Cpath stroke='%23c8d6f022' stroke-width='1.2' d='M46.0 1.2q2.9 0.1 5.8 0t5.8 0M19.2 5.3q2.7 0.2 5.4 0t5.4 0M1.8 7.4q3.4 0.2 6.8 0t6.8 0M47.4 7.4q2.3 0.6 4.5 0t4.5 0M47.4 16.0q2.2 -0.1 4.4 0t4.4 0M31.4 29.3q3.0 0.4 5.9 0t5.9 0'/%3E%3C/svg%3E") 0 0 / 12vmin var(--tile);
+    animation: flow 2.4s linear infinite;
+  }
+  @keyframes flow { to { translate: 0 var(--tile); } }
 
   /* brick walls; mortar courses radiate from the vanishing point */
   .alley { inset: 0; --course: 1.1deg; }
@@ -147,8 +227,8 @@
     clip-path: polygon(12% 26.9%, 17% 28.1%, 17% 77.8%, 12% 84.6%);
   }
 
-  /* fire escape: inline SVG in stage coordinates (viewBox 0 0 100 100, stretched) */
-  .escape {
+  /* dark windows, light poles and (in a second SVG, in front of the lit windows) the fire escape: inline SVG in stage coordinates (viewBox 0 0 100 100, stretched) */
+  .walls {
     inset: 0;
     inline-size: 100%;
     block-size: 100%;
@@ -156,66 +236,78 @@
     stroke: #06070b;
     stroke-width: 2px;
   }
-  .escape path { vector-effect: non-scaling-stroke; }
-  .escape .bars { stroke-width: 1px; }
+  .walls path { vector-effect: non-scaling-stroke; }
+  .walls .pane { fill: #06070bd9; stroke: #2a2e3c; stroke-width: 1px; }
+  .walls .frame, .walls .bars { stroke-width: 1px; }
+  .walls .frame { stroke: #2a2e3c; }
+  .walls .pole { stroke: #0b0c12; stroke-width: 3px; }
+  .walls .head { fill: #0b0c12; stroke: none; }
 
   .mist {
     inset: 0;
     background:
-      radial-gradient(ellipse 26% 16% at 50% 52%, light-dark(#b8c6e026, #8090b01c), #0000),
+      radial-gradient(ellipse 26% 16% at 50% 50%, light-dark(#b8c6e026, #8090b01c), #0000),
       radial-gradient(ellipse 22% 30% at 85% 20%, #ffb34714, #0000);
   }
 
-  /* rain: tiles of thin ellipse streaks, each layer moved down exactly one tile per loop */
-  .rain {
-    inset: -36%; /* enough overscan for a 20deg tilt on a portrait phone */
-    rotate: var(--tilt);
+  /* rain: layers at their own angles and depths, all from one rule. --i is the layer's depth (1 = far);
+     each layer is a tile of thin ellipse streaks moved down exactly one tile per loop */
+  .rain { inset: 0; }
+  .rain i {
+    --z: min(var(--i), 4);
+    inset: -60%; /* overscan, so a tilted layer still covers a portrait phone */
+    rotate: calc(var(--tilt) + (var(--z) - 2) * var(--spread));
   }
-  .rain::before, .rain::after {
+  @supports (order: sibling-index()) {
+    .rain i { --i: sibling-index(); }
+  }
+  .rain i::before {
+    --h: calc(14vmin + var(--z) * 9vmin);
+    --w: calc((2vmin + var(--z) * 4vmin) / var(--density));
+    --streak: calc(0.05vmin + var(--z) * 0.025vmin) calc(0.4vmin + var(--z) * 0.75vmin);
     content: "";
     inset: calc(var(--h) * -1) 0 0;
-    animation: fall var(--d) linear infinite;
-  }
-  .rain::before {
-    --h: 24vmin;
-    --d: 0.9s;
-    opacity: 0.6;
+    opacity: min(1, 0.3 + var(--z) * 0.22);
     background:
-      radial-gradient(0.08vmin 1.3vmin at 20% 30%, var(--rain), #0000) 0 0 / 5vmin var(--h),
-      radial-gradient(0.08vmin 1.1vmin at 70% 78%, var(--rain), #0000) 0 0 / 7vmin var(--h),
-      radial-gradient(0.08vmin 1.2vmin at 45% 55%, var(--rain), #0000) 0 0 / 11vmin var(--h);
-  }
-  .rain::after {
-    --h: 40vmin;
-    --d: 0.45s;
-    background:
-      radial-gradient(0.12vmin 3.2vmin at 30% 20%, var(--rain), #0000) 0 0 / 13vmin var(--h),
-      radial-gradient(0.12vmin 2.6vmin at 80% 65%, var(--rain), #0000) 0 0 / 19vmin var(--h);
+      radial-gradient(var(--streak) at 25% 30%, var(--rain), #0000) calc(var(--i) * 1.7vmin) calc(var(--i) * 5vmin) / var(--w) var(--h),
+      radial-gradient(var(--streak) at 70% 75%, var(--rain), #0000) calc(var(--i) * 3.1vmin) calc(var(--i) * 7.3vmin) / calc(var(--w) * 1.6) var(--h);
+    /* layers past the fourth share a depth, so a small speed step keeps them from falling in lockstep */
+    animation: fall calc((1.2s - var(--z) * 0.19s) * (1 + (var(--i) - var(--z)) * 0.07) / var(--speed)) linear infinite;
   }
   @keyframes fall { to { translate: 0 var(--h); } }
 
   /* ripples: rings scattered over the ground by sin()/cos() of their index */
   .ripples { inset: 0; }
   .ripples i {
-    --n: var(--i);
-    left: calc(50% + sin(var(--n) * 2.4rad) * 17%);
-    top: calc(73% + cos(var(--n) * 1.9rad) * 11%);
-    inline-size: calc(6vmin + cos(var(--n) * 1.9rad) * 2.4vmin);
+    --r: var(--i);
+    left: calc(50% + sin(var(--r) * 2.4rad) * 17%);
+    top: calc(73% + cos(var(--r) * 1.9rad) * 11%);
+    inline-size: calc(6vmin + cos(var(--r) * 1.9rad) * 2.4vmin);
     aspect-ratio: 4;
     translate: -50% -50%;
     border: 0.18vmin solid #c8d6f08c;
     border-radius: 50%;
     opacity: 0;
     animation: ripple 1.6s ease-out infinite;
-    animation-delay: calc(var(--n) * -0.53s);
+    animation-delay: calc(var(--r) * -0.53s);
   }
   @supports (order: sibling-index()) {
-    .ripples i { --n: sibling-index(); }
+    .ripples i { --r: sibling-index(); }
   }
   @keyframes ripple {
     from { scale: 0.15; opacity: 0.8; }
     to { scale: 1; opacity: 0; }
   }
+
+  /* Performance switches. A style query reads the custom property the Controls slider writes, so "off" can mean
+     filter: none or display: none (no layer, no paint) rather than a zero that still costs. Without style queries
+     (Firefox for now) the switches do nothing and the scene stays fully on. */
+  @container style(--reflection: 0) { .reflect { display: none; } }
+  @container style(--blur: 0) { .reflect { filter: none; } }
+  @container style(--masks: 0) { .wet { mask-image: none; } }
+  @container style(--water: 0) { .floor { display: none; } }
+  @container style(--bricks: 0) { .alley::before, .alley::after { background: var(--wall); } }
+  @container style(--glow: 0) { .glow::before, .glow::after { box-shadow: none; text-shadow: none; } }
 
   .vignette {
     inset: 0;
@@ -224,7 +316,12 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .rain::before, .rain::after, .shimmer, .glow::after { animation: none; }
+    .rain i::before, .floor i, .glow::after { animation: none; }
     .ripples i { animation: none; scale: 0.6; opacity: 0.35; }
+    /* one car stopped at the alley mouth with its brake light on; the other lane is empty */
+    .car, .car b { animation: none; }
+    .car { translate: 16%; }
+    .car b { opacity: 1; }
+    .car.back { translate: var(--dx); }
   }
 }
