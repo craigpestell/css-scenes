@@ -128,10 +128,10 @@
 
   /* cars on the far street: full-width layers moved by translate, seen only through the alley mouth */
   .cars { inset: 0; clip-path: inset(0 38%); }
-  .car {
-    --w: 9%;    /* body length */
-    --top: 90.1%;
-    --h: 6.4%;
+  .car { /* left to right, in the near lane: lower and bigger */
+    --w: 10.5%; /* body length */
+    --top: 92%;
+    --h: 7.6%;
     --x0: calc(37.5% - var(--w));  /* starts just hidden behind the left wall */
     --dx: calc(25% + var(--w));    /* and ends just hidden behind the right one */
     inset: 0;
@@ -162,10 +162,11 @@
     opacity: 0;
     animation: brake 12s infinite;
   }
-  .car.back { /* the other lane: mirrored, nearer, bigger, slower, later */
-    --w: 10.5%;
-    --top: 92%;
-    --h: 7.6%;
+  .car.back { /* right to left, in the far lane: mirrored, higher, smaller, slower, later, and behind the near lane */
+    --w: 9%;
+    --top: 90.1%;
+    --h: 6.4%;
+    z-index: -1;
     --dx: calc(-25% - var(--w));
     scale: -1 1;
     animation-duration: 15s;

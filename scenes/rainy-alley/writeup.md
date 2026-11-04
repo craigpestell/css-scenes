@@ -77,7 +77,7 @@ Each car is a full-stage element moved with `translate`. Its body, lights and br
 }
 ```
 
-The easing curve is steep at both ends and flat in the middle, so the car slows as it passes the alley, and the `brake` keyframes light the brake light over the same stretch. Each car's size and travel come from a few custom properties: `--w` (body length, 9% of the stage), and from it `--x0` (a start just hidden behind the left wall) and `--dx` (a travel distance that ends just hidden behind the right wall). The other lane is the same car flipped with `scale: -1 1`, made longer (`--w: 10.5%`), placed a little lower and nearer, and run on a 15s cycle against 12s, so the two rarely meet.
+The easing curve is steep at both ends and flat in the middle, so the car slows as it passes the alley, and the `brake` keyframes light the brake light over the same stretch. Each car's size and travel come from a few custom properties: `--w` (body length, 10.5% of the stage), and from it `--x0` (a start just hidden behind the left wall) and `--dx` (a travel distance that ends just hidden behind the right wall). Cars going left to right use the near lane. The other lane is the same car flipped with `scale: -1 1`, made shorter (`--w: 9%`), placed a little higher and farther, drawn behind the near lane (`z-index: -1`), and run on a 15s cycle against 12s, so the two rarely meet.
 
 ### A water plane at the alley's vanishing point
 
@@ -170,7 +170,7 @@ How to use it: open Stats and watch the fps while you switch things off one at a
 
 | raw | gzip | brotli | budget | ok |
 |---|---|---|---|---|
-| 23,172 B | 8,146 B | 6,989 B | 14,336 B | yes |
+| 23,595 B | 8,277 B | 7,064 B | 14,336 B | yes |
 
 Every animation changes only `translate`, `scale` or `opacity`, so it can run on the compositor. The blur on `.reflect` is static, so it is painted once, until a car moves inside it: the cars and their lights animate inside the blurred, masked reflection, so that layer is re-filtered while a car is crossing. The rain layers are the other big cost, since each is larger than the viewport and promoted to its own layer. In a headless software-rendering check the scene ran at about 10 fps with the default settings, 6 fps with every performance control at maximum, 44 fps with them all off, and 60 fps under reduced motion. For comparison, ramen-counter ran at 46 fps in the same check. Software rendering doesn't predict GPU frame times, and real-hardware numbers are not yet measured; the Performance controls are there to find out (TODO: run `perf-triage` on a real device).
 
