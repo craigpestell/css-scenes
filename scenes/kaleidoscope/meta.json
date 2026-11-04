@@ -1,13 +1,14 @@
 {
   "title": "Kaleidoscope",
-  "tags": ["symmetry", "clip-path", "gradients", "infinite-loop", "no-js"],
+  "tags": ["symmetry", "clip-path", "gradients", "infinite-loop"],
   "techniques": [
     "mirrored clip-path wedges (rotate + scaleY(-1))",
     "sibling-count() and sibling-index() fold count with :nth-child fallback",
     "fixed mirrors over a turning object cell with tumbling glass layers",
     "mix-blend-mode switched by colour scheme",
     "endless barrel turn with coprime animation periods",
-    "per-visit random() with element-shared, keeping the mirrors symmetric"
+    "per-visit random() with element-shared, keeping the mirrors symmetric",
+    "optional adaptive size: a small script fits the eyepiece to the frame rate"
   ],
   "features": [
     { "name": "sibling-count() / sibling-index()", "baseline": "newly available (2026-08-18); :nth-child fallback fixed at 12 wedges" },
@@ -22,7 +23,8 @@
     "localColors": "Glass, field and brass colours are local custom properties; Accepted by the user on 2026-10-06; tokens.json unchanged."
   },
   "params": [
-    { "type": "count", "label": "Mirrors", "selector": ".scope b", "min": 4, "max": 48, "step": 2 },
-    { "type": "count", "label": "Glass layers per mirror", "selector": ".scope b > i", "min": 1, "max": 6 }
+    { "type": "count", "label": "Mirrors", "selector": ".scope b", "min": 6, "max": 48, "step": 2 },
+    { "type": "count", "label": "Glass layers per mirror", "selector": ".scope b > i", "min": 1, "max": 6 },
+    { "type": "toggle", "label": "Fit size to frame rate", "attr": "data-adaptive" }
   ]
 }
