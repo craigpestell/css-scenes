@@ -153,10 +153,10 @@ I checked the logic with a simulated display and frame cost (60 Hz → 30 Hz →
 The script writes the size to `--fit-d`, which the stage reads in place of its default size:
 
 ```css
---d: var(--fit-d, min(84vmin, 42rem));
+--d: var(--fit-d, min(84cqmin, 42rem));
 ```
 
-Turn the switch off and the property is removed, so the eyepiece goes back to `min(84vmin, 42rem)`.
+Turn the switch off and the property is removed, so the eyepiece goes back to `min(84cqmin, 42rem)`.
 
 ### Extra glass layers and mirrors from Controls
 
@@ -167,7 +167,7 @@ Controls can add mirrors and glass layers by cloning elements. A clone's CSS ani
 
 A rectangular `overflow: clip` on each wedge does not reduce raster memory (checked with the same dump), so the wedges keep `clip-path` alone.
 
-While the Controls sheet is open on a window at least 48rem wide, the panel sets `data-sheet-open` on `<html>`. The scene pads the stage by the sheet's width and caps the eyepiece to the room left (`--room`), so the sheet never sits over the glass. That also spares its `backdrop-filter` blur from re-reading every layer each frame. The glow behind the eyepiece uses `background-origin: content-box`, so it stays centred on the eyepiece.
+The eyepiece is sized from the stage's own box (`container-type: size` and `cqmin`), not from the viewport. The gallery's chrome insets the stage, so the stage can be smaller than the window. While a floating sheet (About or Stats) is open on a window at least 48rem wide, the panel sets `data-sheet-open` on `<html>`, and the scene pads the stage by the sheet's width so the sheet never sits over the glass. The container units then shrink the eyepiece to the room that is left. The glow behind the eyepiece uses `background-origin: content-box`, so it stays centred on the eyepiece.
 
 ## Performance notes
 
@@ -177,7 +177,7 @@ While the Controls sheet is open on a window at least 48rem wide, the panel sets
 
 All motion is `transform` or `opacity`. The costliest part is 36 clipped, composited glass layers plus one blend per wedge. An earlier requestAnimationFrame sample in Chrome, with the barrel scroll-driven, held 61 fps; the extra `translate` animations are compositor-only too, but the endless version has not been re-measured. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
 
-The eyepiece is capped at `min(84vmin, 42rem)` (672px) rather than filling the window, which keeps every wedge's layer small.
+The eyepiece is capped at `min(84cqmin, 42rem)` (672px) rather than filling the window, which keeps every wedge's layer small.
 
 ## Accessibility
 
