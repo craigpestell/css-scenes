@@ -78,4 +78,4 @@ The owner asked for: windows on both walls (lit, blacked out, a bar window), a l
 - Road: a far cross street is now visible, and the wet ground gets a real 3D plane (`rotate: x 90deg` under `perspective` at the vanishing point) carrying a moving tile of broken streaks.
 - Cars: two lanes, same markup inside both `.glow` copies, `translate` only; brake lights light as each car slows past the alley.
 - Rain: any number of layers from one rule driven by `--i`; controls for angle, spread between layers, amount and speed.
-- Performance controls: counts for rain layers (0–8) and ripples (0–40), and on/off switches through container style queries (reflection, reflection blur, wet masks, water plane, brick gradient, neon glow). Style queries are not in Firefox yet; there the switches do nothing.
+- Performance controls: counts for rain layers (0–8) and ripples (0–40), and on/off switches (reflection, reflection blur, wet masks, water plane, brick gradient, neon glow). The owner asked on 2026-11-04 that on/off controls be switches, not 0/1 sliders, so they use the panel's `toggle` type: a `data-` attribute on `.stage` that `:not()` selectors read.

@@ -6,7 +6,7 @@ slug: rainy-alley
 
 You are standing at the mouth of a narrow brick alley at night, in the rain. Two street lights stand at the intersection at the far end, and cars cross it in both directions, braking as they pass. Lit and blacked-out windows line both walls, a pink BAR sign and a cyan neon ring hang on them, and the wet asphalt mirrors everything as long, wavering streaks broken up by moving water. Rain falls in three layers at slightly different angles, rings open in the puddles, and the BAR sign stutters every few seconds, as does its reflection. The scene is one HTML file and one CSS file, with no JavaScript and no raster images.
 
-The Controls tab has two kinds of control. The first five change the weather and the reflection. The ones marked "Performance" turn the costly effects up, down or off, so you can watch the frame rate in the Stats tab and see which CSS the GPU is paying for.
+The Controls tab has two kinds of control. The first five change the weather and the reflection. The ones marked "Performance" turn the costly effects up, down or off (with switches for the on/off ones), so you can watch the frame rate in the Stats tab and see which CSS the GPU is paying for.
 
 ## Techniques
 
@@ -77,7 +77,7 @@ Each car is a full-stage element moved with `translate`. Its body, lights and br
 }
 ```
 
-The easing curve is steep at both ends and flat in the middle, so the car slows as it passes the alley, and the `brake` keyframes light the brake light over the same stretch. The other lane is the same car flipped with `scale: -1 1`, given `--dx: -31%`, placed a little lower and nearer, and run on a 15s cycle against 12s, so the two rarely meet.
+The easing curve is steep at both ends and flat in the middle, so the car slows as it passes the alley, and the `brake` keyframes light the brake light over the same stretch. Each car's size and travel come from a few custom properties: `--w` (body length, 9% of the stage), and from it `--x0` (a start just hidden behind the left wall) and `--dx` (a travel distance that ends just hidden behind the right wall). The other lane is the same car flipped with `scale: -1 1`, made longer (`--w: 10.5%`), placed a little lower and nearer, and run on a 15s cycle against 12s, so the two rarely meet.
 
 ### A water plane at the alley's vanishing point
 
@@ -151,18 +151,18 @@ The eight ripple rings have no positions in the markup. Each ring's index goes t
 
 Where `sibling-index()` is supported it replaces the inline `--i`, so you can add a ring without numbering it. The index is called `--r`, not `--n`, because the Controls' count slider writes `--n` (the total) on every element it clones. Trig functions are widely available; `sibling-index()` is newly available (2026-08-18), with the inline `--i` as the fallback.
 
-### Performance switches with style queries
+### Performance switches
 
-A slider can only write a number, but "off" should mean `filter: none` or `display: none`, not a zero that still costs a filter pass or a layer. A container style query turns the number into that:
+"Off" should mean `display: none` or `filter: none`, not a zero value that still allocates a layer or a filter pass. Each Controls switch adds or removes a boolean `data-` attribute on `.stage`. All of them are in the markup, so the scene starts fully on, and `:not()` turns an effect off when its attribute is gone:
 
 ```css
-@container style(--reflection: 0) { .reflect { display: none; } }
-@container style(--blur: 0) { .reflect { filter: none; } }
-@container style(--masks: 0) { .wet { mask-image: none; } }
-@container style(--water: 0) { .floor { display: none; } }
+.stage:not([data-reflection]) .reflect { display: none; }
+.stage:not([data-blur]) .reflect { filter: none; }
+.stage:not([data-masks]) .wet { mask-image: none; }
+.stage:not([data-water]) .floor { display: none; }
 ```
 
-The Controls panel writes the property on `.stage`, and every element below inherits it, so no `container-type` is needed: style queries test the nearest ancestor, and every element is a style container. Rain layers and ripples use the panel's count control instead, which clones or removes the elements. Style queries on custom properties are in Chrome and Safari but not yet Firefox, so there the on/off switches do nothing and the scene stays fully on. The count sliders work everywhere, and the blur slider changes the amount everywhere, but only removes the filter where style queries work.
+Plain attribute selectors work in every browser. Rain layers and ripples use the panel's count control instead, which clones or removes elements, and the blur amount is an ordinary slider.
 
 How to use it: open Stats and watch the fps while you switch things off one at a time. The likely suspects are the reflection blur (a filter on a large, stretched layer), the rain layers (each larger than the viewport), and the masked, perspective-transformed water plane.
 
@@ -170,7 +170,7 @@ How to use it: open Stats and watch the fps while you switch things off one at a
 
 | raw | gzip | brotli | budget | ok |
 |---|---|---|---|---|
-| 22,152 B | 7,792 B | 6,661 B | 14,336 B | yes |
+| 23,172 B | 8,146 B | 6,989 B | 14,336 B | yes |
 
 Every animation changes only `translate`, `scale` or `opacity`, so it can run on the compositor. The blur on `.reflect` is static, so it is painted once, until a car moves inside it: the cars and their lights animate inside the blurred, masked reflection, so that layer is re-filtered while a car is crossing. The rain layers are the other big cost, since each is larger than the viewport and promoted to its own layer. In a headless software-rendering check the scene ran at about 10 fps with the default settings, 6 fps with every performance control at maximum, 44 fps with them all off, and 60 fps under reduced motion. For comparison, ramen-counter ran at 46 fps in the same check. Software rendering doesn't predict GPU frame times, and real-hardware numbers are not yet measured; the Performance controls are there to find out (TODO: run `perf-triage` on a real device).
 
@@ -184,7 +184,6 @@ Every animation changes only `translate`, `scale` or `opacity`, so it can run on
 
 - Checked only in headless Chromium (desktop and a 390px phone, light and dark, with reduced motion), not in Safari or Firefox.
 - On phones, most of the BAR reflection falls below the bottom edge.
-- The on/off performance switches need container style queries, so they do nothing in Firefox for now.
 
 ## Reuse
 
