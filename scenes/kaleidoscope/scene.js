@@ -15,7 +15,8 @@ let shrinks = 0, before = 0, beforeFps = 0; // the current run of shrinks
 let probing = false, probeIn = 15, probeSize = 0, probeTarget = 0;
 
 const bounds = () => {
-  const side = Math.min(innerWidth, innerHeight);
+  // The stage's content box: it narrows while the Controls sheet is open
+  const side = Math.min(stage.clientWidth - parseFloat(getComputedStyle(stage).paddingInlineEnd), stage.clientHeight);
   return [side * 0.3, side * 0.92];
 };
 const apply = (next) => {
@@ -67,6 +68,9 @@ const tick = (now) => {
   step(fps, fastest);
 };
 addEventListener('resize', () => { ceiling = Infinity; });
+// The Controls sheet narrows the stage while it is open: clamp the size to the room left.
+new MutationObserver(() => { if (size && stage.hasAttribute('data-adaptive')) requestAnimationFrame(() => apply(size)); })
+  .observe(document.documentElement, { attributes: true, attributeFilter: ['data-sheet-open'] });
 const sync = () => {
   cancelAnimationFrame(raf);
   last = since = 0; gaps = []; target = 0; size = 0; ceiling = Infinity; calm = 0; shrinks = 0; probing = false; probeIn = 15;

@@ -502,6 +502,11 @@ input[type=color]{height:1.6rem;padding:0;border:1px solid var(--line);border-ra
 .pick{display:flex;gap:.4rem;align-items:center;color:var(--dim)}
 select{padding:.2rem .3rem;border:1px solid var(--line);border-radius:.3rem;background:none}
 .reset{display:block;margin:.6rem 0 0 auto}
+.row .switch{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.row .switch input{appearance:none;position:relative;width:2.1rem;block-size:1.2rem;margin:0;border-radius:99rem;background:var(--line);cursor:pointer;transition:background .15s}
+.row .switch input::before{content:"";position:absolute;inset:.15rem auto .15rem .15rem;aspect-ratio:1;border-radius:50%;background:var(--bg);box-shadow:0 1px 2px #0004;transition:translate .15s}
+.row .switch input:checked{background:var(--fg)}
+.row .switch input:checked::before{translate:.9rem 0}
 `;
 
 /* The edge tab: a slim handle on the window's right edge, vertically centred; the controls slide out beside it. It dims
@@ -539,8 +544,6 @@ button{cursor:pointer}
 .switch input::before{content:"";position:absolute;inset:.15rem auto .15rem .15rem;aspect-ratio:1;border-radius:50%;background:var(--bg);box-shadow:0 1px 2px #0004;transition:translate .15s}
 .switch input:checked{background:var(--fg)}
 .switch input:checked::before{translate:.9rem 0}
-.row .switch{grid-column:1/-1}
-.row .switch input{width:2.1rem;margin:0;grid-column:auto}
 .progress{block-size:3px;border-radius:99rem;background:var(--line);overflow:hidden}
 .progress i{display:block;block-size:100%;background:var(--fg);transform-origin:0 50%;scale:0 1}
 .state,.reduced{margin:0;color:var(--dim)}
@@ -613,6 +616,8 @@ class SceneStats extends HTMLElement {
     root.querySelector('.close').addEventListener('click', () => this.close());
     this.sheet.addEventListener('toggle', (e) => {
       const open = e.newState === 'open';
+      // Scenes can make room for the sheet: html[data-sheet-open] is set while it is open (see kaleidoscope).
+      document.documentElement.toggleAttribute('data-sheet-open', open);
       store.set('tab', open ? this.tab : '');
       this.sync();
       if (open) this.update();

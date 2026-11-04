@@ -140,7 +140,7 @@ Each layer starts at a random resting angle and a random point in each of its cy
 
 ### Optional adaptive size: a small script fits the eyepiece to the frame rate
 
-The scene is CSS only until you turn on **Fit size to frame rate** in Controls. The switch sets `data-adaptive` on the stage, and a small `scene.js` starts counting frames. Once a second it compares the frame rate with the display's refresh rate. Below 90% of that rate, the eyepiece shrinks by 12% at once. After two smooth seconds in a row (at least 95%), it grows by 4%. It doesn't grow straight back to a size that dropped frames, but it tries again after thirty smooth seconds. Its size stays between 30% and 92% of the shorter window side.
+The scene is CSS only until you turn on **Fit size to frame rate** in Controls. The switch sets `data-adaptive` on the stage, and a small `scene.js` starts counting frames. Once a second it compares the frame rate with the display's refresh rate. Below 90% of that rate, the eyepiece shrinks by 12% at once. After two smooth seconds in a row (at least 95%), it grows by 4%. It doesn't grow straight back to a size that dropped frames, but it tries again after thirty smooth seconds. Its size stays between 30% and 92% of the shorter side of the stage.
 
 A page can't read the refresh rate, and the rate changes: a Mac on battery drops from 60 Hz to 30 Hz. So the script works it out:
 
@@ -160,7 +160,9 @@ Turn the switch off and the property is removed, so the eyepiece goes back to `m
 
 ### Extra glass layers and mirrors from Controls
 
-Controls can add mirrors and glass layers by cloning elements. A clone's CSS animations start when it is inserted, so before this fix added wedges ran behind the originals, and part of the circle stopped matching the rest. The panel now gives each clone's animations the start time of the matching animation on an existing sibling, so every wedge stays on the same clock. Each added glass layer is only loose beads (no rings or shards) turned to a new angle, so more layers add sparkle instead of clutter. The mirror count goes from 6 to 48, because 4 mirrors would need `tan(90deg)`.
+Controls can add mirrors and glass layers by cloning elements. A clone's CSS animations start when it is inserted, so before this fix added wedges ran behind the originals, and part of the circle stopped matching the rest. The panel now gives each clone's animations the start time of the matching animation on an existing sibling, so every wedge stays on the same clock. Each added glass layer is only loose beads (no rings or shards) turned to a new angle, so more layers add sparkle instead of clutter. The mirror count goes from 6 (4 mirrors would need `tan(90deg)`) to 32, and glass layers go up to 4. Every glass layer is three composited, animated layers in every wedge, so the old maximum (48 × 6) meant 864 large layers. That is enough to run a GPU short of memory, and other things on screen, such as the Controls sheet, then fail to paint.
+
+While the Controls sheet is open on a window at least 48rem wide, the panel sets `data-sheet-open` on `<html>`. The scene pads the stage by the sheet's width and caps the eyepiece to the room left (`--room`), so the sheet never sits over the glass. That also spares its `backdrop-filter` blur from re-reading every layer each frame. The glow behind the eyepiece uses `background-origin: content-box`, so it stays centred on the eyepiece.
 
 ## Performance notes
 
