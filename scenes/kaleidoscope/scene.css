@@ -3,10 +3,12 @@
 @layer scene {
   .stage {
     /* Eyepiece size; every wedge and glass piece is sized from --r so the scope scales as one */
-    --room: 100vw; /* width left for the eyepiece; less while the Controls sheet is open */
-    --d: var(--fit-d, min(84vmin, 42rem, var(--room) * 0.92)); /* --fit-d: set by scene.js when adaptive size is on */
+    /* Sized from the stage's own box (cqmin), not the viewport: the gallery's controls column and an open sheet
+       make the stage smaller than the window. --fit-d: set by scene.js when adaptive size is on. */
+    container-type: size;
+    --d: var(--fit-d, min(84cqmin, 42rem));
     --r: calc(var(--d) / 2);
-    --rim: max(10px, 1.8vmin);
+    --rim: max(10px, 1.8cqmin);
     /* Local glass colours (light-dark: daylight stained glass / lamp-lit jewels) */
     --ruby: light-dark(#e8003dcc, #ff2d55);
     --amber: light-dark(#ff9d00cc, #ffb000);
@@ -26,9 +28,7 @@
      animated layers can fail to paint (it showed as an empty translucent box), and its blur would re-read them. */
   @media (width >= 48rem) {
     :root[data-sheet-open] .stage {
-      --sheet: calc(min(22rem, 100vw - 1.5rem) + 1.5rem);
-      --room: calc(100vw - var(--sheet));
-      padding-inline-end: var(--sheet);
+      padding-inline-end: calc(min(22rem, 100vw - 1.5rem) + 1.5rem);
     }
   }
   @media (prefers-color-scheme: light) {
@@ -40,7 +40,7 @@
     position: relative;
     padding: var(--rim);
     border-radius: 50%;
-    box-shadow: 0 2vmin 6vmin #0008, 0 0 0 1px #0006;
+    box-shadow: 0 2cqmin 6cqmin #0008, 0 0 0 1px #0006;
   }
   /* the barrel's brushed-brass highlights turn with the object cell, so you can see the tube turning */
   .tube::before {
