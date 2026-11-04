@@ -8,10 +8,10 @@ description: Art-direct a new full-window CSS scene and produce an approved-read
 Output: `scenes/<slug>/brief.md`. No scene CSS in this step.
 
 ## Process
-1. **Concept** — one sentence a stranger would get ("dusk over a layered mountain range, scroll moves the sun"). Mood, 3–5 word motion language ("slow, drifting, parallax").
+1. **Concept** — one sentence a stranger would get ("dusk over a layered mountain range as the sun sets"). Mood, 3–5 word motion language ("slow, drifting, parallax").
 2. **Palette & tokens** — reuse tokens from `packages/tokens/tokens.json` where possible; list any new tokens needed (with `light-dark()` values). Check contrast of text/key shapes in both schemes.
 3. **Composition** — layers back-to-front, what each is (gradient, inline SVG, pseudo-element), rough count. Fewer layers = fewer compositor layers; justify each.
-4. **Motion plan** — for each animation: property, trigger (time / scroll / hover / view), duration, and whether it is compositor-safe (`transform`, `opacity`, `filter`, individual `translate/rotate/scale`). Paint-cost animations (e.g. `@property` gradients, large blur) must be flagged `paint-ok` with a reason.
+4. **Motion plan** — for each animation: property, trigger (time / hover / state; scenes play on the clock, not on scroll, and the shared playback tab sets speed and loop), duration, and whether it is compositor-safe (`transform`, `opacity`, `filter`, individual `translate/rotate/scale`). Paint-cost animations (e.g. `@property` gradients, large blur) must be flagged `paint-ok` with a reason.
 5. **Techniques & support** — run `modern-web-guidance` search for every feature considered (mandatory), note Baseline status, and define the fallback (`@supports` → simpler or static scene). Prefer a technique that is novel *and* teachable; that is what the write-up will explain.
 6. **Reduced motion** — what the scene looks like with `prefers-reduced-motion: reduce` (static composed frame, not a blank one).
 7. **Exceptions** — the baseline is no JS, system fonts, CSS/inline-SVG only. Exceptions are allowed when design needs them: declare each in the brief with a one-line justification and its byte cost (`meta.json` `exceptions`). Don't add one for convenience.

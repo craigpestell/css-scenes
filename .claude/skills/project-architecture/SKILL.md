@@ -54,9 +54,10 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `sites/source/`: the generated How it's made page (write-up beside the code), syntax highlighting, and a small
   Markdown renderer (`markdown.js`) for `writeup.md`. It supports only what write-ups use; extend it when one needs more.
 - `sites/stats/stats.js`: build-time stats and feature-test mapping.
-- `sites/stats/panel.js`: browser-only scene sheet below the dock, with About, Controls (scroll dial, auto-play,
-  animation speed, colour scheme, scene `params`) and Stats (performance, size, compatibility, environment) tabs. It adds
-  its tab buttons to the dock's tools.
+- `sites/stats/panel.js`: browser-only scene sheet below the dock, with About, Controls (colour
+  scheme, scene `params`) and Stats (performance, size, compatibility, environment) tabs. It adds its tab buttons to the
+  dock's tools. It also adds `<scene-playback>`, a tab fixed to the window's right edge with speed, loop, pause and
+  restart, applied to the `.stage` animations through the Web Animations API. Scenes play on the clock, never on scroll.
 - `.claude/`: scene design/build/review/write-up workflow; `/new-scene` is the
   human-approval-gated orchestrator.
 - `vercel.json`: static deployment of `dist/`; no framework runtime or serverless functions.

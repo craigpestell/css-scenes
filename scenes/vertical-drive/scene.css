@@ -7,7 +7,7 @@
 
 @layer scene {
   .stage {
-    /* three laps. Time-based loop by default; the scrollbar drives it where scroll timelines exist */
+    /* three laps, on the clock; the playback tab sets speed and whether it repeats */
     --loop: 30s;
     --lime: #d2ff00;
     --night: #111112;
@@ -24,7 +24,6 @@
       repeating-radial-gradient(ellipse at 88% 12%, #0000 0 7vmin, var(--contour) 0 calc(7vmin + 1px)),
       var(--bg);
   }
-  .runway { display: none; }
 
   /* The board keeps the SVG's 100 x 160 aspect, so viewBox units and percentages map 1:1 */
   .board {
@@ -85,13 +84,11 @@
     }
   }
 
-  .hud, .hint {
+  .hud {
     position: absolute;
     margin: 0;
     font: 600 clamp(0.8rem, 2.4vmin, 1.25rem)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
     letter-spacing: 0.08em;
-  }
-  .hud {
     inset: 3vmin auto auto 3vmin;
     padding: 0.4em 0.8em;
     border-radius: 0.5em;
@@ -112,30 +109,8 @@
     66.6% { --lap: 2; } 66.7% { --lap: 3; }
     100% { --cs: 26400; --lap: 3; --pos: 1; }
   }
-  .hint {
-    display: none;
-    inset: auto 0 4vmin;
-    color: var(--paint);
-    text-align: center;
-    animation: fade var(--loop) linear both;
-  }
-  @keyframes fade { 3%, 100% { opacity: 0; } }
-
-  @supports (animation-timeline: scroll()) {
-    body { overflow: auto; }
-    .runway { display: block; block-size: 900dvh; }
-    .hint { display: block; }
-    .car, .hud, .hint {
-      animation-duration: auto;
-      animation-iteration-count: 1;
-      animation-timeline: scroll(root);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .stage *, .stage *::before, .stage *::after { animation: none !important; }
-    .runway, .hint { display: none; }
-    body { overflow: clip; }
     /* still frame: last lap, you lead out of the final corner with the pack behind */
     .you { offset-distance: 97%; }
     .rival { offset-distance: calc(94% - var(--i) * 3%); }

@@ -4,13 +4,13 @@ slug: full-send
 ---
 ## The idea
 
-A race-day poster built by scrolling. The outlines of FULL SEND draw themselves in, lime floods the letters from the bottom up, and colour sweeps across ALL GAS, NO BRAKES. All the while, a tilted lime ticker slides behind the word. No JavaScript and no web fonts.
+A race-day poster that builds itself. The outlines of FULL SEND draw themselves in, lime floods the letters from the bottom up, and colour sweeps across ALL GAS, NO BRAKES. All the while, a tilted lime ticker slides behind the word. No JavaScript and no web fonts.
 
 ## Techniques
 
 ### stroke-dashoffset draw-in on SVG text, shared through <use>
 
-The word is two `<text>` lines in a `<defs>` group. A dash longer than any glyph's outline, offset by its own length, starts invisible. Scrolling the offset to 0 draws every glyph at once. The dash pattern restarts for each glyph, so the letters draw in together:
+The word is two `<text>` lines in a `<defs>` group. A dash longer than any glyph's outline, offset by its own length, starts invisible. Animating the offset to 0 draws every glyph at once. The dash pattern restarts for each glyph, so the letters draw in together:
 
 ```css
 .line {
@@ -61,23 +61,15 @@ web-features lists `background-clip: text` as limited availability. Outside the 
 
 Every base style describes the finished poster (`stroke-dashoffset: 0`, `clip-path: inset(0)`, `background-position: 0 0`). Keyframes only say where things start, as in `@keyframes approach { from { scale: 0.9; } }`. Reduced motion therefore needs no still-frame values at all: turning animation off shows the end state.
 
-### One keyframe script on two timelines
+### One alternating clock
 
-A shared shorthand gives every stage child the same clock. Without scroll timelines it runs a 9s loop that alternates forwards and back, so the poster draws and undraws instead of snapping back to empty. With scroll timelines it runs once, forwards, on the scrollbar:
+A shared shorthand gives every stage child the same clock: a 9s loop that alternates forwards and back, so the poster draws and undraws instead of snapping back to empty.
 
 ```css
-@supports (animation-timeline: scroll()) {
-  body { overflow: auto; }
-  .runway { display: block; block-size: 400dvh; }
-  .hint { display: block; }
-  .stage { --dir: normal; }
-  .stage > *, .flood, .line, .band span {
-    animation-duration: auto;
-    animation-iteration-count: 1;
-    animation-timeline: scroll(root);
-  }
-}
+.stage > * { animation: var(--loop) linear infinite var(--dir) both; }
 ```
+
+With the playback tab's loop off, the scene finishes on a forwards pass and holds the finished poster.
 
 ## Performance notes
 
@@ -91,7 +83,7 @@ A build gotcha: Lightning CSS turned `font-stretch: condensed` plus the `font` s
 
 ## Accessibility
 
-- `prefers-reduced-motion: reduce` shows the finished poster and stops the page scrolling. Checked in headless Chromium at 1280 and 390 px wide, light and dark.
+- `prefers-reduced-motion: reduce` shows the finished poster. Checked in headless Chromium at 1280 and 390 px wide, light and dark.
 - The outline is ink in both schemes, so the letters read before the lime arrives. Once swept, the tagline is near-black on paper (light) or lime on near-black (dark).
 - The SVG, tagline and ticker are `aria-hidden`; the stage's `aria-label` says what is shown.
 

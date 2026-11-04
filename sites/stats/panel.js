@@ -7,9 +7,9 @@
  * The tab buttons go into the dock's tools (light DOM, styled by the dock) and the sheet lives in a shadow root. Each tab
  * holds { title, render(el), update?(el) } sections, so new sections slot in without touching the shell.
  *
- * Controls: a dial that scrolls the page (scroll-driven scenes run on the scrollbar), auto-play, a speed multiplier for
- * time-based animations, a colour-scheme override, and the scene's own meta.json `params`. Nothing in Controls persists;
- * Reset restores the page as authored. The open tab is remembered per browser.
+ * Controls: a colour-scheme override and the scene's own meta.json `params`. Playback (speed, loop, pause, restart) is a
+ * separate tab fixed to the window's edge, <scene-playback>, so it stays in reach with the sheet closed. Nothing in either
+ * persists; Reset restores the page as authored. Which tab is open, and whether the edge tab is open, are remembered.
  */
 const data = JSON.parse(document.getElementById('scene-stats')?.textContent ?? 'null');
 const html = document.documentElement;
@@ -153,46 +153,174 @@ const SECTIONS = [
   },
 ];
 
+/* Playback: every scene runs on the clock (the document timeline), never on the scrollbar. The edge tab holds speed,
+ * loop, pause and restart; they act on the stage's animations through the Web Animations API, so scenes need no script.
+ *
+ * Loop off means one pass, then a still: the scene's longest repeating animation (its cycle, such as a launch or a race)
+ * finishes the pass it is on and holds its last frame, and everything else stops with it. An alternating cycle finishes
+ * on a forwards pass, so it holds the authored end. Turning loop back on after the hold plays the scene from the start.
+ */
+const play = { rate: 1, paused: false, loop: true, held: false, scheme: '' };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+const stageAnims = () => (document.getAnimations?.() ?? []).filter((a) =>
+  a.timeline instanceof DocumentTimeline && a.effect?.target?.closest?.('.stage'));
+const infinite = new WeakSet(); // animations authored to repeat, remembered before loop-off rewrites their iterations
+const cycleOf = (list) => {
+  list.forEach((a) => { if (a.effect.getTiming().iterations === Infinity) infinite.add(a); });
+  const loops = list.filter((a) => infinite.has(a));
+  const len = (a) => Number(a.effect.getTiming().duration) || 0;
+  const max = Math.max(0, ...loops.map(len));
+  return { max, cycle: loops.filter((a) => len(a) >= max * 0.999 && max > 0) };
+};
+
+/** Make the cycle's animations end after the pass they are on (forwards, for alternating ones) or repeat again. */
+const setIterations = (cycle) => {
+  for (const a of cycle) {
+    const t = a.effect.getTiming();
+    if (play.loop) { if (t.iterations !== Infinity) a.effect.updateTiming({ iterations: Infinity }); continue; }
+    if (t.iterations !== Infinity) continue; // already ending
+    const n = a.effect.getComputedTiming().currentIteration ?? 0;
+    const flips = t.direction === 'alternate' || t.direction === 'alternate-reverse';
+    const backwards = (t.direction === 'alternate' && n % 2) || (t.direction === 'alternate-reverse' && !(n % 2));
+    a.effect.updateTiming({ iterations: n + 1 + (flips && backwards ? 1 : 0), fill: 'both' });
+  }
+};
+
+/** Keep every stage animation at the chosen speed and loop setting. Runs on changes and twice a second, because CSS
+ * replaces animations when a property they read changes (a scene param, the colour scheme). */
+const syncPlayback = () => {
+  const list = stageAnims();
+  const { cycle } = cycleOf(list);
+  setIterations(cycle);
+  if (!play.loop && !play.held && cycle.length && cycle.every((a) => a.playState === 'finished')) play.held = true;
+  const r = play.paused || play.held ? 0 : play.rate;
+  for (const a of list) if (a.playbackRate !== r && a.playState !== 'finished') a.playbackRate = r;
+  playback?.render();
+};
+
+/** Every stage animation back to its first frame, playing. */
+const restart = () => {
+  play.held = false;
+  for (const a of stageAnims()) {
+    if (infinite.has(a)) a.effect.updateTiming({ iterations: Infinity });
+    a.currentTime = 0;
+    a.play();
+  }
+  syncPlayback();
+};
+const setLoop = (on) => {
+  play.loop = on;
+  if (on && play.held) restart(); // the still was the end of the pass; looping again starts the next one
+  else syncPlayback();
+};
+const resetPlayback = () => {
+  Object.assign(play, { rate: 1, paused: false });
+  setLoop(true);
+};
+
+/** How far the cycle is through its current pass, 0 to 1, for the tab's progress bar. */
+const progress = () => {
+  const { cycle } = cycleOf(stageAnims());
+  const t = cycle[0]?.effect.getComputedTiming();
+  if (!t) return null;
+  if (cycle[0].playState === 'finished') return 1;
+  const p = t.progress ?? 0;
+  return t.direction === 'reverse' || (t.direction === 'alternate' && t.currentIteration % 2) ? 1 - p : p;
+};
+
+class ScenePlayback extends HTMLElement {
+  connectedCallback() {
+    const root = this.attachShadow({ mode: 'open' });
+    root.innerHTML = `<style>${PLAYBACK_CSS}</style>
+      <div class="tab">
+        <button class="handle" aria-expanded="false" aria-controls="pb" title="Playback (P)">
+          <span class="icon" aria-hidden="true"></span><span class="word">Playback</span></button>
+        <div id="pb" class="body" role="group" aria-label="Playback" hidden>
+          <p class="reduced" hidden>Your system asks for reduced motion, so this scene shows a still frame.</p>
+          <div class="buttons">
+            <button type="button" class="btn" data-a="pause" aria-pressed="false">Pause</button>
+            <button type="button" class="btn" data-a="restart">Restart</button>
+          </div>
+          <div class="row"><label for="pb-rate">Speed</label><output for="pb-rate">1×</output>
+            <input type="range" id="pb-rate" min="0.1" max="4" step="0.05" value="1" list="pb-marks">
+            <datalist id="pb-marks"><option value="0.5"></option><option value="1"></option><option value="2"></option></datalist></div>
+          <label class="switch"><span>Loop</span><input type="checkbox" role="switch" data-a="loop" checked></label>
+          <div class="progress" aria-hidden="true"><i></i></div>
+          <p class="state" aria-live="polite"></p>
+        </div>
+      </div>`;
+    this.handle = root.querySelector('.handle');
+    this.body = root.getElementById('pb');
+    this.rate = root.getElementById('pb-rate');
+    this.bar = root.querySelector('.progress i');
+    this.state = root.querySelector('.state');
+    this.handle.addEventListener('click', () => this.toggle());
+    this.body.addEventListener('input', (e) => {
+      if (e.target === this.rate) { play.rate = +this.rate.value; syncPlayback(); }
+      if (e.target.dataset.a === 'loop') setLoop(e.target.checked);
+    });
+    this.body.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (b?.dataset.a === 'pause') { play.paused = !play.paused; syncPlayback(); }
+      if (b?.dataset.a === 'restart') restart();
+    });
+    // 1× is a double-click away on the slider
+    this.rate.addEventListener('dblclick', () => { play.rate = 1; syncPlayback(); });
+    addEventListener('keydown', (e) => {
+      if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return;
+      if (e.composedPath().some((el) => el.matches?.('input,select,textarea,[contenteditable]'))) return;
+      if (e.key === 'Escape' && !this.body.hidden) { this.toggle(false); this.handle.focus(); }
+      else if (e.key === 'p' || e.key === 'P') this.toggle();
+    });
+    reduced.addEventListener('change', () => this.render());
+    // While open, the progress bar follows the cycle every frame
+    this.tick = () => { if (!this.body.hidden) { this.paint(); requestAnimationFrame(this.tick); } };
+    this.toggle(store.get('playback') === 'open');
+  }
+
+  toggle(open = this.body.hidden) {
+    this.body.hidden = !open;
+    this.handle.setAttribute('aria-expanded', open);
+    store.set('playback', open ? 'open' : '');
+    this.render();
+    if (open) requestAnimationFrame(this.tick);
+  }
+
+  paint() {
+    const p = progress();
+    this.bar.parentElement.hidden = p === null || reduced.matches;
+    if (p !== null) this.bar.style.scale = `${p} 1`;
+  }
+
+  render() {
+    if (!this.body) return;
+    const off = reduced.matches;
+    this.body.querySelector('.reduced').hidden = !off;
+    this.body.querySelectorAll('button,input').forEach((el) => { el.disabled = off; });
+    const pause = this.body.querySelector('[data-a=pause]');
+    pause.setAttribute('aria-pressed', play.paused);
+    pause.textContent = play.paused ? 'Play' : 'Pause';
+    if (+this.rate.value !== play.rate) this.rate.value = play.rate;
+    this.body.querySelector('output').value = `${+play.rate.toFixed(2)}×`;
+    this.body.querySelector('[data-a=loop]').checked = play.loop;
+    this.handle.dataset.state = off ? 'still' : play.held ? 'ended' : play.paused ? 'paused' : 'playing';
+    const text = off ? '' : play.held ? 'Played once. Restart, or turn loop on, to play again.' : play.paused ? 'Paused.' : '';
+    if (this.state.textContent !== text) this.state.textContent = text;
+    this.paint();
+  }
+}
+let playback;
+
 /* Controls. Scene params come from meta.json:
- *   { "type": "range", "label", "var": "--x", "target"?: ".stage", "min", "max", "step", "value", "unit"?, "when"?: "time" }
+ *   { "type": "range", "label", "var": "--x", "target"?: ".stage", "min", "max", "step", "value", "unit"? }
  *     sets a custom property inline on target; `value` is the authored default, and Reset removes the inline value.
  *   { "type": "count", "label", "selector", "min", "max", "step"? }
  *     clones or removes elements matching selector inside each of their parents, then sets --i (1-based index) and
  *     --n (count) inline on each, so --i-driven CSS keeps working where sibling-index() is missing.
  *   { "type": "color", "label", "var", "target"?, "value" }
- * "when": "time" hides a param where scroll timelines drive the scene, since it only affects the time-based fallback.
+ * Playback (speed, loop, pause) lives in the edge tab, not here.
  */
-const scroller = document.scrollingElement;
-const scrollRange = () => scroller.scrollHeight - innerHeight;
-const scrollDriven = () => CSS.supports('animation-timeline: scroll()') && scrollRange() > 1;
-const play = { rate: 1, paused: false, auto: false, run: 20, scheme: '' };
-const TURN = 4; // dial turns for one full scroll of the page
-
-/* Speed applies to animations on the document timeline; scroll-linked ones follow the scrollbar instead. */
-const applyRate = () => {
-  const r = play.paused ? 0 : play.rate;
-  for (const a of document.getAnimations?.() ?? []) {
-    if (a.timeline instanceof DocumentTimeline && a.playbackRate !== r) a.playbackRate = r;
-  }
-};
-
-/* Auto-play scrolls through the page once every `run` seconds, then starts over. A manual scroll moves its position. */
-let autoPos = 0, autoLast = 0;
-const autoTick = (t) => {
-  if (!play.auto) return;
-  const range = scrollRange();
-  if (Math.abs(scroller.scrollTop - autoPos) > 2) autoPos = scroller.scrollTop;
-  autoPos += autoLast ? (range * Math.min(t - autoLast, 100)) / (play.run * 1000) : 0;
-  if (autoPos >= range) autoPos = 0;
-  autoLast = t;
-  scroller.scrollTop = autoPos;
-  requestAnimationFrame(autoTick);
-};
-const setAuto = (on) => {
-  play.auto = on; autoLast = 0; autoPos = scroller.scrollTop;
-  if (on) requestAnimationFrame(autoTick);
-};
-
 const counts = new Map(); // selector -> { template, homes: [{ parent, anchor }], initial }
 const countSetup = (p) => {
   const els = [...document.querySelectorAll(p.selector)];
@@ -231,7 +359,7 @@ const hex = (c) => {
 };
 
 const controlsSection = {
-  title: 'Playback',
+  title: 'Scene',
   render: (el) => {
     const id = (i) => `ctl-${i}`;
     const rows = data.params.map((p, i) => {
@@ -242,28 +370,16 @@ const controlsSection = {
       const input = p.type === 'color'
         ? `<input type="color" id="${id(i)}" value="${esc(p.value)}">`
         : `<input type="range" id="${id(i)}" min="${p.min}" max="${p.max}" step="${p.step ?? 1}" value="${p.value}">`;
-      return `<div class="row" data-p="${i}"${p.when === 'time' && scrollDriven() ? ' hidden' : ''}>
+      return `<div class="row" data-p="${i}">
         <label for="${id(i)}">${esc(p.label)}</label><output for="${id(i)}">${esc(show(p, p.value))}</output>${input}</div>`;
     }).join('');
-    el.innerHTML = `<div class="scroll" hidden>
-        <div class="dial" role="slider" tabindex="0" aria-label="Scroll position" aria-valuemin="0" aria-valuemax="100"
-          aria-valuenow="0" aria-valuetext="0%"><i></i></div>
-        <div class="stack">
-          <button type="button" class="btn" data-a="auto" aria-pressed="false">Auto-play</button>
-          <div class="row"><label for="ctl-run">Full run</label><output for="ctl-run">20 s</output>
-            <input type="range" id="ctl-run" min="2" max="90" step="1" value="20"></div>
-        </div>
-      </div>
-      <div class="row"><label for="ctl-rate">Animation speed</label><output for="ctl-rate">1×</output>
-        <input type="range" id="ctl-rate" min="0" max="4" step="0.05" value="1"></div>
+    el.innerHTML = `<p class="note">Speed and loop are in the Playback tab on the edge of the window.</p>
       <div class="pair">
-        <button type="button" class="btn" data-a="pause" aria-pressed="false">Pause</button>
         <label class="pick">Scheme <select data-a="scheme"><option value="">auto</option><option>light</option><option>dark</option></select></label>
       </div>
-      ${rows ? `<h3>Scene</h3>${rows}` : ''}
+      ${rows}
       <button type="button" class="btn reset" data-a="reset">Reset all</button>`;
 
-    const dial = el.querySelector('.dial');
     const out = (id, v) => { el.querySelector(`output[for="${id}"]`).value = v; };
     const applyParam = (p, v) => {
       if (p.type === 'count') {
@@ -271,14 +387,12 @@ const controlsSection = {
         p.current = +v;
         data.params.filter((q) => q.type === 'count' && counts.has(q.selector)).forEach((q) => setCount(q, q.current ?? q.value));
       } else targets(p).forEach((t) => t.style.setProperty(p.var, fmt(p, v)));
-      applyRate();
+      syncPlayback();
     };
 
     el.addEventListener('input', (e) => {
       const t = e.target;
-      if (t.id === 'ctl-rate') { play.rate = +t.value; out(t.id, `${play.rate}×`); applyRate(); }
-      else if (t.id === 'ctl-run') { play.run = +t.value; out(t.id, `${play.run} s`); }
-      else if (t.dataset.a === 'scheme') { play.scheme = t.value; html.style.colorScheme = t.value; }
+      if (t.dataset.a === 'scheme') { play.scheme = t.value; html.style.colorScheme = t.value; }
       else {
         const p = data.params[t.closest('[data-p]')?.dataset.p];
         if (!p) return;
@@ -287,74 +401,21 @@ const controlsSection = {
       }
     });
     el.addEventListener('click', (e) => {
-      const b = e.target.closest('button');
-      if (!b) return;
-      const press = (on) => b.setAttribute('aria-pressed', on);
-      if (b.dataset.a === 'auto') { setAuto(!play.auto); press(play.auto); }
-      if (b.dataset.a === 'pause') { play.paused = !play.paused; press(play.paused); applyRate(); }
-      if (b.dataset.a === 'reset') {
-        Object.assign(play, { rate: 1, paused: false, scheme: '' });
-        setAuto(false);
-        html.style.colorScheme = '';
-        data.params.forEach((p, i) => {
-          const input = el.querySelector(`#${id(i)}`);
-          if (!input) return;
-          input.value = p.value;
-          out(input.id, show(p, p.value));
-          if (p.type === 'count') applyParam(p, p.value);
-          else targets(p).forEach((t) => t.style.removeProperty(p.var));
-        });
-        el.querySelector('#ctl-rate').value = 1; out('ctl-rate', '1×');
-        play.run = 20; el.querySelector('#ctl-run').value = 20; out('ctl-run', '20 s');
-        el.querySelector('[data-a=scheme]').value = '';
-        el.querySelectorAll('[aria-pressed]').forEach((x) => x.setAttribute('aria-pressed', 'false'));
-        applyRate();
-      }
-    });
-
-    /* The dial is a jog wheel: turning it scrolls the page, TURN turns from top to bottom, and its ring shows progress. */
-    const scrollBy = (dy) => { scroller.scrollTop += dy; };
-    let angle = null;
-    const at = (e) => {
-      const r = dial.getBoundingClientRect();
-      return (Math.atan2(e.clientY - r.top - r.height / 2, e.clientX - r.left - r.width / 2) * 180) / Math.PI;
-    };
-    dial.addEventListener('pointerdown', (e) => { dial.setPointerCapture(e.pointerId); angle = at(e); });
-    dial.addEventListener('pointermove', (e) => {
-      if (angle === null) return;
-      const a = at(e);
-      const d = ((a - angle + 540) % 360) - 180; // shortest way round, so crossing ±180° doesn't jump
-      angle = a;
-      scrollBy((d / 360 / TURN) * scrollRange());
-    });
-    dial.addEventListener('pointerup', () => { angle = null; });
-    dial.addEventListener('pointercancel', () => { angle = null; });
-    dial.addEventListener('keydown', (e) => {
-      const range = scrollRange();
-      const step = { ArrowUp: -0.01, ArrowLeft: -0.01, ArrowDown: 0.01, ArrowRight: 0.01, PageUp: -0.1, PageDown: 0.1 }[e.key];
-      if (step) scrollBy(step * range);
-      else if (e.key === 'Home') scroller.scrollTop = 0;
-      else if (e.key === 'End') scroller.scrollTop = range;
-      else return;
-      e.preventDefault();
-    });
-    const sync = () => {
-      const p = scrollRange() > 1 ? scroller.scrollTop / scrollRange() : 0;
-      dial.style.setProperty('--p', p);
-      const pct = Math.round(p * 100);
-      dial.setAttribute('aria-valuenow', pct);
-      dial.setAttribute('aria-valuetext', `${pct}%`);
-    };
-    addEventListener('scroll', sync, { passive: true });
-    controlsSection.layout = () => {
-      el.querySelector('.scroll').hidden = scrollRange() <= 1;
-      el.querySelectorAll('[data-p]').forEach((r) => {
-        r.hidden = data.params[r.dataset.p].when === 'time' && scrollDriven();
+      if (e.target.closest('button')?.dataset.a !== 'reset') return;
+      play.scheme = '';
+      html.style.colorScheme = '';
+      el.querySelector('[data-a=scheme]').value = '';
+      data.params.forEach((p, i) => {
+        const input = el.querySelector(`#${id(i)}`);
+        if (!input) return;
+        input.value = p.value;
+        out(input.id, show(p, p.value));
+        if (p.type === 'count') applyParam(p, p.value);
+        else targets(p).forEach((t) => t.style.removeProperty(p.var));
       });
-      sync();
-    };
+      resetPlayback();
+    });
   },
-  update: () => { controlsSection.layout(); applyRate(); },
 };
 
 const CSS_TEXT = `
@@ -407,20 +468,57 @@ li{display:grid;grid-template-columns:auto 1fr;gap:.5rem;align-items:start}
 .row input{grid-column:1/-1;width:100%;margin:.2rem 0 0;accent-color:var(--fg)}
 input[type=color]{height:1.6rem;padding:0;border:1px solid var(--line);border-radius:.3rem;background:none}
 [hidden]{display:none!important}
-.scroll{display:grid;grid-template-columns:auto 1fr;gap:.8rem;align-items:center;margin:0 0 .6rem}
-.stack .row{margin:.5rem 0 0}
-.dial{--p:0;position:relative;width:5rem;aspect-ratio:1;border-radius:50%;touch-action:none;cursor:grab;
-  background:conic-gradient(var(--fg) calc(var(--p) * 1turn),var(--line) 0)}
-.dial:active{cursor:grabbing}
-.dial i{position:absolute;inset:.35rem;border-radius:50%;background:var(--bg);box-shadow:inset 0 1px 4px #0003;
-  rotate:calc(var(--p) * ${TURN}turn)}
-.dial i::before{content:"";position:absolute;inset:.3rem auto auto calc(50% - .15rem);width:.3rem;height:.9rem;border-radius:.2rem;background:var(--fg)}
 .pair{display:flex;gap:.5rem;align-items:center;justify-content:space-between;margin:0 0 .3rem}
 .btn{padding:.3rem .7rem;border:1px solid var(--line);border-radius:99rem;background:none}
 .btn[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .pick{display:flex;gap:.4rem;align-items:center;color:var(--dim)}
 select{padding:.2rem .3rem;border:1px solid var(--line);border-radius:.3rem;background:none}
 .reset{display:block;margin:.6rem 0 0 auto}
+`;
+
+/* The edge tab: a slim handle on the window's right edge, vertically centred; the controls slide out beside it. It dims
+   with the dock on hover devices and wakes on hover or focus. */
+const PLAYBACK_CSS = `
+:host{all:initial;color-scheme:inherit;position:fixed;z-index:9;inset:50% 0 auto auto;translate:0 -50%;
+  --bg:light-dark(#fffe,#0f0e18f0);--fg:light-dark(#14121f,#f4f1ff);--dim:light-dark(#5d5a70,#a29fb8);--line:light-dark(#14121f1f,#fff2);
+  font:12px/1.45 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--fg)}
+.tab{display:flex;align-items:center;filter:drop-shadow(0 .5rem 1.2rem #0004)}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.handle{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:.8rem .45rem;border:0;border-radius:.8rem 0 0 .8rem;
+  background:var(--bg);box-shadow:0 0 0 1px var(--line);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-weight:600}
+.handle:hover{background:light-dark(#fff,#1a1828f5)}
+.word{writing-mode:vertical-rl;rotate:180deg;letter-spacing:.04em}
+.icon{inline-size:.7rem;aspect-ratio:1;background:currentColor;clip-path:polygon(15% 0,100% 50%,15% 100%)}
+.handle[data-state=paused] .icon{clip-path:polygon(0 0,35% 0,35% 100%,0 100%,0 0,65% 0,100% 0,100% 100%,65% 100%,65% 0)}
+.handle[data-state=ended] .icon,.handle[data-state=still] .icon{clip-path:none;border-radius:2px;scale:.85}
+.body{display:grid;gap:.7rem;inline-size:min(14rem,calc(100vw - 4rem));padding:.8rem;border-radius:.9rem 0 0 .9rem;
+  background:var(--bg);box-shadow:0 0 0 1px var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.tab:has(.body:not([hidden])) .handle{margin-inline-end:-1px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:no-preference){.body{animation:out .18s ease-out}}
+@keyframes out{from{opacity:0;translate:.6rem 0}}
+.buttons{display:flex;gap:.4rem}
+.btn{flex:1;padding:.35rem .7rem;border:1px solid var(--line);border-radius:99rem;background:none;font-weight:600}
+.btn:hover{background:light-dark(#14121f14,#fff2)}
+.btn[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.row{display:grid;grid-template-columns:1fr auto;gap:0 .5rem}
+.row output{color:var(--dim)}
+.row input{grid-column:1/-1;inline-size:100%;margin:.25rem 0 0;accent-color:var(--fg)}
+.switch{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.switch input{appearance:none;position:relative;inline-size:2.1rem;block-size:1.2rem;margin:0;border-radius:99rem;background:var(--line);cursor:pointer;transition:background .15s}
+.switch input::before{content:"";position:absolute;inset:.15rem auto .15rem .15rem;aspect-ratio:1;border-radius:50%;background:var(--bg);box-shadow:0 1px 2px #0004;transition:translate .15s}
+.switch input:checked{background:var(--fg)}
+.switch input:checked::before{translate:.9rem 0}
+.progress{block-size:3px;border-radius:99rem;background:var(--line);overflow:hidden}
+.progress i{display:block;block-size:100%;background:var(--fg);transform-origin:0 50%;scale:0 1}
+.state,.reduced{margin:0;color:var(--dim)}
+.state:empty{display:none}
+:disabled{opacity:.45;cursor:not-allowed}
+@media (hover:hover){:host{animation:idle .6s 3s both}:host(:hover),:host(:focus-within){animation:none}}
+@media (prefers-reduced-motion:reduce){:host{animation-duration:0s}}
+@keyframes idle{to{opacity:.35}}
 `;
 
 let panel;
@@ -523,7 +621,7 @@ class SceneStats extends HTMLElement {
     this.fps.value = frames.fps;
     // Green at 55+ fps, amber at 30+, red below.
     this.buttons.stats.style.setProperty('--state', frames.fps >= 55 ? '#5fd38d' : frames.fps >= 30 ? '#f5c451' : '#ff8a80');
-    applyRate(); // CSS restarts animations when their properties change; keep new ones at the chosen speed
+    syncPlayback(); // CSS restarts animations when their properties change; keep new ones at the chosen speed and loop
     if (!this.sheet.matches(':popover-open')) return;
     TABS.find((t) => t.id === this.tab)?.sections.forEach((s) => s.update?.(s.body));
   }
@@ -532,4 +630,7 @@ class SceneStats extends HTMLElement {
 if (data && window === window.top) {
   customElements.define('scene-stats', SceneStats);
   panel = document.body.appendChild(document.createElement('scene-stats'));
+  customElements.define('scene-playback', ScenePlayback);
+  playback = document.body.appendChild(document.createElement('scene-playback'));
+  syncPlayback();
 }

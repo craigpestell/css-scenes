@@ -14,13 +14,13 @@ function href(url, slug) {
 /** How a visitor drives the scene; the gallery filters on it. */
 export function modeOf(meta) {
   const tags = meta.tags ?? [];
-  if (tags.includes('scroll-driven')) return 'scroll';
+  if (tags.includes('story')) return 'story';
   if (tags.some((t) => t === 'interactive' || t === 'state-toggle')) return 'interactive';
   return 'loop';
 }
 
 export const MODES = {
-  scroll: { label: 'Scroll-driven', hint: 'Scroll to play' },
+  story: { label: 'Stories', hint: 'Plays through' },
   interactive: { label: 'Interactive', hint: 'Interactive' },
   loop: { label: 'Ambient loops', hint: 'Loops' },
 };

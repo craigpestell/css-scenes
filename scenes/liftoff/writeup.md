@@ -4,13 +4,13 @@ slug: liftoff
 ---
 ## The idea
 
-Scroll down and a rocket launches. The countdown ticks from T−10, smoke billows off the pad, the ground drops away, clouds rush past, the booster separates and tumbles, and the upper stage lights its own engine as the sky turns to stars. No JavaScript: the scrollbar is the timeline.
+A rocket launches. The countdown ticks from T−10, smoke billows off the pad, the ground drops away, clouds rush past, the booster separates and tumbles, and the upper stage lights its own engine as the sky turns to stars. No JavaScript in the scene: the whole launch is one keyframe script on a clock.
 
 ## Techniques
 
 ### One keyframe script, two timelines
 
-Every choreographed layer uses the same 0–100% script, written into keyframe percentages (0–12% countdown and ignition, 12–45% liftoff, 58–64% staging, 55–90% night falls). By default each layer runs it on a time loop:
+Every choreographed layer uses the same 0–100% script, written into keyframe percentages (0–12% countdown and ignition, 12–45% liftoff, 58–64% staging, 55–90% night falls). Each layer runs it on the same `--loop` clock:
 
 ```css
 .booster {
@@ -25,39 +25,19 @@ Every choreographed layer uses the same 0–100% script, written into keyframe p
 }
 ```
 
-Where scroll timelines exist, one block swaps the clock for the scrollbar and makes the page scrollable:
+The page never scrolls: the launch plays on the clock. The playback tab on the edge of the window sets its speed and whether it repeats; with loop off the launch runs once and holds its last frame, high in the stars.
 
-```css
-@supports (animation-timeline: scroll()) {
-  body { overflow: auto; }
-  .runway { display: block; block-size: 600dvh; }
-  .hint { display: block; }
-  .sky, .stars, .clouds i, .ground, .smoke i, .rocket, .booster, .hud, .hint {
-    animation-duration: auto;
-    animation-iteration-count: 1;
-    animation-timeline: scroll(root);
-  }
-}
-```
+Trade-off: putting the script in keyframe percentages instead of separate delays means one `--loop` length scales the whole launch, and the Launch length control is a single custom property. The cost is that each layer's keyframes hold its own hold-frames (`0%, 58%`), which is a little more verbose than ranges.
 
-Trade-off: putting the script in keyframe percentages instead of `animation-range` means the fallback needs no second set of numbers. The cost is that each layer's keyframes hold its own hold-frames (`0%, 58%`), which is a little more verbose than ranges. The `animation-timeline` longhand has to come after the `animation` shorthand, because the shorthand resets it.
+### Two clocks on one element
 
-### Mixing a scroll timeline and a time timeline on one element
-
-The flames grow with scroll but flicker on a clock. Animations are lists, so each one gets its own timeline:
+The flames grow with the launch but flicker on a fast clock of their own. Animations are lists, so each runs at its own length:
 
 ```css
 .flame {
   inset: 100% 10% auto;
   block-size: 18vmin;
   animation: ignite var(--loop) linear infinite both, flicker 90ms linear infinite alternate;
-}
-@supports (animation-timeline: scroll()) {
-  .flame, .engine {
-    animation-duration: auto, 90ms;
-    animation-iteration-count: 1, infinite;
-    animation-timeline: scroll(root), auto;
-  }
 }
 @keyframes ignite { 0%, 5% { scale: 1 0; } 12%, 57% { scale: 1 1; } 59%, 100% { scale: 1 0; } }
 @keyframes flicker { to { transform: scale(1.06, 0.86); } }
@@ -87,7 +67,7 @@ The flames grow with scroll but flicker on a clock. Animations are lists, so eac
 }
 ```
 
-Registered integers interpolate and round, so scrolling counts. The HUD is `aria-hidden`; the stage's `aria-label` describes the scene. A translucent black backing keeps the white text readable on the pale day sky as well as in space.
+Registered integers interpolate and round, so the HUD counts. The HUD is `aria-hidden`; the stage's `aria-label` describes the scene. A translucent black backing keeps the white text readable on the pale day sky as well as in space.
 
 ### shape() nose cone with a polygon fallback
 
@@ -112,9 +92,8 @@ Every animated property is `translate`, `rotate`, `scale`, `transform` or `opaci
 
 ## Accessibility
 
-- `prefers-reduced-motion: reduce` turns every animation off, hides the runway so the page doesn't scroll, and shows the composed on-pad frame at T−10 (checked in a headless Chromium screenshot).
-- Scroll-driven motion is user-controlled, but the cloud parallax is large, which is why reduced motion also stops the scroll version.
-- The "Scroll to launch" hint only appears where scrolling actually does something.
+- `prefers-reduced-motion: reduce` turns every animation off and shows the composed on-pad frame at T−10 (checked in a headless Chromium screenshot).
+- The playback tab can pause the launch, slow it down, or play it once and stop.
 
 ## Known limitations
 
@@ -124,6 +103,6 @@ Every animated property is `translate`, `rotate`, `scale`, `transform` or `opaci
 
 ## Reuse
 
-- `stage` (library): the contained scene root. The page gets a 600dvh `.runway` sibling so the root can scroll behind the fixed stage.
-- Candidate snippets: `two-timelines` (time-based keyframes upgraded to `scroll(root)` in one `@supports` block) and `typed-counter` (an `@property` integer feeding `counter()`). Neither has been extracted to `packages/lib` yet.
+- `stage` (library): the contained scene root.
+- Candidate snippets: `keyframe-script` (one 0–100% script shared by every layer on one clock) and `typed-counter` (an `@property` integer feeding `counter()`). Neither has been extracted to `packages/lib` yet.
 - Colours are local custom properties apart from `--c-accent`. Nothing was added to `tokens.json`. This departs from the repo rule, and the user accepted it as an exception on 2026-10-03 (recorded in `meta.json`).

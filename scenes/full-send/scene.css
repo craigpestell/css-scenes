@@ -2,7 +2,7 @@
 
 @layer scene {
   .stage {
-    /* Time loop (forwards then back) by default; the scrollbar drives it where scroll timelines exist.
+    /* Time loop that draws forwards then back; with the playback tab's loop off it draws once and holds.
        Base styles are the finished frame and keyframes only say `from`, so reduced motion just switches animation off. */
     --loop: 9s;
     --dir: alternate;
@@ -18,7 +18,6 @@
     background: var(--bg);
     color: var(--ink);
   }
-  .runway { display: none; }
   .stage > * { animation: var(--loop) linear infinite var(--dir) both; }
 
   .word {
@@ -88,34 +87,7 @@
   }
   @keyframes ticker { from { translate: 0 0; } }
 
-  .hint {
-    position: absolute;
-    inset: auto 0 4vmin;
-    margin: 0;
-    display: none;
-    text-align: center;
-    font: 600 clamp(0.8rem, 2.2vmin, 1.1rem)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
-    letter-spacing: 0.08em;
-    opacity: 0;
-    animation-name: fade;
-  }
-  @keyframes fade { 0% { opacity: 1; } 3% { opacity: 0; } }
-
-  @supports (animation-timeline: scroll()) {
-    body { overflow: auto; }
-    .runway { display: block; block-size: 400dvh; }
-    .hint { display: block; }
-    .stage { --dir: normal; }
-    .stage > *, .flood, .line, .band span {
-      animation-duration: auto;
-      animation-iteration-count: 1;
-      animation-timeline: scroll(root);
-    }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .stage *, .stage *::before, .stage *::after { animation: none !important; }
-    .runway, .hint { display: none; }
-    body { overflow: clip; }
   }
 }
