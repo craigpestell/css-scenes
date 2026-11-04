@@ -26,6 +26,9 @@ sites/stats/stats.js -> embedded per-scene JSON
 sites/stats/panel.js -> dist/stats.js shared runtime panel
 sites/shared/site.css -> imported by index.css and source.css (never by scenes)
 sites/index/* + all scene metadata -> dist/index.html
+sites/404/* + scene list -> dist/404.html (Vercel serves it for unknown paths)
+sites/shared/head.js -> favicon + link-preview tags on every page; dist/favicon.svg
+sites/og/*.jpg (made by `pnpm og`) -> dist/og/ link-preview images
 ```
 
 Lightning CSS inlines tokens, `@import "lib/<name>"` and (site pages only) `@import "site/<name>"`, lowers to Chrome 120+, Safari 17.4+,
@@ -41,7 +44,12 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `packages/build/src/tokens.js`: converts token JSON into registered properties and root values.
 - `packages/tokens/tokens.json`: shared colors, durations, easings, and registered angles.
 - `packages/lib/src/`: reusable CSS snippets resolved only through `lib/<name>` imports.
-- `sites/shared/`: styles shared by the gallery and source page (surfaces, type, radii, focus, wordmark).
+- `sites/shared/`: styles shared by the gallery, source and 404 pages (surfaces, type, radii, focus, wordmark), and
+  `head.js`: the site icon and Open Graph/Twitter tags (`headTags`), with `SITE` as the canonical origin.
+- `sites/404/`: the not-found page; the build fills in a list of every scene.
+- `sites/og/`: committed 1200x630 link-preview JPEGs, `index.jpg` plus one per scene slug. `pnpm og`
+  (`packages/build/src/og.js`) regenerates them from `dist/` with Playwright, which is not a project dependency;
+  rerun it after a scene's look changes. A page with no image simply gets no `og:image`.
 - `sites/index/`: gallery shell, card renderer, gallery styling, and the scene dock (`sceneChrome`).
 - `sites/source/`: the generated How it's made page (write-up beside the code), syntax highlighting, and a small
   Markdown renderer (`markdown.js`) for `writeup.md`. It supports only what write-ups use; extend it when one needs more.
@@ -59,7 +67,8 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 
 - Must contain `<!--css-->`; the build replaces it with bundled CSS and generated scene chrome.
 - The `<main class="stage" aria-label="...">` label becomes the gallery description.
-- Keep standard document metadata. Injected `#preview` hides chrome inside gallery iframes.
+- Keep standard document metadata. The build injects the icon and link-preview tags. `#preview` (the live hero)
+  hides the scene dock inside gallery iframes; `#card` (grid cards) also hides on-stage controls such as labels.
 
 ### Scene CSS
 

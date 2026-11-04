@@ -1,6 +1,43 @@
-{ "title": "Aurora", "techniques": ["@property angle animation", "conic-gradient", "contain: strict"], "exceptions": {},
+{
+  "title": "Aurora",
+  "tags": [
+    "registered-properties",
+    "conic-gradient",
+    "seamless-loop",
+    "no-js"
+  ],
+  "techniques": [
+    "@property <angle> animated with plain keyframes",
+    "conic-gradient sweeping from the registered angle",
+    "heavy blur turning hard gradient edges into glow"
+  ],
+  "features": [
+    {
+      "name": "@property",
+      "baseline": "newly available (2024-07-09)"
+    },
+    {
+      "name": "conic-gradient()",
+      "baseline": "widely available"
+    }
+  ],
+  "exceptions": {},
   "params": [
-    { "type": "range", "label": "Spin period", "var": "--t-drift", "min": 2, "max": 60, "step": 1, "value": 24, "unit": "s" },
-    { "type": "color", "label": "Glow colour", "var": "--c-accent", "value": "#6d4aff" }
+    {
+      "type": "range",
+      "label": "Spin period",
+      "var": "--t-drift",
+      "min": 2,
+      "max": 60,
+      "step": 1,
+      "value": 24,
+      "unit": "s"
+    },
+    {
+      "type": "color",
+      "label": "Glow colour",
+      "var": "--c-accent",
+      "value": "#6d4aff"
+    }
   ]
 }

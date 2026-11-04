@@ -52,7 +52,7 @@ export function renderCard({ slug, meta, description, hasJs, size }) {
 
   return `    <li class="card" data-mode="${mode}">
       <div class="preview" style="view-transition-name: scene-${esc(slug)}" inert>
-        <iframe src="scenes/${esc(slug)}/#preview" title="${esc(meta.title)} preview" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
+        <iframe src="scenes/${esc(slug)}/#card" title="${esc(meta.title)} preview" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
       </div>
       <div class="body">
         <p class="kicker"><span>${esc(MODES[mode].hint)}</span> <span>${esc(kb(size.br))}${hasJs ? ' · uses JS' : ''}</span></p>
@@ -72,6 +72,10 @@ export function renderCard({ slug, meta, description, hasJs, size }) {
     </li>`;
 }
 
+/** The 404 page's way back: every scene as a link, with how to play it. Root-absolute, since a 404 answers any path. */
+export const renderLost = (scenes) => scenes.map(({ slug, meta }) =>
+  `<li><a href="/scenes/${esc(slug)}/">${esc(meta.title)}</a> <small>${esc(MODES[modeOf(meta)].hint)}</small></li>`).join('\n      ');
+
 /** Filter chips for the gallery: radios, so :has() filters the grid without JavaScript. */
 export function renderFilters(modes) {
   const counts = Object.fromEntries(Object.keys(MODES).map((m) => [m, modes.filter((x) => x === m).length]));
@@ -85,7 +89,8 @@ export function renderFilters(modes) {
  * previous/next scene links (wrapping at the ends) around the title and how to play the scene, and the scene's tools.
  * Without JavaScript the tools are just Source; the shared panel script (dist/stats.js) adds About, Controls and Stats,
  * which open one tabbed sheet below the dock. ← and → move between scenes. The dock dims after a few seconds on hover
- * devices and wakes on hover or focus. Card previews load the scene at #preview, which hides it.
+ * devices and wakes on hover or focus. The gallery hero loads the scene at #preview and its cards at #card, which both
+ * hide the dock; cards also hide the scene's own controls (labels and control groups), since a card can't be clicked into.
  *
  * Source toggles source.html in a <dialog> below the dock. It's non-modal so the dock stays usable: the dialog dims the
  * scene with a spread shadow, and Escape or a click outside the dialog and dock closes it. Previous/next carry it to the
@@ -112,7 +117,8 @@ export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 @media (hover:hover){.scene-dock{animation:scene-dock-idle .6s 3s both}.scene-dock:is(:hover,:focus-within){animation:none}}
 @media (prefers-reduced-motion:reduce){.scene-dock{animation-duration:0s}}
 @keyframes scene-dock-idle{to{opacity:.35}}
-:root:has(#preview:target) .scene-dock{display:none}
+:root:has(:is(#preview,#card):target) .scene-dock{display:none}
+:root:has(#card:target) .stage :is(label,[role=group]:has(label)){visibility:hidden}
 .scene-source{position:fixed;z-index:8;inset:calc(max(.75rem,env(safe-area-inset-top)) + 3.4rem) 0 auto;inline-size:min(82rem,100% - 1.5rem);block-size:min(52rem,100dvh - max(.75rem,env(safe-area-inset-top)) - 4.4rem);max-inline-size:none;max-block-size:none;margin:0 auto;padding:0;border:0;border-radius:1.25rem;background:var(--c-paper,Canvas);color:var(--c-ink,CanvasText);box-shadow:0 1.5rem 4rem #0008,0 0 0 1px light-dark(#14121f1f,#fff2),0 0 0 100vmax #0007;overflow:hidden;font:600 .8rem/1 system-ui,sans-serif}
 .scene-source[open]{display:flex;flex-direction:column}
 .scene-source form{display:flex;justify-content:end;gap:.25rem;padding:.4rem;border-block-end:1px solid light-dark(#14121f1f,#fff2)}
@@ -150,4 +156,4 @@ const [p,x]=n.querySelectorAll('[rel]');
 addEventListener('keydown',(e)=>{const l={ArrowLeft:p,ArrowRight:x}[e.key];if(!l||e.defaultPrevented||e.altKey||e.metaKey||e.ctrlKey||e.shiftKey||e.composedPath().some((el)=>el.matches?.('input,select,textarea,[role=slider],[contenteditable]')))return;l.click()});
 if(location.hash==='#source')open();
 </script>
-<b id="preview" hidden></b>`;
+<b id="preview" hidden></b><b id="card" hidden></b>`;

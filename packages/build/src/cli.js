@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, copyFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
@@ -6,7 +6,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { transform, browserslistToTargets } from 'lightningcss';
 import { generateTokens } from './tokens.js';
-import { renderCard, renderHero, renderFilters, modeOf, MODES, describe, sceneChrome } from '../../../sites/index/cards.js';
+import { renderCard, renderHero, renderFilters, renderLost, modeOf, MODES, describe, sceneChrome } from '../../../sites/index/cards.js';
+import { headTags, FAVICON } from '../../../sites/shared/head.js';
 import { renderSource } from '../../../sites/source/source.js';
 import { sceneStats, statsTags } from '../../../sites/stats/stats.js';
 
@@ -50,6 +51,9 @@ async function build() {
     report.push(row);
     return row;
   };
+  // Link-preview images are pre-rendered by `pnpm og`; pages without one get none
+  const og = new Set((await readdir(path.join(root, 'sites/og')).catch(() => [])).filter((f) => f.endsWith('.jpg')));
+  const ogImage = (name) => (og.has(`${name}.jpg`) ? `/og/${name}.jpg` : null);
   const sourceCss = await bundleCss(await readFile(path.join(root, 'sites/source/source.css'), 'utf8'), tokensCss, 'source.css');
 
   const scenes = await Promise.all(slugs.map(async (slug) => {
@@ -70,17 +74,21 @@ async function build() {
     const next = scenes[(i + 1) % scenes.length];
     const chrome = sceneChrome({ slug, title: meta.title, prev, next, mode: modeOf(meta) });
     const script = js ? `<script type="module">${js.replaceAll('</script', '<\\/script')}</script>` : '';
-    // The header goes straight after the styles so it comes first in focus order, ahead of the stage
     const minCss = await bundleCss(css, tokensCss);
-    const out = html.replace('<!--css-->', () => `<style>${minCss}</style>${chrome}`) + script;
+    const description = describe(html);
+    // Head tags go first, while the parser is still in the head; the header follows the styles so it comes first in
+    // focus order, ahead of the stage
+    const head = headTags({ root: '../../', title: `${meta.title} · CSS Scenes`, description, path: `/scenes/${slug}/`, image: ogImage(slug) });
+    const out = html.replace('<!--css-->', () => `${head}<style>${minCss}</style>${chrome}`) + script;
     const outDir = path.join(dist, 'scenes', slug);
     await mkdir(outDir, { recursive: true });
     const size = measure(slug, out, meta.exceptions?.extraBytes);
     const markup = html.replace('<!--css-->', () => chrome);
-    await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size, description: describe(html) })));
+    await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size, description })));
     const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
-    await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, writeup, bundled, size, pageCss: sourceCss, hint: MODES[modeOf(meta)].hint }));
-    shown.push({ slug, meta, description: describe(html), hasJs: Boolean(js), size });
+    await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, writeup, bundled, size, pageCss: sourceCss, hint: MODES[modeOf(meta)].hint,
+      head: headTags({ root: '../../', title: `${meta.title}: how it's made · CSS Scenes`, description, path: `/scenes/${slug}/source`, image: ogImage(slug) }) }));
+    shown.push({ slug, meta, description, hasJs: Boolean(js), size });
     cards.push(renderCard(shown.at(-1)));
   }
 
@@ -94,6 +102,7 @@ async function build() {
   const featured = shown.find((s) => s.slug === indexHtml.match(/<!--hero:([\w-]+)-->/)?.[1]) ?? shown[0];
   const avg = shown.reduce((t, s) => t + s.size.br, 0) / shown.length;
   const index = indexHtml
+    .replace('<!--head-->', () => headTags({ root: '', title: 'CSS Scenes', description: 'Full-window scenes and animations built with modern CSS. No images, and no JavaScript unless a scene needs it.', path: '/', image: ogImage('index') }))
     .replace('<!--css-->', `<style>${await bundleCss(indexCss, tokensCss, 'index.css')}</style>`)
     .replace(/<!--hero:[\w-]*-->/, () => renderHero(featured))
     .replaceAll('<!--count-->', String(cards.length))
@@ -102,6 +111,21 @@ async function build() {
     .replace('<!--filters-->', () => renderFilters(shown.map((s) => modeOf(s.meta))))
     .replace('<!--cards-->', () => cards.join('\n'));
   await writeFile(path.join(dist, 'index.html'), index);
+
+  // 404: every scene, so a broken link still lands somewhere to go
+  const [lostHtml, lostCss] = await Promise.all([
+    readFile(path.join(root, 'sites/404/404.html'), 'utf8'),
+    readFile(path.join(root, 'sites/404/404.css'), 'utf8'),
+  ]);
+  await writeFile(path.join(dist, '404.html'), lostHtml
+    .replace('<!--head-->', () => headTags({ root: '/', title: 'Not found · CSS Scenes', description: '', path: '/', image: null }))
+    .replace('<!--css-->', `<style>${await bundleCss(lostCss, tokensCss, '404.css')}</style>`)
+    .replace('<!--scenes-->', () => renderLost(shown)));
+
+  // Shared files: the site icon and the link-preview images
+  await writeFile(path.join(dist, 'favicon.svg'), FAVICON);
+  await mkdir(path.join(dist, 'og'), { recursive: true });
+  await Promise.all([...og].map((f) => copyFile(path.join(root, 'sites/og', f), path.join(dist, 'og', f))));
   await writeFile(path.join(dist, 'stats.js'), await readFile(path.join(root, 'sites/stats/panel.js')));
   measure('(index)', index);
 
@@ -115,7 +139,7 @@ const rebuild = () => (pending ??= build().finally(() => { pending = undefined; 
 
 async function dev() {
   await build();
-  const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8' };
+  const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
   createServer(async (req, res) => {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p.endsWith('/')) p += 'index.html';
@@ -127,8 +151,9 @@ async function dev() {
       res.writeHead(200, { 'content-type': types[path.extname(file)] ?? 'application/octet-stream' });
       res.end(body);
     } catch {
-      if (!res.headersSent) res.writeHead(404);
-      res.end('not found');
+      if (res.headersSent) return res.end();
+      res.writeHead(404, { 'content-type': types['.html'] });
+      res.end(await readFile(path.join(dist, '404.html')).catch(() => 'not found')); // as Vercel serves it
     }
   }).listen(4321, () => console.log('http://localhost:4321/'));
 }

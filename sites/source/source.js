@@ -16,9 +16,9 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 
 /**
  * @param {{ slug: string, meta: object, html: string, css: string, js: string | null, writeup: string | null,
- *           bundled: string, size: { br: number, budget: number }, pageCss: string, hint: string }} scene
+ *           bundled: string, size: { br: number, budget: number }, pageCss: string, hint: string, head: string }} scene
  */
-export function renderSource({ meta, html, css, js, writeup, bundled, size, pageCss, hint }) {
+export function renderSource({ meta, html, css, js, writeup, bundled, size, pageCss, hint, head }) {
   const files = [
     { name: 'index.html', code: html, lang: 'html' },
     { name: 'scene.css', code: css, lang: 'css' },
@@ -55,6 +55,7 @@ export function renderSource({ meta, html, css, js, writeup, bundled, size, page
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>${esc(meta.title)}: how it's made · CSS Scenes</title>
+${head}
 <script>
 // Opened in the scene's source dialog (source.html#embed). The class survives the section links changing the hash, and
 // Escape pressed in here never reaches the parent page, so close the dialog from here.
