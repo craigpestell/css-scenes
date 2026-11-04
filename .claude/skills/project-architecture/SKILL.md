@@ -54,10 +54,14 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `sites/source/`: the generated How it's made page (write-up beside the code), syntax highlighting, and a small
   Markdown renderer (`markdown.js`) for `writeup.md`. It supports only what write-ups use; extend it when one needs more.
 - `sites/stats/stats.js`: build-time stats and feature-test mapping.
-- `sites/stats/panel.js`: browser-only scene sheet below the dock, with About, Controls (colour
-  scheme, scene `params`) and Stats (performance, size, compatibility, environment) tabs. It adds its tab buttons to the
-  dock's tools. It also adds `<scene-playback>`, a tab fixed to the window's right edge with speed, loop, pause and
-  restart, applied to the `.stage` animations through the Web Animations API. Scenes play on the clock, never on scroll.
+- `sites/stats/panel.js`: browser-only. A sheet below the toolbar with About and Stats (performance, size,
+  compatibility, environment) tabs, and `<scene-controls>`, a column on the window's right edge (a bottom sheet on
+  phones) with playback (speed, loop, pause, restart, applied to `.stage` animations through the Web Animations API)
+  and the scene settings (colour scheme, `params`). It wires the dock's About, Controls and Stats buttons, which
+  `sceneChrome` renders hidden up front. Scenes play on the clock, never on scroll.
+- Chrome never covers a scene: `sceneChrome` insets `.stage` by `--chrome-top` (the toolbar), `--chrome-right` (the
+  Controls column) and `--chrome-bottom` (the phone sheet). Scenes should size from the stage (%), not the viewport,
+  where they can. Only the About/Stats sheet and the Source dialog float, and `html[data-sheet-open]` marks the sheet.
 - `.claude/`: scene design/build/review/write-up workflow; `/new-scene` is the
   human-approval-gated orchestrator.
 - `vercel.json`: static deployment of `dist/`; no framework runtime or serverless functions.

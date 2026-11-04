@@ -7,9 +7,10 @@
  * The tab buttons go into the dock's tools (light DOM, styled by the dock) and the sheet lives in a shadow root. Each tab
  * holds { title, render(el), update?(el) } sections, so new sections slot in without touching the shell.
  *
- * Controls: a colour-scheme override and the scene's own meta.json `params`. Playback (speed, loop, pause, restart) is a
- * separate tab fixed to the window's edge, <scene-playback>, so it stays in reach with the sheet closed. Nothing in either
- * persists; Reset restores the page as authored. Which tab is open, and whether the edge tab is open, are remembered.
+ * Controls is its own panel, <scene-controls>, on a tab fixed to the window's right edge (the dock's Controls button opens
+ * it too): playback (speed, loop, pause, restart) on top, then the colour scheme and the scene's own meta.json `params`.
+ * Only one of the sheet and Controls is open at a time. Nothing in Controls persists; Reset restores the page as authored.
+ * Which sheet tab is open, and whether Controls is open, are remembered.
  */
 const data = JSON.parse(document.getElementById('scene-stats')?.textContent ?? 'null');
 const html = document.documentElement;
@@ -229,14 +230,15 @@ const progress = () => {
   return t.direction === 'reverse' || (t.direction === 'alternate' && t.currentIteration % 2) ? 1 - p : p;
 };
 
-class ScenePlayback extends HTMLElement {
+class SceneControls extends HTMLElement {
   connectedCallback() {
     const root = this.attachShadow({ mode: 'open' });
     root.innerHTML = `<style>${PLAYBACK_CSS}</style>
       <div class="tab">
-        <button class="handle" aria-expanded="false" aria-controls="pb" title="Playback (P)">
-          <span class="icon" aria-hidden="true"></span><span class="word">Playback</span></button>
-        <div id="pb" class="body" role="group" aria-label="Playback" hidden>
+        <button class="handle" aria-expanded="false" aria-controls="controls" title="Controls (C)">
+          <span class="icon" aria-hidden="true"></span><span class="word">Controls</span></button>
+        <div id="controls" class="body" role="group" aria-label="${esc(data.title)} controls" hidden>
+          <section class="playback" aria-label="Playback"><h3>Playback</h3>
           <p class="reduced" hidden>Your system asks for reduced motion, so this scene shows a still frame.</p>
           <div class="buttons">
             <button type="button" class="btn" data-a="pause" aria-pressed="false">Pause</button>
@@ -248,10 +250,13 @@ class ScenePlayback extends HTMLElement {
           <label class="switch"><span>Loop</span><input type="checkbox" role="switch" data-a="loop" checked></label>
           <div class="progress" aria-hidden="true"><i></i></div>
           <p class="state" aria-live="polite"></p>
+          </section>
+          <section aria-label="Scene"><h3>Scene</h3><div class="scene"></div></section>
         </div>
       </div>`;
+    controlsSection.render(root.querySelector('.scene'));
     this.handle = root.querySelector('.handle');
-    this.body = root.getElementById('pb');
+    this.body = root.getElementById('controls');
     this.rate = root.getElementById('pb-rate');
     this.bar = root.querySelector('.progress i');
     this.state = root.querySelector('.state');
@@ -271,18 +276,21 @@ class ScenePlayback extends HTMLElement {
       if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return;
       if (e.composedPath().some((el) => el.matches?.('input,select,textarea,[contenteditable]'))) return;
       if (e.key === 'Escape' && !this.body.hidden) { this.toggle(false); this.handle.focus(); }
-      else if (e.key === 'p' || e.key === 'P') this.toggle();
+      else if (e.key === 'c' || e.key === 'C') this.toggle();
     });
     reduced.addEventListener('change', () => this.render());
     // While open, the progress bar follows the cycle every frame
     this.tick = () => { if (!this.body.hidden) { this.paint(); requestAnimationFrame(this.tick); } };
-    this.toggle(store.get('playback') === 'open');
+    this.toggle(store.get('controls') === 'open');
   }
 
   toggle(open = this.body.hidden) {
+    if (open) { panel?.close(); document.getElementById('scene-source')?.close(); } // one panel at a time
     this.body.hidden = !open;
     this.handle.setAttribute('aria-expanded', open);
-    store.set('playback', open ? 'open' : '');
+    document.querySelector('.scene-dock [data-tab=controls]')?.setAttribute('aria-expanded', open);
+    html.toggleAttribute('data-controls-open', open); // the stage makes room for the column (dock styles)
+    store.set('controls', open ? 'open' : '');
     this.render();
     if (open) requestAnimationFrame(this.tick);
   }
@@ -297,12 +305,12 @@ class ScenePlayback extends HTMLElement {
     if (!this.body) return;
     const off = reduced.matches;
     this.body.querySelector('.reduced').hidden = !off;
-    this.body.querySelectorAll('button,input').forEach((el) => { el.disabled = off; });
+    this.body.querySelectorAll('.playback :is(button,input)').forEach((el) => { el.disabled = off; });
     const pause = this.body.querySelector('[data-a=pause]');
     pause.setAttribute('aria-pressed', play.paused);
     pause.textContent = play.paused ? 'Play' : 'Pause';
     if (+this.rate.value !== play.rate) this.rate.value = play.rate;
-    this.body.querySelector('output').value = `${+play.rate.toFixed(2)}×`;
+    this.body.querySelector('output[for=pb-rate]').value = `${+play.rate.toFixed(2)}×`;
     this.body.querySelector('[data-a=loop]').checked = play.loop;
     this.handle.dataset.state = off ? 'still' : play.held ? 'ended' : play.paused ? 'paused' : 'playing';
     const text = off ? '' : play.held ? 'Played once. Restart, or turn loop on, to play again.' : play.paused ? 'Paused.' : '';
@@ -311,6 +319,9 @@ class ScenePlayback extends HTMLElement {
   }
 }
 let playback;
+/* Scenes can make room for the sheet, which floats over the right of the stage: html[data-sheet-open] is set while it
+   is open (see kaleidoscope). Controls needs no such help, since the stage itself shrinks beside it. */
+const makeRoom = () => html.toggleAttribute('data-sheet-open', Boolean(panel?.sheet?.matches(':popover-open')));
 
 /* Controls. Scene params come from meta.json:
  *   { "type": "range", "label", "var": "--x", "target"?: ".stage", "min", "max", "step", "value", "unit"? }
@@ -398,8 +409,7 @@ const controlsSection = {
       return `<div class="row" data-p="${i}">
         <label for="${id(i)}">${esc(p.label)}</label><output for="${id(i)}">${esc(show(p, p.value))}</output>${input}</div>`;
     }).join('');
-    el.innerHTML = `<p class="note">Speed and loop are in the Playback tab on the edge of the window.</p>
-      <div class="pair">
+    el.innerHTML = `<div class="pair">
         <label class="pick">Scheme <select data-a="scheme"><option value="">auto</option><option>light</option><option>dark</option></select></label>
       </div>
       ${rows}
@@ -453,8 +463,8 @@ const CSS_TEXT = `
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 button,select{font:inherit;color:inherit;cursor:pointer}
 :focus-visible{outline:2px solid currentColor;outline-offset:2px}
-[popover]{position:fixed;inset:calc(max(.75rem,env(safe-area-inset-top)) + 3.4rem) max(.75rem,env(safe-area-inset-right)) auto auto;margin:0;
-  width:min(22rem,calc(100vw - 1.5rem));max-height:min(calc(100dvh - 5rem),40rem);overflow:auto;padding:0;
+[popover]{position:fixed;inset:calc(var(--chrome-top,0px) + .5rem) calc(var(--chrome-right,0px) + .5rem) auto auto;margin:0;
+  width:min(22rem,calc(100vw - 1.5rem));max-height:min(calc(100dvh - var(--chrome-top,0px) - 1.5rem),40rem);overflow:auto;padding:0;
   border:0;border-radius:1rem;background:var(--bg);color:var(--fg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
   box-shadow:0 0 0 1px var(--line),0 1rem 3rem #0005}
 @media (width < 40rem){[popover]{max-height:58dvh}}
@@ -509,29 +519,44 @@ select{padding:.2rem .3rem;border:1px solid var(--line);border-radius:.3rem;back
 .row .switch input:checked::before{translate:.9rem 0}
 `;
 
-/* The edge tab: a slim handle on the window's right edge, vertically centred; the controls slide out beside it. It dims
-   with the dock on hover devices and wakes on hover or focus. */
+/* Controls: a column on the window's right edge, below the toolbar. Closed, it is a slim handle; open, the panel sits
+   beside the handle. The stage is inset by the column's width (--chrome-right, set from html[data-controls-open] in the
+   dock styles), so the scene shrinks to fit beside it instead of being covered. On phones it opens as a sheet at the
+   bottom (the dock's Controls button opens it) and the stage gives up that height instead. */
 const PLAYBACK_CSS = `
-:host{all:initial;color-scheme:inherit;position:fixed;z-index:9;inset:50% 0 auto auto;translate:0 -50%;
-  --bg:light-dark(#fffe,#0f0e18f0);--fg:light-dark(#14121f,#f4f1ff);--dim:light-dark(#5d5a70,#a29fb8);--line:light-dark(#14121f1f,#fff2);
+:host{all:initial;color-scheme:inherit;position:fixed;z-index:9;inset:var(--chrome-top,0px) 0 0 auto;
+  --bg:light-dark(#fff,#0f0e18);--fg:light-dark(#14121f,#f4f1ff);--dim:light-dark(#5d5a70,#a29fb8);--line:light-dark(#14121f1f,#fff2);
   font:12px/1.45 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--fg)}
-.tab{display:flex;align-items:center;filter:drop-shadow(0 .5rem 1.2rem #0004)}
+.tab{display:flex;block-size:100%;background:var(--bg);box-shadow:-1px 0 0 var(--line)}
 button,input{font:inherit;color:inherit}
 button{cursor:pointer}
-:focus-visible{outline:2px solid currentColor;outline-offset:2px}
-.handle{display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:.8rem .45rem;border:0;border-radius:.8rem 0 0 .8rem;
-  background:var(--bg);box-shadow:0 0 0 1px var(--line);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-weight:600}
-.handle:hover{background:light-dark(#fff,#1a1828f5)}
+:focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+.handle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;box-sizing:border-box;inline-size:2.25rem;
+  padding:.8rem 0;border:0;background:none;font-weight:600}
+.handle:hover,.handle[aria-expanded=true]{background:light-dark(#14121f0d,#fff1)}
 .word{writing-mode:vertical-rl;rotate:180deg;letter-spacing:.04em}
 .icon{inline-size:.7rem;aspect-ratio:1;background:currentColor;clip-path:polygon(15% 0,100% 50%,15% 100%)}
 .handle[data-state=paused] .icon{clip-path:polygon(0 0,35% 0,35% 100%,0 100%,0 0,65% 0,100% 0,100% 100%,65% 100%,65% 0)}
 .handle[data-state=ended] .icon,.handle[data-state=still] .icon{clip-path:none;border-radius:2px;scale:.85}
-.body{display:grid;gap:.7rem;inline-size:min(14rem,calc(100vw - 4rem));padding:.8rem;border-radius:.9rem 0 0 .9rem;
-  background:var(--bg);box-shadow:0 0 0 1px var(--line);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
-.tab:has(.body:not([hidden])) .handle{margin-inline-end:-1px}
+.body{box-sizing:border-box;inline-size:var(--controls-w,19rem);block-size:100%;overflow:auto;overscroll-behavior:contain;border-inline-start:1px solid var(--line)}
+@media (width < 40rem){
+  :host{inset:auto 0 0 0;block-size:var(--chrome-bottom,0px)}
+  .tab{box-shadow:0 -1px 0 var(--line)}
+  .handle{display:none}
+  .body{inline-size:100%;border:0}
+}
+section{display:grid;gap:.7rem;padding:.8rem;border-block-end:1px solid var(--line)}
+section:last-child{border:0}
+h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)}
+.scene{display:grid;gap:.6rem}
+.pair{display:flex;gap:.5rem;align-items:center;justify-content:space-between}
+.pick{display:flex;gap:.4rem;align-items:center;color:var(--dim)}
+select{padding:.2rem .3rem;border:1px solid var(--line);border-radius:.3rem;background:none;font:inherit;color:inherit;cursor:pointer}
+input[type=color]{block-size:1.6rem;padding:0;border:1px solid var(--line);border-radius:.3rem;background:none}
+.row .switch{grid-column:1/-1}
+.row .switch input{inline-size:2.1rem;margin:0}
+.reset{flex:none;justify-self:end}
 [hidden]{display:none!important}
-@media (prefers-reduced-motion:no-preference){.body{animation:out .18s ease-out}}
-@keyframes out{from{opacity:0;translate:.6rem 0}}
 .buttons{display:flex;gap:.4rem}
 .btn{flex:1;padding:.35rem .7rem;border:1px solid var(--line);border-radius:99rem;background:none;font-weight:600}
 .btn:hover{background:light-dark(#14121f14,#fff2)}
@@ -549,16 +574,12 @@ button{cursor:pointer}
 .state,.reduced{margin:0;color:var(--dim)}
 .state:empty{display:none}
 :disabled{opacity:.45;cursor:not-allowed}
-@media (hover:hover){:host{animation:idle .6s 3s both}:host(:hover),:host(:focus-within){animation:none}}
-@media (prefers-reduced-motion:reduce){:host{animation-duration:0s}}
-@keyframes idle{to{opacity:.35}}
 `;
 
 let panel;
 
 const TABS = [
   { id: 'about', label: 'About', sections: [aboutSection] },
-  { id: 'controls', label: 'Controls', sections: [controlsSection] },
   { id: 'stats', label: 'Stats', sections: SECTIONS },
 ];
 
@@ -583,18 +604,19 @@ class SceneStats extends HTMLElement {
     // The dock buttons: About before Source, Controls and the live fps (Stats) after it
     const tools = document.querySelector('.scene-dock .tools');
     // The dock renders these buttons already, hidden, so it doesn't change width (and move the arrows) when this loads
-    const make = (t, html) => {
+    const make = (t, html, onClick) => {
       let b = tools?.querySelector(`[data-tab="${t.id}"]`);
       if (b) { b.classList.remove('pending'); b.removeAttribute('aria-hidden'); b.removeAttribute('tabindex'); }
       else { b = document.createElement('button'); b.type = 'button'; b.dataset.tab = t.id; b.innerHTML = html; }
       b.setAttribute('aria-expanded', 'false');
-      b.addEventListener('click', () => (this.tab === t.id && this.sheet.matches(':popover-open') ? this.close() : this.open(t.id)));
+      b.addEventListener('click', onClick ?? (() => (this.tab === t.id && this.sheet.matches(':popover-open') ? this.close() : this.open(t.id))));
       return b;
     };
     this.buttons = {
       about: make(TABS[0], 'About'),
-      controls: make(TABS[1], 'Controls'),
-      stats: make(TABS[2], '<i class="fps-dot"></i><output>–</output><span class="unit">fps</span>'),
+      // Controls isn't a sheet tab: it opens the Controls panel on the window's edge
+      controls: make({ id: 'controls' }, 'Controls', () => playback?.toggle()),
+      stats: make(TABS[1], '<i class="fps-dot"></i><output>–</output><span class="unit">fps</span>'),
     };
     this.buttons.stats.classList.add('fps');
     this.buttons.stats.setAttribute('aria-label', 'Stats');
@@ -616,8 +638,7 @@ class SceneStats extends HTMLElement {
     root.querySelector('.close').addEventListener('click', () => this.close());
     this.sheet.addEventListener('toggle', (e) => {
       const open = e.newState === 'open';
-      // Scenes can make room for the sheet: html[data-sheet-open] is set while it is open (see kaleidoscope).
-      document.documentElement.toggleAttribute('data-sheet-open', open);
+      makeRoom();
       store.set('tab', open ? this.tab : '');
       this.sync();
       if (open) this.update();
@@ -634,6 +655,7 @@ class SceneStats extends HTMLElement {
   open(id) {
     this.tab = id;
     document.getElementById('scene-source')?.close(); // one panel at a time
+    playback?.toggle(false);
     if (!this.sheet.matches(':popover-open')) this.sheet.showPopover();
     store.set('tab', id);
     this.sync();
@@ -667,7 +689,7 @@ class SceneStats extends HTMLElement {
 if (data && window === window.top) {
   customElements.define('scene-stats', SceneStats);
   panel = document.body.appendChild(document.createElement('scene-stats'));
-  customElements.define('scene-playback', ScenePlayback);
-  playback = document.body.appendChild(document.createElement('scene-playback'));
+  customElements.define('scene-controls', SceneControls);
+  playback = document.body.appendChild(document.createElement('scene-controls'));
   syncPlayback();
 }
