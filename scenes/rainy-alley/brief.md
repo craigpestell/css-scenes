@@ -71,3 +71,11 @@ Uses `lib/stage`. Candidates: the "reflect a custom-property background" rig (an
 1. Neon sign wording: a plain word like "HOTEL" or "BAR", a Japanese sign to sit with Tokyo Subway and Ramen Counter, or no lettering (just glowing shapes)? Default (built): "BAR" plus one lit, shape-only neon ring.
 2. Is the blue-hour light scheme right, or should both schemes be full night? Default: blue hour.
 3. Anything in the alley (fire escape, bins, a parked bicycle) or keep it empty? Default: a fire escape silhouette on the right wall, otherwise empty.
+
+## Second pass (owner's notes, 2026-11-04)
+The owner asked for: windows on both walls (lit, blacked out, a bar window), a less flat road with irregular water streaks, street light poles at the intersection, cars crossing the far road in both directions with headlights and brake lights reflected, several rain layers at different angles with controls, and controls that change the scene's complexity so GPU cost can be compared. As built:
+- Windows: generated perspective quads. Lit ones are an SVG data-URI layer of `--lights` (so they reflect); dark ones, poles and fire escape are inline SVGs. A blacked-out bar shopfront with a pink neon tube sits under the BAR sign.
+- Road: a far cross street is now visible, and the wet ground gets a real 3D plane (`rotate: x 90deg` under `perspective` at the vanishing point) carrying a moving tile of broken streaks.
+- Cars: two lanes, same markup inside both `.glow` copies, `translate` only; brake lights light as each car slows past the alley.
+- Rain: any number of layers from one rule driven by `--i`; controls for angle, spread between layers, amount and speed.
+- Performance controls: counts for rain layers (0–8) and ripples (0–40), and on/off switches through container style queries (reflection, reflection blur, wet masks, water plane, brick gradient, neon glow). Style queries are not in Firefox yet; there the switches do nothing.

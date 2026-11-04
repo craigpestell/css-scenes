@@ -6,6 +6,8 @@
     "mask-image",
     "conic-gradient",
     "inline-svg",
+    "3d-transform",
+    "style-queries",
     "light-dark",
     "sibling-index",
     "no-js"
@@ -13,9 +15,13 @@
   "techniques": [
     "One background, painted twice",
     "Masks for where the ground is wet",
+    "Perspective windows inside the light layer",
+    "Cars in both copies",
+    "A water plane at the alley's vanishing point",
     "Perspective bricks from one conic gradient",
-    "Period-locked rain tiles",
-    "Ripples placed by sin() and cos()"
+    "Rain layers from one rule",
+    "Ripples placed by sin() and cos()",
+    "Performance switches with style queries"
   ],
   "features": [
     {
@@ -28,6 +34,14 @@
     },
     {
       "name": "repeating-conic-gradient",
+      "baseline": "widely available"
+    },
+    {
+      "name": "3D transforms (rotate: x, perspective, perspective-origin)",
+      "baseline": "widely available"
+    },
+    {
+      "name": "SVG data URI as a background layer",
       "baseline": "widely available"
     },
     {
@@ -49,6 +63,10 @@
     {
       "name": "prefers-reduced-motion",
       "baseline": "widely available"
+    },
+    {
+      "name": "container style queries (style(--x: 0))",
+      "baseline": "limited availability (Chrome, Safari; not Firefox); the performance on/off switches do nothing without them"
     }
   ],
   "exceptions": {
@@ -67,12 +85,108 @@
     },
     {
       "type": "range",
+      "label": "Angle between rain layers",
+      "var": "--spread",
+      "min": 0,
+      "max": 10,
+      "step": 0.5,
+      "value": 5,
+      "unit": "deg"
+    },
+    {
+      "type": "range",
+      "label": "Rain amount",
+      "var": "--density",
+      "min": 0.4,
+      "max": 3,
+      "step": 0.1,
+      "value": 1
+    },
+    {
+      "type": "range",
+      "label": "Rain speed",
+      "var": "--speed",
+      "min": 0.25,
+      "max": 2,
+      "step": 0.05,
+      "value": 1
+    },
+    {
+      "type": "range",
       "label": "Reflection stretch",
       "var": "--stretch",
       "min": 1,
       "max": 4,
       "step": 0.1,
       "value": 1.6
+    },
+    {
+      "type": "count",
+      "label": "Performance: rain layers",
+      "selector": ".rain i",
+      "min": 0,
+      "max": 8
+    },
+    {
+      "type": "count",
+      "label": "Performance: ripples",
+      "selector": ".ripples i",
+      "min": 0,
+      "max": 40
+    },
+    {
+      "type": "range",
+      "label": "Performance: reflection (0 off, 1 on)",
+      "var": "--reflection",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1
+    },
+    {
+      "type": "range",
+      "label": "Performance: reflection blur in vmin (0 removes the filter)",
+      "var": "--blur",
+      "min": 0,
+      "max": 2,
+      "step": 0.1,
+      "value": 0.4
+    },
+    {
+      "type": "range",
+      "label": "Performance: wet-ground masks (0 off, 1 on)",
+      "var": "--masks",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1
+    },
+    {
+      "type": "range",
+      "label": "Performance: moving water plane, 3D (0 off, 1 on)",
+      "var": "--water",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1
+    },
+    {
+      "type": "range",
+      "label": "Performance: brick gradient (0 off, 1 on)",
+      "var": "--bricks",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1
+    },
+    {
+      "type": "range",
+      "label": "Performance: neon glow shadows (0 off, 1 on)",
+      "var": "--glow",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "value": 1
     }
   ]
 }
