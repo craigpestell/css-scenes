@@ -39,7 +39,7 @@
     inset: 0;
     border-radius: 50%;
     background: conic-gradient(from 40deg, #7a5a24, #f0d48c, #8c6a2c, #5e4419, #e2bf6c, #7a5a24);
-    animation: cell 90s linear infinite;
+    animation: cell var(--turn, 80s) linear infinite;
   }
   /* Eyepiece glint and depth shadow sit on the barrel, so they stay put while the view turns */
   .tube::after {
@@ -86,9 +86,12 @@
     .scope b { --n: sibling-count(); --k: round(down, (sibling-index() - 1) / 2); }
   }
 
-  /* The object cell. The mirrors (wedges) never move; turning the barrel turns the cell in front of them,
+  /* The object cell. The mirrors (wedges) never move; the barrel turns the cell in front of them forever,
      and the loose glass inside it tumbles: it catches, lags behind the cell, then slips and falls.
-     Every wedge holds an identical copy on the same timeline, so the copies stay in perfect symmetry. */
+     Every wedge holds an identical copy on the same clock, so the copies stay in perfect symmetry.
+     Two animations per layer: a turn on `transform` and a wander on `translate`. Their periods are
+     coprime (80s, 47s, 31s, 13s, 19s, 23s), so the layers never line up the same way twice in a sitting
+     and the pattern never repeats; the full loop only closes after about twenty years. */
   .scope i,
   .scope i::before,
   .scope i::after {
@@ -96,7 +99,7 @@
     inset: calc(var(--r) * -0.5) auto auto calc(var(--r) * -0.18);
     inline-size: calc(var(--r) * 1.45);
     aspect-ratio: 1;
-    animation: cell 90s linear infinite;
+    animation: cell var(--turn, 80s) linear infinite, wander-a 23s ease-in-out infinite alternate;
   }
   .scope i {
     transform-origin: 52% 48%;
@@ -120,8 +123,9 @@
     transform-origin: 44% 58%;
     rotate: -80deg;
     mix-blend-mode: var(--blend);
-    animation-name: tumble;
-    animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1); /* per segment: hold, then slip */
+    animation-name: tumble, wander-b;
+    animation-duration: 47s, 13s;
+    animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1), ease-in-out; /* per segment: hold, then slip */
     background:
       radial-gradient(circle at 38% 52%, var(--violet) 0 5%, #0000 5.4%),
       radial-gradient(circle at 60% 40%, var(--ruby) 0 2.6%, #0000 3%),
@@ -136,8 +140,9 @@
     inline-size: auto;
     transform-origin: 58% 46%;
     rotate: 140deg;
-    animation-name: rattle;
-    animation-timing-function: cubic-bezier(0.8, 0, 0.2, 1);
+    animation-name: rattle, wander-c;
+    animation-duration: 31s, 19s;
+    animation-timing-function: cubic-bezier(0.8, 0, 0.2, 1), ease-in-out;
     background:
       radial-gradient(circle at 46% 40%, var(--amber) 0 1.6%, #0000 2%),
       radial-gradient(circle at 52% 44%, var(--teal) 0 1.2%, #0000 1.6%),
@@ -173,36 +178,52 @@
     100% { transform: rotate(360deg); }
   }
 
-  .runway { display: none; }
-  .hint {
-    position: absolute;
-    inset: auto 0 3vmin;
-    display: none;
-    text-align: center;
-    color: light-dark(#14121fb3, #f4f1ffb3);
-    font: 600 clamp(0.75rem, 2vmin, 1rem)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
-    letter-spacing: 0.08em;
+  /* Wander: the loose glass drifts on the separate `translate` property, which composes with the turn.
+     Steps are deliberately irregular so the drift reads as shaking, not as an orbit. */
+  @keyframes wander-a {
+    0% { translate: 0 0; }
+    21% { translate: 1.5% -1%; }
+    48% { translate: -1% -2%; }
+    77% { translate: -2% 1.5%; }
+    100% { translate: 1% 2%; }
+  }
+  @keyframes wander-b {
+    0% { translate: 0 0; }
+    17% { translate: -4% 2%; }
+    39% { translate: 3% 5%; }
+    58% { translate: 5% -2%; }
+    83% { translate: -2% -5%; }
+    100% { translate: 2% -1%; }
+  }
+  @keyframes wander-c {
+    0% { translate: 0 0; }
+    13% { translate: 5% 3%; }
+    36% { translate: -3% 6%; }
+    64% { translate: -6% -2%; }
+    88% { translate: 2% -5%; }
+    100% { translate: 4% 1%; }
   }
 
-  /* Scroll upgrade: scrolling is turning the barrel. Nothing moves unless you scroll; scrolling back turns it back.
-     Without scroll timelines the barrel turns itself, slowly, on the same keyframes. */
-  @supports (animation-timeline: scroll()) {
-    body { overflow: auto; }
-    .runway { display: block; block-size: 800dvh; }
-    /* longhands only: Lightning CSS would fold a shorthand + animation-timeline into one invalid shorthand */
-    .hint { display: block; animation-name: fade; animation-fill-mode: both; animation-timeline: scroll(root); }
-    .tube::before, .scope i, .scope i::before, .scope i::after {
-      animation-duration: auto;
-      animation-iteration-count: 1;
-      animation-fill-mode: both;
-      animation-timeline: scroll(root);
+  /* Per-visit randomness where CSS random() is supported: each layer starts at a random angle and a random
+     point in its cycles, so every visit shows a different pattern. element-shared gives every wedge's copy the
+     same value, which keeps the mirrors symmetric; the named keys keep each layer's values independent. */
+  @supports (rotate: random(--k element-shared, 0deg, 1turn)) {
+    .stage { --turn: random(--turn element-shared, 60s, 100s, 1s); }
+    .scope i {
+      rotate: random(--cell element-shared, 0deg, 1turn);
+      animation-delay: random(--cell-t element-shared, -100s, 0s), random(--cell-w element-shared, -23s, 0s);
+    }
+    .scope i::before {
+      rotate: random(--tumble element-shared, 0deg, 1turn);
+      animation-delay: random(--tumble-t element-shared, -47s, 0s), random(--tumble-w element-shared, -13s, 0s);
+    }
+    .scope i::after {
+      rotate: random(--rattle element-shared, 0deg, 1turn);
+      animation-delay: random(--rattle-t element-shared, -31s, 0s), random(--rattle-w element-shared, -19s, 0s);
     }
   }
-  @keyframes fade { 4% { opacity: 0; } 100% { opacity: 0; } }
 
   @media (prefers-reduced-motion: reduce) {
     .stage *, .stage *::before, .stage *::after { animation: none !important; }
-    .runway, .hint { display: none; }
-    body { overflow: clip; }
   }
 }

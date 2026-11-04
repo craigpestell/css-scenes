@@ -4,7 +4,7 @@ slug: kaleidoscope
 ---
 ## The idea
 
-You look down the eyepiece of a brass kaleidoscope. Twelve fixed mirror slices fold the glass beads, rings and shards in the object cell into a six-fold pattern. Scrolling turns the barrel: the cell turns, the loose glass inside tumbles, and the pattern changes. Nothing moves until you scroll, and scrolling back turns it back. In dark mode the glass glows like jewels under a lamp; in light mode it filters daylight like stained glass. No JavaScript, no images, no web fonts.
+You look down the eyepiece of a brass kaleidoscope. Twelve fixed mirror slices fold the glass beads, rings and shards in the object cell into a six-fold pattern. The barrel turns on its own, forever: the cell turns, the loose glass inside tumbles and shakes, and the pattern keeps changing without ever repeating. Where CSS `random()` is supported, every visit also starts from a different pattern. In dark mode the glass glows like jewels under a lamp; in light mode it filters daylight like stained glass. No JavaScript, no images, no web fonts.
 
 ## Techniques
 
@@ -55,7 +55,7 @@ CSS has no way to render one element in twelve places, so every wedge holds its 
   inset: calc(var(--r) * -0.5) auto auto calc(var(--r) * -0.18);
   inline-size: calc(var(--r) * 1.45);
   aspect-ratio: 1;
-  animation: cell 90s linear infinite;
+  animation: cell var(--turn, 80s) linear infinite, wander-a 23s ease-in-out infinite alternate;
 }
 ```
 
@@ -83,7 +83,7 @@ The loose layers wander with a small `translate` at each step, and their timing 
 
 Because the three layers move at different, uneven rates, they slide past each other relative to the fixed mirrors, and the folded pattern keeps re-forming. The resting angle lives in the `rotate` property and the animation adds to it through `transform`; both apply, so turning animation off leaves a composed still frame.
 
-The brass ring is a `.tube::before` that runs the same `cell` keyframes, so its highlights turn with the barrel. The eyepiece glint on `.tube::after` stays put.
+The brass ring is a `.tube::before` that runs the same `cell` keyframes on the same `--turn` period, so its highlights turn with the barrel. The eyepiece glint on `.tube::after` stays put.
 
 Everything that moves is a transform, so it runs on the compositor. The gradients paint once per layer and are then only moved.
 
@@ -103,40 +103,56 @@ Everything that moves is a transform, so it runs on the compositor. The gradient
 
 The second glass layer uses `mix-blend-mode: var(--blend)`. On black, `screen` makes overlaps brighter; on the pale daylight field, `multiply` makes them deeper, and the light palette uses translucent colours so the effect reads.
 
-### scroll(root) barrel turn with longhand-only timeline
+### Endless barrel turn with coprime animation periods
 
-With scroll timelines, scrolling the 800dvh runway turns the barrel one full turn and runs every glass layer through its keyframes once. At the top of the page everything is at rest, and nothing moves without input. Without scroll timelines (Firefox) the same keyframes run on time, one turn every 90s.
+Every layer runs two infinite animations: a turn on `transform` and an irregular wander on the separate `translate` property, which composes with it. The six periods are 80s, 47s, 31s, 13s, 19s and 23s. They share no common factor, so the layers only line up the same way again after their least common multiple, about 6.6 × 10⁸ seconds (around twenty years, counting the alternating wanders). In practice the pattern never repeats.
 
 ```css
-@supports (animation-timeline: scroll()) {
-  .tube::before, .scope i, .scope i::before, .scope i::after {
-    animation-duration: auto;
-    animation-iteration-count: 1;
-    animation-fill-mode: both;
-    animation-timeline: scroll(root);
+.scope i::before {
+  animation-name: tumble, wander-b;
+  animation-duration: 47s, 13s;
+  animation-timing-function: cubic-bezier(0.7, 0, 0.3, 1), ease-in-out;
+}
+@keyframes wander-b {
+  17% { translate: -4% 2%; }
+  39% { translate: 3% 5%; }
+  /* …irregular steps… */
+}
+```
+
+The wander runs `alternate`, so it never jumps at the loop point, and its steps are uneven so it reads as glass shaking loose rather than an orbit. An earlier version turned the barrel from a `scroll(root)` timeline; it stopped when you stopped scrolling and ended at the bottom of the page, so the scene now always runs on time. The gallery's playback controls (speed, pause) act on these animations.
+
+### Per-visit random() with element-shared, keeping the mirrors symmetric
+
+Random positions per wedge would break the kaleidoscope: every mirror has to show the same glass. CSS `random()` handles this with `element-shared`, which gives every element the same value, while a named key keeps each layer's value independent:
+
+```css
+@supports (rotate: random(--k element-shared, 0deg, 1turn)) {
+  .stage { --turn: random(--turn element-shared, 60s, 100s, 1s); }
+  .scope i::before {
+    rotate: random(--tumble element-shared, 0deg, 1turn);
+    animation-delay: random(--tumble-t element-shared, -47s, 0s), random(--tumble-w element-shared, -13s, 0s);
   }
 }
 ```
 
-The longhands keep each layer's own `animation-name` and timing function from the base rules and only swap the clock.
-
-A build gotcha: written as `animation: turn linear both; animation-timeline: scroll(root);`, Lightning CSS merged the two into `animation: linear both turn scroll(root)`. `animation-timeline` is reset-only in the shorthand, so Chrome dropped the whole declaration and the animation silently went back to the time loop. Setting longhands only avoids the merge.
+Each layer starts at a random resting angle and a random point in each of its cycles (negative delays), and the barrel's speed is picked between 60s and 100s a turn. `random()` is limited availability (Safari 26.2 as far as we know; not in Chrome 153, checked with `CSS.supports`). Without it, the scene starts from the same pattern on every visit and then never repeats.
 
 ## Performance notes
 
 | raw | gzip | brotli | budget | ok |
 |---|---|---|---|---|
-| 9,188 B | 3,114 B | 2,676 B | 14,336 B | yes |
+| 15,355 B | 5,222 B | 4,468 B | 14,336 B | yes |
 
-All motion is `transform` or `opacity`. The costliest part is 36 clipped, composited glass layers plus one blend per wedge. A requestAnimationFrame sample in Chrome on the dev machine, scrolling the whole runway in 3s, held 61 fps with no frames over 25 ms. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
+All motion is `transform` or `opacity`. The costliest part is 36 clipped, composited glass layers plus one blend per wedge. An earlier requestAnimationFrame sample in Chrome, with the barrel scroll-driven, held 61 fps; the extra `translate` animations are compositor-only too, but the endless version has not been re-measured. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
 
 The eyepiece is capped at `min(88vmin, 62rem)` rather than filling the window, which keeps every wedge's layer small.
 
 ## Accessibility
 
-- `prefers-reduced-motion: reduce` stops every animation and shows the glass at its resting angles, with no hint and no scrolling. Checked with headless Chrome `--force-prefers-reduced-motion`.
+- `prefers-reduced-motion: reduce` stops every animation and shows the glass at its resting angles. Checked with headless Chrome `--force-prefers-reduced-motion`.
 - The barrel and glass are `aria-hidden`; the stage's `aria-label` describes the view.
-- The only text is the scroll hint, at 70% ink on paper in both schemes.
+- There is no text in the scene.
 
 ## Reuse
 
