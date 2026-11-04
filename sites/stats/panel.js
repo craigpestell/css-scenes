@@ -549,9 +549,11 @@ class SceneStats extends HTMLElement {
 
     // The dock buttons: About before Source, Controls and the live fps (Stats) after it
     const tools = document.querySelector('.scene-dock .tools');
+    // The dock renders these buttons already, hidden, so it doesn't change width (and move the arrows) when this loads
     const make = (t, html) => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.dataset.tab = t.id; b.innerHTML = html;
+      let b = tools?.querySelector(`[data-tab="${t.id}"]`);
+      if (b) { b.classList.remove('pending'); b.removeAttribute('aria-hidden'); b.removeAttribute('tabindex'); }
+      else { b = document.createElement('button'); b.type = 'button'; b.dataset.tab = t.id; b.innerHTML = html; }
       b.setAttribute('aria-expanded', 'false');
       b.addEventListener('click', () => (this.tab === t.id && this.sheet.matches(':popover-open') ? this.close() : this.open(t.id)));
       return b;
@@ -563,8 +565,8 @@ class SceneStats extends HTMLElement {
     };
     this.buttons.stats.classList.add('fps');
     this.buttons.stats.setAttribute('aria-label', 'Stats');
-    tools?.prepend(this.buttons.about);
-    tools?.append(this.buttons.controls, this.buttons.stats);
+    if (!this.buttons.about.isConnected) tools?.prepend(this.buttons.about);
+    if (!this.buttons.controls.isConnected) tools?.append(this.buttons.controls, this.buttons.stats);
     this.fps = this.buttons.stats.querySelector('output');
 
     this.tabs.forEach((b, i) => {
