@@ -4,7 +4,7 @@ slug: kaleidoscope
 ---
 ## The idea
 
-You look down the eyepiece of a brass kaleidoscope. Twelve fixed mirror slices fold the glass beads, rings and shards in the object cell into a six-fold pattern. The barrel turns on its own, forever: the cell turns, the loose glass inside tumbles and shakes, and the pattern keeps changing without ever repeating. Where CSS `random()` is supported, every visit also starts from a different pattern. In dark mode the glass glows like jewels under a lamp; in light mode it filters daylight like stained glass. No JavaScript, no images, no web fonts.
+You look down the eyepiece of a brass kaleidoscope. Twelve fixed mirror slices fold the glass fragments (beads, rings and shards) in the object cell into a six-fold pattern. The barrel turns on its own, forever: the cell turns, the loose glass inside tumbles and shakes, and the pattern keeps changing without ever repeating. Where CSS `random()` is supported, every visit also starts from a different pattern. In dark mode the glass glows like jewels under a lamp; in light mode it filters daylight like stained glass. No JavaScript, no images, no web fonts.
 
 ## Techniques
 
@@ -41,7 +41,7 @@ The fold count comes from the markup. Where `sibling-index()` is supported, `--n
 
 Delete four `<b>` elements and you get four-fold symmetry with no CSS change (checked in Chrome). Keep the count even and at least 6, since `tan(90deg)` is infinite. `sibling-index()` is newly available (2026-08-18). Without it, `--n: 12` and five `:nth-child(n + 3)`… rules set `--k`, so the shipped markup looks the same everywhere.
 
-### Fixed mirrors over a turning object cell with tumbling glass layers
+### Fixed mirrors over a turning object cell with tumbling fragment layers
 
 In a real kaleidoscope the mirrors never move. Turning the barrel turns the object cell at the far end, and the loose glass in it tumbles: pieces catch, ride along, then slip and fall over each other. That is why the pattern changes instead of the whole picture spinning. The scene copies that. The wedges (the mirrors) and `.scope` have no animation at all; only the glass moves.
 
@@ -101,7 +101,7 @@ Everything that moves is a transform, so it runs on the compositor. The gradient
 }
 ```
 
-The second glass layer uses `mix-blend-mode: var(--blend)`. On black, `screen` makes overlaps brighter; on the pale daylight field, `multiply` makes them deeper, and the light palette uses translucent colours so the effect reads.
+The second fragment layer uses `mix-blend-mode: var(--blend)`. On black, `screen` makes overlaps brighter; on the pale daylight field, `multiply` makes them deeper, and the light palette uses translucent colours so the effect reads.
 
 ### Endless barrel turn with coprime animation periods
 
@@ -162,7 +162,7 @@ Turn the switch off and the property is removed, so the eyepiece goes back to `m
 
 When the GPU runs out of tile memory, wedges silently stop drawing while the frame rate holds. No web API reports that: frame timing, paint timing and IntersectionObserver describe what the page asked for, not what the GPU managed to draw. So `scene.js` predicts the memory instead, and **GPU memory budget** in Controls (40–600 MB, default 150) caps the eyepiece so the estimate stays within it.
 
-The model is fitted to Chromium memory dumps (`cc/tile_memory` at 1400×900 and 2×). It is a fixed cost for the page, which scales with window area, plus a cost per wedge and per extra glass layer, which scales with the eyepiece's area. Both grow with the pixel density squared:
+The model is fitted to Chromium memory dumps (`cc/tile_memory` at 1400×900 and 2×). It is a fixed cost for the page, which scales with window area, plus a cost per wedge and per extra fragment layer, which scales with the eyepiece's area. Both grow with the pixel density squared:
 
 ```js
 memory ≈ dpr² × (window area × 8 B + r² × mirrors × (4.6 B + 1.7 B × (layers − 1)))
@@ -170,11 +170,11 @@ memory ≈ dpr² × (window area × 8 B + r² × mirrors × (4.6 B + 1.7 B × (l
 
 It matches the dumps it was fitted to: 65 MB at 12/1 and 145 MB at 24/4. With a budget of 80 MB at 24/4, the eyepiece shrinks to 414 px, and the dump settles at 66 MB once the browser frees the old tiles, which took a few seconds. The cap goes in `--cap-d`, the stage reads `min(var(--fit-d, …), var(--cap-d))`, and the frame-rate fitting stays under the cap. `data-memory` on the stage shows the current estimate in MB. The real limit depends on the GPU and browser, so the slider is for lowering the budget until nothing drops out.
 
-### Extra glass layers and mirrors from Controls
+### Extra fragment layers and mirrors from Controls
 
-Controls can add mirrors and glass layers by cloning elements. A clone's CSS animations start when it is inserted, so before this fix added wedges ran behind the originals, and part of the circle stopped matching the rest. The panel now gives each clone's animations the start time of the matching animation on an existing sibling, so every wedge stays on the same clock. Each added glass layer is only loose beads (no rings or shards) turned to a new angle, so more layers add sparkle instead of clutter. The mirror count goes from 6 (4 mirrors would need `tan(90deg)`) to 24, and glass layers go up to 4. Every wedge holds its own composited, animated copy of each layer, and the browser rasters each layer in full even though `clip-path` shows only a sliver. At high counts the GPU tile budget runs out, and some wedges or the Controls sheet simply don't draw, while the frame rate stays the same. A Chromium memory dump at 1400×900 and 2× shows the tile memory: 85 MB at 12 mirrors and 1 layer, and 319 MB at 32 mirrors and 4 layers in the earlier version. Two changes bring that down:
+Controls can add mirrors and fragment layers by cloning elements. A clone's CSS animations start when it is inserted, so before this fix added wedges ran behind the originals, and part of the circle stopped matching the rest. The panel now gives each clone's animations the start time of the matching animation on an existing sibling, so every wedge stays on the same clock. Each added fragment layer is only loose beads (no rings or shards) turned to a new angle, so more layers add sparkle instead of clutter. The mirror count goes from 6 (4 mirrors would need `tan(90deg)`) to 24, and fragment layers go up to 4. Every wedge holds its own composited, animated copy of each layer, and the browser rasters each layer in full even though `clip-path` shows only a sliver. At high counts the GPU tile budget runs out, and some wedges or the Controls sheet simply don't draw, while the frame rate stays the same. A Chromium memory dump at 1400×900 and 2× shows the tile memory: 85 MB at 12 mirrors and 1 layer, and 319 MB at 32 mirrors and 4 layers in the earlier version. Two changes bring that down:
 
-- The loose beads (`i::after`) sit on a box only as big as they need, 48% of the old side, so about a quarter of the area. Their gradients use absolute radii in `--r`, and their keyframe offsets are scaled up to match, so the look and motion don't change. Extra glass layers are only these beads. This brings tile memory to 65 MB at 12/1 and 180 MB at 32/4.
+- The loose beads (`i::after`) sit on a box only as big as they need, 48% of the old side, so about a quarter of the area. Their gradients use absolute radii in `--r`, and their keyframe offsets are scaled up to match, so the look and motion don't change. Extra fragment layers are only these beads. This brings tile memory to 65 MB at 12/1 and 180 MB at 32/4.
 - The mirror maximum is 24, which brings the worst case (24/4) to 145 MB.
 
 A rectangular `overflow: clip` on each wedge does not reduce raster memory (checked with the same dump), so the wedges keep `clip-path` alone.
@@ -187,7 +187,7 @@ The eyepiece is sized from the stage's own box (`container-type: size` and `cqmi
 |---|---|---|---|---|
 | 15,355 B | 5,222 B | 4,468 B | 14,336 B | yes |
 
-All motion is `transform` or `opacity`. The costliest part is 36 clipped, composited glass layers plus one blend per wedge. An earlier requestAnimationFrame sample in Chrome, with the barrel scroll-driven, held 61 fps; the extra `translate` animations are compositor-only too, but the endless version has not been re-measured. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
+All motion is `transform` or `opacity`. The costliest part is 36 clipped, composited fragment layers plus one blend per wedge. An earlier requestAnimationFrame sample in Chrome, with the barrel scroll-driven, held 61 fps; the extra `translate` animations are compositor-only too, but the endless version has not been re-measured. Lighthouse and dropped-frame stats are not measured yet (TODO: `pnpm measure` once it exists).
 
 The eyepiece is capped at `min(84cqmin, 42rem)` (672px) rather than filling the window, which keeps every wedge's layer small.
 

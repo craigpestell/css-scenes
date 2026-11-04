@@ -85,11 +85,11 @@ sync();
 // When the GPU runs out of tile memory, wedges silently stop drawing while the frame rate holds, and no web API
 // reports it. So the script predicts the memory instead and caps the eyepiece so the estimate stays in budget.
 // The model is fitted to Chromium memory dumps (cc/tile_memory at 1400×900, 2×: 65 MB at 12 mirrors / 1 layer,
-// 145 MB at 24/4, 180 MB at 32/4): a fixed cost for the page, plus bytes per wedge and per extra glass layer
+// 145 MB at 24/4, 180 MB at 32/4): a fixed cost for the page, plus bytes per wedge and per extra fragment layer
 // that grow with the eyepiece's area and the pixel density squared.
 const PAGE = 40e6 / (1400 * 900 * 4); // bytes per CSS px² of window at 1×
 const WEDGE = 4.6; // bytes per wedge, per r² at 1×
-const GLASS = 1.7; // bytes per extra glass layer in a wedge, per r² at 1×
+const GLASS = 1.7; // bytes per extra fragment layer in a wedge, per r² at 1×
 const scope = stage.querySelector('.scope');
 const estimate = (d = scope.offsetWidth) => {
   const n = scope.children.length;
