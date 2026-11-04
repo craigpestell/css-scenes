@@ -85,13 +85,14 @@ export function renderFilters(modes) {
     ...Object.entries(MODES).filter(([m]) => counts[m]).map(([m, { label }]) => chip(m, label, counts[m]))].join('\n      ');
 }
 
-/** Chrome added to every scene page, generated from the scene list: one dock at the top right holding the way home,
+/** Chrome added to every scene page, generated from the scene list: a toolbar across the top holding the way home,
  * previous/next scene links (wrapping at the ends) around the title and how to play the scene, and the scene's tools.
  * Source works on its own; About, Controls and Stats are rendered hidden and the shared panel script (dist/stats.js)
- * reveals and wires them, so they open one tabbed sheet below the dock. Every part has a fixed width, so the arrows sit
- * in the same place on every scene. ← and → move between scenes. The dock dims after a few seconds on hover
- * devices and wakes on hover or focus. The gallery hero loads the scene at #preview and its cards at #card, which both
- * hide the dock; cards also hide the scene's own controls (labels and control groups), since a card can't be clicked into.
+ * reveals and wires them. About and Stats open a tabbed sheet below the toolbar; Controls opens a column on the right.
+ * The toolbar and the Controls column take their own space (the stage is inset by --chrome-*), so neither covers the
+ * scene. Every toolbar part has a fixed width, so the arrows sit in the same place on every scene. ← and → move
+ * between scenes. The gallery hero loads the scene at #preview and its cards at #card, which both hide the chrome and
+ * give the stage the whole window; cards also hide the scene's own controls (labels and control groups).
  *
  * Source toggles source.html in a <dialog> below the dock. It's non-modal so the dock stays usable: the dialog dims the
  * scene with a spread shadow, and Escape or a click outside the dialog and dock closes it. Previous/next carry it to the
@@ -100,13 +101,22 @@ export function renderFilters(modes) {
 export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 @media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}
 .stage{view-transition-name:scene-${esc(slug)}}
-.scene-dock{--dock-line:light-dark(#14121f26,#fff3);position:fixed;inset:max(.75rem,env(safe-area-inset-top)) max(.75rem,env(safe-area-inset-right)) auto auto;z-index:9;display:flex;align-items:center;gap:.15rem;padding:.25rem;border-radius:99rem;background:light-dark(#fffd,#0b0a14cc);color:light-dark(#14121f,#f4f1ff);box-shadow:0 0 0 1px light-dark(#14121f1f,#fff2),0 .5rem 1.5rem #0003;backdrop-filter:blur(10px);font:600 .8rem/1 system-ui,sans-serif;white-space:nowrap;view-transition-name:scene-nav}
+/* The chrome never covers the scene: the stage is inset by the toolbar on top and, once the panel script loads, by the
+   Controls column on the right (or, on phones, its sheet at the bottom). Gallery previews get the whole window. */
+:root{--chrome-top:calc(3.25rem + env(safe-area-inset-top));--chrome-right:0px;--chrome-bottom:0px;--controls-w:min(19rem,100vw - 6rem)}
+:root:has(scene-controls){--chrome-right:2.25rem}
+:root[data-controls-open]{--chrome-right:calc(2.25rem + var(--controls-w))}
+@media (width<40rem){:root:has(scene-controls){--chrome-right:0px}:root[data-controls-open]{--chrome-right:0px;--chrome-bottom:min(55dvh,30rem)}}
+:root:has(:is(#preview,#card):target){--chrome-top:0px;--chrome-right:0px;--chrome-bottom:0px}
+.stage{inset:var(--chrome-top) var(--chrome-right) var(--chrome-bottom) 0}
+.scene-dock{--dock-line:light-dark(#14121f26,#fff3);position:fixed;inset:0 0 auto;z-index:9;display:flex;align-items:center;gap:.15rem;box-sizing:border-box;block-size:var(--chrome-top);padding:env(safe-area-inset-top) max(.5rem,env(safe-area-inset-right)) 0 max(.5rem,env(safe-area-inset-left));background:light-dark(#fff,#0b0a14);color:light-dark(#14121f,#f4f1ff);box-shadow:0 1px 0 light-dark(#14121f1f,#fff2);font:600 .8rem/1 system-ui,sans-serif;white-space:nowrap;view-transition-name:scene-nav}
+.scene-dock .tools{margin-inline-start:auto}
 .scene-dock nav{display:flex;align-items:center;gap:.15rem}
 .scene-dock nav+nav{border-inline-start:1px solid var(--dock-line);padding-inline-start:.25rem;margin-inline-start:.1rem}
 .scene-dock :is(a,button){display:inline-flex;align-items:center;gap:.4em;padding:.5rem .65rem;border:0;border-radius:99rem;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
 .scene-dock :is(a,button):hover{background:light-dark(#14121f14,#fff2)}
 .scene-dock :is(a,button):focus-visible{outline:2px solid currentColor;outline-offset:-2px}
-.scene-dock :is([aria-expanded=true],[aria-pressed=true]){background:light-dark(#14121f,#f4f1ff);color:light-dark(#f4f1ff,#14121f)}
+.scene-dock :is(a,button):is([aria-expanded=true],[aria-pressed=true]){background:light-dark(#14121f,#f4f1ff);color:light-dark(#f4f1ff,#14121f)}
 .scene-dock .home::before{content:"";inline-size:.7em;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 210deg,#9d85ff,#ff7ac6,#ffc27a,#9d85ff)}
 .scene-dock [rel]{min-inline-size:2rem;justify-content:center}
 /* Fixed widths for everything that changes between scenes or frames (the title, the fps), so the arrows sit in the same
@@ -116,15 +126,11 @@ export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 .scene-dock .pending{visibility:hidden} /* space held for the buttons the panel script wires up */
 .scene-dock .fps{font-variant-numeric:tabular-nums}.scene-dock .fps output{inline-size:3ch;text-align:end}.scene-dock .unit{margin-inline-start:-.15em;opacity:.65}.scene-dock .fps-dot{inline-size:.5em;aspect-ratio:1;border-radius:50%;background:var(--state,#5fd38d)}
 .scene-dock .now small{font:500 .68rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;opacity:.65}
-/* Narrow screens keep the home dot, the arrows, Source and Controls, so the dock clears scene HUDs; the title stays for
-   screen readers, and About and Stats stay one tap away as tabs in the sheet */
+/* Narrow screens keep the home dot, the arrows, Source and Controls; the title stays for screen readers, and About and Stats stay one tap away as tabs in the sheet */
 @media (width<40rem){.scene-dock :is(.home span,.now){position:absolute;clip-path:inset(50%);inline-size:1px;overflow:hidden}.scene-dock :is([data-tab=about],.fps){display:none}.scene-dock :is(a,button){padding:.5rem .5rem}}
-@media (hover:hover){.scene-dock{animation:scene-dock-idle .6s 3s both}.scene-dock:is(:hover,:focus-within){animation:none}}
-@media (prefers-reduced-motion:reduce){.scene-dock{animation-duration:0s}}
-@keyframes scene-dock-idle{to{opacity:.35}}
 :root:has(:is(#preview,#card):target) .scene-dock{display:none}
 :root:has(#card:target) .stage :is(label,[role=group]:has(label)){visibility:hidden}
-.scene-source{position:fixed;z-index:8;inset:calc(max(.75rem,env(safe-area-inset-top)) + 3.4rem) 0 auto;inline-size:min(82rem,100% - 1.5rem);block-size:min(52rem,100dvh - max(.75rem,env(safe-area-inset-top)) - 4.4rem);max-inline-size:none;max-block-size:none;margin:0 auto;padding:0;border:0;border-radius:1.25rem;background:var(--c-paper,Canvas);color:var(--c-ink,CanvasText);box-shadow:0 1.5rem 4rem #0008,0 0 0 1px light-dark(#14121f1f,#fff2),0 0 0 100vmax #0007;overflow:hidden;font:600 .8rem/1 system-ui,sans-serif}
+.scene-source{position:fixed;z-index:8;inset:calc(var(--chrome-top) + .5rem) 0 auto;inline-size:min(82rem,100% - 1.5rem);block-size:min(52rem,100dvh - var(--chrome-top) - 1rem);max-inline-size:none;max-block-size:none;margin:0 auto;padding:0;border:0;border-radius:1.25rem;background:var(--c-paper,Canvas);color:var(--c-ink,CanvasText);box-shadow:0 1.5rem 4rem #0008,0 0 0 1px light-dark(#14121f1f,#fff2),0 0 0 100vmax #0007;overflow:hidden;font:600 .8rem/1 system-ui,sans-serif}
 .scene-source[open]{display:flex;flex-direction:column}
 .scene-source form{display:flex;justify-content:end;gap:.25rem;padding:.4rem;border-block-end:1px solid light-dark(#14121f1f,#fff2)}
 .scene-source :is(a,button){padding:.45rem .7rem;border:0;border-radius:99rem;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
@@ -133,8 +139,6 @@ export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 .scene-source iframe{flex:1;inline-size:100%;border:0}
 @media (prefers-reduced-motion:no-preference){.scene-source[open]{animation:scene-source-in .2s ease-out}}
 @keyframes scene-source-in{from{opacity:0;translate:0 .5rem}}
-/* While the source is open the dock stays awake above it */
-:root:has(.scene-source[open]) .scene-dock,.scene-dock.awake{animation:none}
 :root:has(.scene-source[open]){overflow:hidden}
 </style>
 <header class="scene-dock">
