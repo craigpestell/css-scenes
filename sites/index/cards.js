@@ -87,8 +87,9 @@ export function renderFilters(modes) {
 
 /** Chrome added to every scene page, generated from the scene list: one dock at the top right holding the way home,
  * previous/next scene links (wrapping at the ends) around the title and how to play the scene, and the scene's tools.
- * Without JavaScript the tools are just Source; the shared panel script (dist/stats.js) adds About, Controls and Stats,
- * which open one tabbed sheet below the dock. ← and → move between scenes. The dock dims after a few seconds on hover
+ * Source works on its own; About, Controls and Stats are rendered hidden and the shared panel script (dist/stats.js)
+ * reveals and wires them, so they open one tabbed sheet below the dock. Every part has a fixed width, so the arrows sit
+ * in the same place on every scene. ← and → move between scenes. The dock dims after a few seconds on hover
  * devices and wakes on hover or focus. The gallery hero loads the scene at #preview and its cards at #card, which both
  * hide the dock; cards also hide the scene's own controls (labels and control groups), since a card can't be clicked into.
  *
@@ -108,8 +109,12 @@ export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 .scene-dock :is([aria-expanded=true],[aria-pressed=true]){background:light-dark(#14121f,#f4f1ff);color:light-dark(#f4f1ff,#14121f)}
 .scene-dock .home::before{content:"";inline-size:.7em;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 210deg,#9d85ff,#ff7ac6,#ffc27a,#9d85ff)}
 .scene-dock [rel]{min-inline-size:2rem;justify-content:center}
-.scene-dock .now{display:grid;gap:.2rem;padding-inline:.35rem;line-height:1.1}
-.scene-dock .fps{font-variant-numeric:tabular-nums}.scene-dock .fps output{min-inline-size:1.3em;text-align:end}.scene-dock .unit{margin-inline-start:-.15em;opacity:.65}.scene-dock .fps-dot{inline-size:.5em;aspect-ratio:1;border-radius:50%;background:var(--state,#5fd38d)}
+/* Fixed widths for everything that changes between scenes or frames (the title, the fps), so the arrows sit in the same
+   place on every scene and can be clicked again and again without moving the pointer */
+.scene-dock .now{display:grid;gap:.2rem;inline-size:clamp(6rem,100vw - 36rem,13rem);padding-inline:.35rem;line-height:1.1}
+.scene-dock .now>*{overflow:hidden;text-overflow:ellipsis}
+.scene-dock .pending{visibility:hidden} /* space held for the buttons the panel script wires up */
+.scene-dock .fps{font-variant-numeric:tabular-nums}.scene-dock .fps output{inline-size:3ch;text-align:end}.scene-dock .unit{margin-inline-start:-.15em;opacity:.65}.scene-dock .fps-dot{inline-size:.5em;aspect-ratio:1;border-radius:50%;background:var(--state,#5fd38d)}
 .scene-dock .now small{font:500 .68rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;opacity:.65}
 /* Narrow screens keep the home dot, the arrows, Source and Controls, so the dock clears scene HUDs; the title stays for
    screen readers, and About and Stats stay one tap away as tabs in the sheet */
@@ -134,8 +139,8 @@ export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 </style>
 <header class="scene-dock">
 <nav aria-label="Site"><a class="home" href="../../" aria-label="All scenes"><span>CSS Scenes</span></a></nav>
-<nav aria-label="Scenes"><a href="../${esc(prev.slug)}/" rel="prev" title="Previous: ${esc(prev.title)} (←)" aria-label="Previous scene: ${esc(prev.title)}">←</a><span class="now"><span aria-current="page">${esc(title)}</span><small>${esc(MODES[mode].hint)}</small></span><a href="../${esc(next.slug)}/" rel="next" title="Next: ${esc(next.title)} (→)" aria-label="Next scene: ${esc(next.title)}">→</a></nav>
-<nav aria-label="Scene tools" class="tools"><a href="source.html">Source</a></nav>
+<nav aria-label="Scenes"><a href="../${esc(prev.slug)}/" rel="prev" title="Previous: ${esc(prev.title)} (←)" aria-label="Previous scene: ${esc(prev.title)}">←</a><span class="now"><span aria-current="page" title="${esc(title)}">${esc(title)}</span><small>${esc(MODES[mode].hint)}</small></span><a href="../${esc(next.slug)}/" rel="next" title="Next: ${esc(next.title)} (→)" aria-label="Next scene: ${esc(next.title)}">→</a></nav>
+<nav aria-label="Scene tools" class="tools"><button type="button" data-tab="about" class="pending" aria-hidden="true" tabindex="-1">About</button><a href="source.html">Source</a><button type="button" data-tab="controls" class="pending" aria-hidden="true" tabindex="-1">Controls</button><button type="button" data-tab="stats" class="fps pending" aria-hidden="true" tabindex="-1"><i class="fps-dot"></i><output>–</output><span class="unit">fps</span></button></nav>
 </header>
 <dialog class="scene-source" id="scene-source" aria-label="${esc(title)} source" closedby="closerequest">
 <form method="dialog"><a href="source.html">Open as page</a><button autofocus>Close</button></form>
