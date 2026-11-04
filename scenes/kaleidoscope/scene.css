@@ -149,19 +149,19 @@
   }
   .scope i::after {
     content: "";
-    inset: -12%;
+    inset: 20.24%; /* only as big as the beads need: every layer is rastered in full, in every wedge */
     inline-size: auto;
-    transform-origin: 58% 46%;
+    transform-origin: 66.7% 41.7%;
     rotate: 140deg;
     animation-name: rattle, wander-c;
     animation-duration: 31s, 19s;
     animation-timing-function: cubic-bezier(0.8, 0, 0.2, 1), ease-in-out;
     background:
-      radial-gradient(circle at 46% 40%, var(--amber) 0 1.6%, #0000 2%),
-      radial-gradient(circle at 52% 44%, var(--teal) 0 1.2%, #0000 1.6%),
-      radial-gradient(circle at 57% 61%, var(--ruby) 0 1.8%, #0000 2.2%),
-      radial-gradient(circle at 36% 63%, var(--cobalt) 0 1.4%, #0000 1.8%),
-      conic-gradient(from 300deg at 66% 50%, var(--violet) 0 14deg, #0000 14.6deg);
+      radial-gradient(circle calc(var(--r) * 0.0290) at 41.7% 29.2%, var(--amber) 0 80%, #0000),
+      radial-gradient(circle calc(var(--r) * 0.0220) at 54.2% 37.5%, var(--teal) 0 75%, #0000),
+      radial-gradient(circle calc(var(--r) * 0.0330) at 64.6% 72.9%, var(--ruby) 0 82%, #0000),
+      radial-gradient(circle calc(var(--r) * 0.0291) at 20.8% 77.1%, var(--cobalt) 0 78%, #0000),
+      conic-gradient(from 300deg at 83.3% 50.0%, var(--violet) 0 14deg, #0000 14.6deg);
   }
   /* Transforms add to each layer's resting `rotate`. The cell turns steadily; the loose layers turn against it
      and wander, in uneven steps, so relative to the mirrors the pieces tumble instead of just spinning. */
@@ -180,14 +180,14 @@
     100% { transform: rotate(-360deg); }
   }
   @keyframes rattle {
-    12% { transform: rotate(45deg) translate(-3%, 3%); }
-    20% { transform: rotate(60deg) translate(2%, 5%); }
-    33% { transform: rotate(150deg) translate(4%, -1%); }
-    41% { transform: rotate(170deg) translate(0, -4%); }
-    55% { transform: rotate(260deg) translate(-4%, -2%); }
-    62% { transform: rotate(280deg) translate(-2%, 3%); }
-    76% { transform: rotate(310deg) translate(3%, 4%); }
-    84% { transform: rotate(330deg) translate(4%, -2%); }
+    12% { transform: rotate(45deg) translate(-6.2%, 6.2%); }
+    20% { transform: rotate(60deg) translate(4.2%, 10.4%); }
+    33% { transform: rotate(150deg) translate(8.3%, -2.1%); }
+    41% { transform: rotate(170deg) translate(0, -8.3%); }
+    55% { transform: rotate(260deg) translate(-8.3%, -4.2%); }
+    62% { transform: rotate(280deg) translate(-4.2%, 6.2%); }
+    76% { transform: rotate(310deg) translate(6.2%, 8.3%); }
+    84% { transform: rotate(330deg) translate(8.3%, -4.2%); }
     100% { transform: rotate(360deg); }
   }
 
@@ -210,11 +210,11 @@
   }
   @keyframes wander-c {
     0% { translate: 0 0; }
-    13% { translate: 5% 3%; }
-    36% { translate: -3% 6%; }
-    64% { translate: -6% -2%; }
-    88% { translate: 2% -5%; }
-    100% { translate: 4% 1%; }
+    13% { translate: 10.4% 6.2%; }
+    36% { translate: -6.2% 12.5%; }
+    64% { translate: -12.5% -4.2%; }
+    88% { translate: 4.2% -10.4%; }
+    100% { translate: 8.3% 2.1%; }
   }
 
   /* Per-visit randomness where CSS random() is supported: each layer starts at a random angle and a random
