@@ -17,7 +17,8 @@ let probing = false, probeIn = 15, probeSize = 0, probeTarget = 0;
 const bounds = () => {
   // The stage's content box: it narrows while the Controls sheet is open
   const side = Math.min(stage.clientWidth - parseFloat(getComputedStyle(stage).paddingInlineEnd), stage.clientHeight);
-  return [side * 0.3, side * 0.92];
+  const cap = parseFloat(stage.style.getPropertyValue('--cap-d')) || Infinity; // the memory budget's limit
+  return [Math.min(side * 0.3, cap), Math.min(side * 0.92, cap)];
 };
 const apply = (next) => {
   const [min, max] = bounds();
@@ -79,3 +80,37 @@ const sync = () => {
 };
 new MutationObserver(sync).observe(stage, { attributes: true, attributeFilter: ['data-adaptive'] });
 sync();
+
+// GPU memory budget (the "GPU memory budget" slider in Controls sets --budget, in MB, on the stage).
+// When the GPU runs out of tile memory, wedges silently stop drawing while the frame rate holds, and no web API
+// reports it. So the script predicts the memory instead and caps the eyepiece so the estimate stays in budget.
+// The model is fitted to Chromium memory dumps (cc/tile_memory at 1400×900, 2×: 65 MB at 12 mirrors / 1 layer,
+// 145 MB at 24/4, 180 MB at 32/4): a fixed cost for the page, plus bytes per wedge and per extra glass layer
+// that grow with the eyepiece's area and the pixel density squared.
+const PAGE = 40e6 / (1400 * 900 * 4); // bytes per CSS px² of window at 1×
+const WEDGE = 4.6; // bytes per wedge, per r² at 1×
+const GLASS = 1.7; // bytes per extra glass layer in a wedge, per r² at 1×
+const scope = stage.querySelector('.scope');
+const estimate = (d = scope.offsetWidth) => {
+  const n = scope.children.length;
+  const g = scope.firstElementChild?.children.length ?? 1;
+  const dpr2 = devicePixelRatio ** 2;
+  return dpr2 * (innerWidth * innerHeight * PAGE + (d / 2) ** 2 * n * (WEDGE + GLASS * (g - 1)));
+};
+const fitBudget = () => {
+  const mb = parseFloat(getComputedStyle(stage).getPropertyValue('--budget')) || 150;
+  const n = scope.children.length;
+  const g = scope.firstElementChild?.children.length ?? 1;
+  const dpr2 = devicePixelRatio ** 2;
+  const room = mb * 1e6 / dpr2 - innerWidth * innerHeight * PAGE;
+  const r = Math.sqrt(Math.max(0, room) / (n * (WEDGE + GLASS * (g - 1))));
+  const cap = `${Math.max(120, Math.floor(2 * r))}px`;
+  // Only write when it changes: this observer also watches the stage's style attribute
+  if (stage.style.getPropertyValue('--cap-d') !== cap) stage.style.setProperty('--cap-d', cap);
+  stage.dataset.memory = Math.round(estimate() / 1e6); // what the current size is estimated to need, for checking
+};
+new MutationObserver(fitBudget).observe(scope, { childList: true, subtree: true }); // mirrors or glass added
+new MutationObserver(fitBudget).observe(stage, { attributes: true, attributeFilter: ['style'] }); // slider moved
+addEventListener('resize', fitBudget);
+matchMedia(`(resolution: ${devicePixelRatio}dppx)`).addEventListener('change', fitBudget); // moved to another screen
+fitBudget();

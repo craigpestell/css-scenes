@@ -158,6 +158,18 @@ The script writes the size to `--fit-d`, which the stage reads in place of its d
 
 Turn the switch off and the property is removed, so the eyepiece goes back to `min(84cqmin, 42rem)`.
 
+### GPU memory budget
+
+When the GPU runs out of tile memory, wedges silently stop drawing while the frame rate holds. No web API reports that: frame timing, paint timing and IntersectionObserver describe what the page asked for, not what the GPU managed to draw. So `scene.js` predicts the memory instead, and **GPU memory budget** in Controls (40–600 MB, default 150) caps the eyepiece so the estimate stays within it.
+
+The model is fitted to Chromium memory dumps (`cc/tile_memory` at 1400×900 and 2×). It is a fixed cost for the page, which scales with window area, plus a cost per wedge and per extra glass layer, which scales with the eyepiece's area. Both grow with the pixel density squared:
+
+```js
+memory ≈ dpr² × (window area × 8 B + r² × mirrors × (4.6 B + 1.7 B × (layers − 1)))
+```
+
+It matches the dumps it was fitted to: 65 MB at 12/1 and 145 MB at 24/4. With a budget of 80 MB at 24/4, the eyepiece shrinks to 414 px, and the dump settles at 66 MB once the browser frees the old tiles, which took a few seconds. The cap goes in `--cap-d`, the stage reads `min(var(--fit-d, …), var(--cap-d))`, and the frame-rate fitting stays under the cap. `data-memory` on the stage shows the current estimate in MB. The real limit depends on the GPU and browser, so the slider is for lowering the budget until nothing drops out.
+
 ### Extra glass layers and mirrors from Controls
 
 Controls can add mirrors and glass layers by cloning elements. A clone's CSS animations start when it is inserted, so before this fix added wedges ran behind the originals, and part of the circle stopped matching the rest. The panel now gives each clone's animations the start time of the matching animation on an existing sibling, so every wedge stays on the same clock. Each added glass layer is only loose beads (no rings or shards) turned to a new angle, so more layers add sparkle instead of clutter. The mirror count goes from 6 (4 mirrors would need `tan(90deg)`) to 24, and glass layers go up to 4. Every wedge holds its own composited, animated copy of each layer, and the browser rasters each layer in full even though `clip-path` shows only a sliver. At high counts the GPU tile budget runs out, and some wedges or the Controls sheet simply don't draw, while the frame rate stays the same. A Chromium memory dump at 1400×900 and 2× shows the tile memory: 85 MB at 12 mirrors and 1 layer, and 319 MB at 32 mirrors and 4 layers in the earlier version. Two changes bring that down:
