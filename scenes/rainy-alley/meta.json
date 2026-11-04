@@ -7,7 +7,6 @@
     "conic-gradient",
     "inline-svg",
     "3d-transform",
-    "style-queries",
     "light-dark",
     "sibling-index",
     "no-js"
@@ -21,7 +20,7 @@
     "Perspective bricks from one conic gradient",
     "Rain layers from one rule",
     "Ripples placed by sin() and cos()",
-    "Performance switches with style queries"
+    "Performance switches"
   ],
   "features": [
     {
@@ -65,8 +64,8 @@
       "baseline": "widely available"
     },
     {
-      "name": "container style queries (style(--x: 0))",
-      "baseline": "limited availability (Chrome, Safari; not Firefox); the performance on/off switches do nothing without them"
+      "name": ":not() with attribute selectors (performance switches)",
+      "baseline": "widely available"
     }
   ],
   "exceptions": {
@@ -136,16 +135,7 @@
     },
     {
       "type": "range",
-      "label": "Performance: reflection (0 off, 1 on)",
-      "var": "--reflection",
-      "min": 0,
-      "max": 1,
-      "step": 1,
-      "value": 1
-    },
-    {
-      "type": "range",
-      "label": "Performance: reflection blur in vmin (0 removes the filter)",
+      "label": "Performance: reflection blur amount (vmin)",
       "var": "--blur",
       "min": 0,
       "max": 2,
@@ -153,40 +143,40 @@
       "value": 0.4
     },
     {
-      "type": "range",
-      "label": "Performance: wet-ground masks (0 off, 1 on)",
-      "var": "--masks",
-      "min": 0,
-      "max": 1,
-      "step": 1,
-      "value": 1
+      "type": "toggle",
+      "label": "Performance: reflection",
+      "attr": "data-reflection",
+      "value": true
     },
     {
-      "type": "range",
-      "label": "Performance: moving water plane, 3D (0 off, 1 on)",
-      "var": "--water",
-      "min": 0,
-      "max": 1,
-      "step": 1,
-      "value": 1
+      "type": "toggle",
+      "label": "Performance: reflection blur filter",
+      "attr": "data-blur",
+      "value": true
     },
     {
-      "type": "range",
-      "label": "Performance: brick gradient (0 off, 1 on)",
-      "var": "--bricks",
-      "min": 0,
-      "max": 1,
-      "step": 1,
-      "value": 1
+      "type": "toggle",
+      "label": "Performance: wet-ground masks",
+      "attr": "data-masks",
+      "value": true
     },
     {
-      "type": "range",
-      "label": "Performance: neon glow shadows (0 off, 1 on)",
-      "var": "--glow",
-      "min": 0,
-      "max": 1,
-      "step": 1,
-      "value": 1
+      "type": "toggle",
+      "label": "Performance: moving water plane (3D)",
+      "attr": "data-water",
+      "value": true
+    },
+    {
+      "type": "toggle",
+      "label": "Performance: brick gradient",
+      "attr": "data-bricks",
+      "value": true
+    },
+    {
+      "type": "toggle",
+      "label": "Performance: neon glow shadows",
+      "attr": "data-glow",
+      "value": true
     }
   ]
 }

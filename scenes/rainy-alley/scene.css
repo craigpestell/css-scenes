@@ -15,13 +15,7 @@
     --density: 1;     /* rain amount */
     --speed: 1;       /* rain speed */
     --stretch: 1.6;   /* reflection stretch */
-    /* Performance switches (Controls): 1 = on, 0 = off. Each one turns a costly effect off completely */
-    --reflection: 1;
-    --blur: 0.4;      /* reflection blur in vmin; 0 removes the filter */
-    --masks: 1;
-    --water: 1;
-    --bricks: 1;
-    --glow: 1;
+    --blur: 0.4;      /* reflection blur amount, in vmin */
 
     --sky: light-dark(#6f86b0, #2b3350);
     --sky-top: light-dark(#34405e, #0c0e18);
@@ -135,43 +129,48 @@
   /* cars on the far street: full-width layers moved by translate, seen only through the alley mouth */
   .cars { inset: 0; clip-path: inset(0 38%); }
   .car {
-    --dx: 31%;
+    --w: 9%;    /* body length */
+    --top: 90.1%;
+    --h: 6.4%;
+    --x0: calc(37.5% - var(--w));  /* starts just hidden behind the left wall */
+    --dx: calc(25% + var(--w));    /* and ends just hidden behind the right one */
     inset: 0;
     animation: drive 12s infinite;
   }
-  .car::before, .car::after, .car b { inset-block-start: 93.2%; block-size: 2.6%; }
+  .car::before, .car::after, .car b { inset-block-start: var(--top); block-size: var(--h); }
   .car::before { /* body */
     content: "";
-    inset-inline-start: 32%;
-    inline-size: 4.6%;
+    inset-inline-start: var(--x0);
+    inline-size: var(--w);
     background: linear-gradient(#3a3f4e, #05060a 55%);
     clip-path: polygon(0 55%, 6% 38%, 24% 32%, 36% 0, 66% 0, 80% 32%, 97% 40%, 100% 58%, 100% 92%, 0 92%);
   }
   .car::after { /* tail light, headlamp, and the beam on the wet road */
     content: "";
-    inset-inline-start: 31.8%;
-    inline-size: 12%;
+    inset-inline-start: calc(var(--x0) - var(--w) * 0.04);
+    inline-size: calc(var(--w) * 2.6);
     background:
-      radial-gradient(circle at 2.4% 58%, #ff4a3a 0 0.2vmin, #ff2a2a55 0.7vmin, #0000 1.4vmin),
-      radial-gradient(circle at 39.6% 55%, #fffbe8 0 0.25vmin, #ffe8b0aa 0.7vmin, #0000 1.6vmin),
+      radial-gradient(circle at 2.4% 58%, #ff4a3a 0 0.35vmin, #ff2a2a55 1.2vmin, #0000 2.4vmin),
+      radial-gradient(circle at 39.6% 55%, #fffbe8 0 0.45vmin, #ffe8b0aa 1.2vmin, #0000 2.8vmin),
       radial-gradient(ellipse 32% 60% at 62% 82%, #fff1c440, #0000);
   }
   .car b { /* brake light */
-    inset-inline-start: 31%;
-    inline-size: 3vmin;
+    inset-inline-start: calc(var(--x0) - var(--w) * 0.12);
+    inline-size: 5vmin;
     translate: 0 -30%;
     background: radial-gradient(closest-side, #ff3b30 0 18%, #ff1e1e4d 50%, #0000);
     opacity: 0;
     animation: brake 12s infinite;
   }
-  .car.back { /* the other lane: mirrored, nearer, slower, later */
-    --dx: -31%;
+  .car.back { /* the other lane: mirrored, nearer, bigger, slower, later */
+    --w: 10.5%;
+    --top: 92%;
+    --h: 7.6%;
+    --dx: calc(-25% - var(--w));
     scale: -1 1;
     animation-duration: 15s;
     animation-delay: -7s;
   }
-  .back::before, .back::after, .back b { inset-block-start: 95.8%; block-size: 3.1%; }
-  .back::before { inline-size: 5.2%; }
   .back b { animation-duration: 15s; animation-delay: -7s; }
   @keyframes drive {
     0% { translate: 0; animation-timing-function: cubic-bezier(0.2, 0.6, 0.8, 0.4); } /* slows at the alley */
@@ -299,15 +298,15 @@
     to { scale: 1; opacity: 0; }
   }
 
-  /* Performance switches. A style query reads the custom property the Controls slider writes, so "off" can mean
-     filter: none or display: none (no layer, no paint) rather than a zero that still costs. Without style queries
-     (Firefox for now) the switches do nothing and the scene stays fully on. */
-  @container style(--reflection: 0) { .reflect { display: none; } }
-  @container style(--blur: 0) { .reflect { filter: none; } }
-  @container style(--masks: 0) { .wet { mask-image: none; } }
-  @container style(--water: 0) { .floor { display: none; } }
-  @container style(--bricks: 0) { .alley::before, .alley::after { background: var(--wall); } }
-  @container style(--glow: 0) { .glow::before, .glow::after { box-shadow: none; text-shadow: none; } }
+  /* Performance switches. Each Controls switch adds or removes a data- attribute on .stage (all present in the
+     markup, so everything starts on). Off means display: none or filter: none, so the effect costs nothing at all,
+     not a zero value that still allocates a layer or a filter pass. */
+  .stage:not([data-reflection]) .reflect { display: none; }
+  .stage:not([data-blur]) .reflect { filter: none; }
+  .stage:not([data-masks]) .wet { mask-image: none; }
+  .stage:not([data-water]) .floor { display: none; }
+  .stage:not([data-bricks]) .alley::before, .stage:not([data-bricks]) .alley::after { background: var(--wall); }
+  .stage:not([data-glow]) .glow::before, .stage:not([data-glow]) .glow::after { box-shadow: none; text-shadow: none; }
 
   .vignette {
     inset: 0;
@@ -320,7 +319,7 @@
     .ripples i { animation: none; scale: 0.6; opacity: 0.35; }
     /* one car stopped at the alley mouth with its brake light on; the other lane is empty */
     .car, .car b { animation: none; }
-    .car { translate: 16%; }
+    .car { translate: 17%; }
     .car b { opacity: 1; }
     .car.back { translate: var(--dx); }
   }
