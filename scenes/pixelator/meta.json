@@ -5,9 +5,8 @@
     "point sampling: a background magnified 100,000 times shows one colour per tile",
     "column and row from sibling-index() with mod() and round()",
     "round() snaps neighbouring tiles to one sample, so blocks grow without touching the markup",
-    "each step doubles the block side with pow(), so the pixel count drops to a quarter",
-    "Halve and Double buttons from radio inputs, :has() and labels, no script",
-    "the step as a registered integer that animates in whole steps",
+    "block size as a registered integer that animates in whole steps",
+    "a pixel size slider: the script passes its value in as one custom property",
     "a live pixel count through a registered integer and counter()",
     "tile count from sqrt() of the photo's aspect ratio",
     "hover wipe with a one-way opacity transition",
@@ -16,8 +15,7 @@
   "features": [
     { "name": "sibling-index()", "baseline": "newly available (2026-08-18); the script writes --i where it is missing, and without either the frame shows the plain photo" },
     { "name": "CSS round() and mod()", "baseline": "newly available (2024-05); plain photo without them" },
-    { "name": "CSS sqrt() / pow()", "baseline": "widely available" },
-    { "name": ":has()", "baseline": "widely available" },
+    { "name": "CSS sqrt()", "baseline": "widely available" },
     { "name": "@property", "baseline": "newly available (2024-07)" },
     { "name": "container query units (cqw, cqh)", "baseline": "widely available" },
     { "name": "light-dark()", "baseline": "newly available (2024-05-13)" }
@@ -26,11 +24,11 @@
     { "title": "Michelangelo's David, Florence 2019 (the default photo, CC BY 2.0, resized)", "author": "George M. Groutas", "url": "https://commons.wikimedia.org/wiki/File:Michelangelo%E2%80%99s_David,_Florence_2019_-_48170169936.jpg" }
   ],
   "exceptions": {
-    "script": "scene.js swaps the photo for one the visitor picks, drops or pastes, and writes --i where sibling-index() is missing. The pixelation itself is CSS.",
+    "script": "scene.js passes the slider's value to the CSS, swaps the photo for one the visitor picks, drops or pastes, and writes --i where sibling-index() is missing. The pixelation itself is CSS.",
     "rasterImage": "assets/david.jpg (800x1200 JPEG, 94 KB) is the default photo, asked for by the founder on 2026-11-10. It loads as a separate file and is not part of the 14 KiB page budget."
   },
   "params": [
-    { "type": "range", "label": "Halvings in the loop", "var": "--depth", "min": 1, "max": 5, "step": 1, "value": 3 },
+    { "type": "range", "label": "Biggest pixel in the loop (tiles)", "var": "--size", "min": 1, "max": 32, "step": 1, "value": 8 },
     { "type": "range", "label": "Tiles", "var": "--cells", "min": 384, "max": 3456, "step": 96, "value": 3456 }
   ]
 }

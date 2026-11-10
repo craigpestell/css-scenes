@@ -7,7 +7,6 @@
   agree, which is what turns fine tiles into big pixels.
 */
 @property --k { syntax: "<integer>"; inherits: true; initial-value: 1; }       /* block size, in tiles */
-@property --step { syntax: "<integer>"; inherits: false; initial-value: 0; }  /* how many times the pixels are halved */
 @property --count { syntax: "<integer>"; inherits: false; initial-value: 0; }
 @property --cols { syntax: "<integer>"; inherits: true; initial-value: 48; }
 @property --rows { syntax: "<integer>"; inherits: true; initial-value: 72; }
@@ -17,8 +16,7 @@
     --photo: url(/scenes/pixelator/assets/david.jpg); /* from the site root: the page is served with and without a trailing slash */
     --ar: 0.6667;    /* the photo's width / height. CSS can't read that from an image, so the script sets it for an upload */
     /* Controls */
-    --depth: 3;      /* how many halvings the loop goes through */
-    --level: var(--depth); /* the step on show once Halve or Double has been pressed */
+    --size: 8;       /* the biggest block in the loop, in tiles */
     --cells: 3456;   /* how many tiles to aim for; the markup holds 3,600 */
     --loop: 16s;
     --below: 10.5rem; /* room under the frame for the buttons and the credit */
@@ -69,9 +67,7 @@
     grid-template-columns: repeat(var(--cols), var(--tile));
     grid-auto-rows: var(--tile);
     overflow: clip;   /* spare tiles land in rows below the frame */
-    /* Each step doubles the block's side, so the picture keeps a quarter as many pixels */
-    --step: var(--level);
-    --k: round(pow(2, var(--step)), 1);
+    --k: var(--pick, var(--size));   /* --pick is the slider's value, once it has been moved */
   }
   .grid i {
     /* Column and row, counted from 0 */
@@ -100,59 +96,40 @@
     [data-indexed] .grid { display: grid; }
   }
 
-  /* The loop: sharp photo, finest tiles, then halve, halve, halve and back. --step is an integer, so it moves in
-     whole steps and the tiles repaint only when it does. Picking a step by hand stops the loop. */
-  .stage:not(:has(.steps :checked)) .grid {
-    animation: halve var(--loop) linear infinite both, veil var(--loop) linear infinite both; /* paint-ok: --step repaints the tiles a few times per loop */
+  /* The loop: sharp photo, finest tiles, bigger and bigger blocks, and back. --k is an integer, so it moves in whole
+     steps and the tiles repaint only when it does. Moving the slider stops the loop. */
+  .stage:not([data-picked]) .grid {
+    animation: block var(--loop) linear infinite both, veil var(--loop) linear infinite both; /* paint-ok: --k repaints the tiles about twice a second */
   }
-  @keyframes halve {
-    0%, 14%, 90%, 100% { --step: 0; }
-    46%, 58% { --step: var(--depth); }
+  @keyframes block {
+    0%, 12%, 92%, 100% { --k: 1; }
+    48%, 58% { --k: var(--size); }
   }
   @keyframes veil {
     0%, 5%, 97%, 100% { opacity: 0; }
     10%, 93% { opacity: 1; }
   }
 
-  /* Halve and Double with no script: six radio buttons hold the step. From step n, the label for n + 1 is shown as
-     Halve and the label for n - 1 as Double. With nothing picked yet the loop is playing, and Halve starts at 1. */
-  .stage:has(#s0:checked) { --level: 0; }
-  .stage:has(#s1:checked) { --level: 1; }
-  .stage:has(#s2:checked) { --level: 2; }
-  .stage:has(#s3:checked) { --level: 3; }
-  .stage:has(#s4:checked) { --level: 4; }
-  .stage:has(#s5:checked) { --level: 5; }
-  .steps {
+  .size {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
     font-size: 0.9rem;
   }
-  .steps input { position: absolute; opacity: 0; inline-size: 1px; block-size: 1px; }
-  .steps label { display: none; }
-  .steps:not(:has(:checked)) label[for="s1"],
-  #s0:checked ~ label[for="s1"], #s1:checked ~ label[for="s2"], #s2:checked ~ label[for="s3"],
-  #s3:checked ~ label[for="s4"], #s4:checked ~ label[for="s5"] { display: block; order: 3; }
-  #s1:checked ~ label[for="s0"], #s2:checked ~ label[for="s1"], #s3:checked ~ label[for="s2"],
-  #s4:checked ~ label[for="s3"], #s5:checked ~ label[for="s4"] { display: block; order: 1; }
-  .steps label::before { content: "Halve"; }
-  #s1:checked ~ label[for="s0"]::before, #s2:checked ~ label[for="s1"]::before, #s3:checked ~ label[for="s2"]::before,
-  #s4:checked ~ label[for="s3"]::before, #s5:checked ~ label[for="s4"]::before { content: "Double"; }
+  .size[hidden] { display: none; }
+  .size input { inline-size: min(14rem, 40cqw); accent-color: var(--c-accent); }
   /* The readout counts the blocks, cut-off ones at the edges included */
-  .steps output {
-    order: 2;
-    min-inline-size: 7.5rem;
-    text-align: center;
+  .size output {
+    min-inline-size: 6.5rem;
     font-variant-numeric: tabular-nums;
-    --count: calc(round(up, var(--cols) / pow(2, var(--level)), 1) * round(up, var(--rows) / pow(2, var(--level)), 1));
+    --count: calc(round(up, var(--cols) / var(--pick, var(--size)), 1) * round(up, var(--rows) / var(--pick, var(--size)), 1));
     counter-reset: pixels var(--count);
   }
-  .steps output::after { content: counter(pixels) " pixels"; }
-  .steps:not(:has(:checked)) output::after { content: "Looping"; }
-  .steps button { order: 4; }
-  .steps:not(:has(:checked)) button { display: none; }
-  .steps:has(:focus-visible) output { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: 0.25rem; }
+  .size output::after { content: counter(pixels) " pixels"; }
+  .stage:not([data-picked]) .size output::after { content: "Looping"; }
+  .stage:not([data-picked]) .loop { display: none; }
 
   .tools {
     display: flex;
@@ -163,7 +140,7 @@
     font-size: 0.9rem;
   }
   .tools[hidden] { display: none; }
-  .pick, .back, .steps label, .steps button {
+  .pick, .back, .loop {
     padding: 0.5rem 1rem;
     border: 1px solid var(--c-ink);
     border-radius: 99rem;
@@ -172,26 +149,25 @@
     cursor: pointer;
   }
   .pick { background: var(--c-ink); color: var(--c-paper); }
-  .back, .steps label, .steps button { background: none; color: inherit; }
-  .steps label, .steps button { padding-block: 0.3rem; user-select: none; }
+  .back, .loop { background: none; color: inherit; }
+  .loop { padding-block: 0.3rem; }
   .pick input { position: absolute; opacity: 0; inline-size: 1px; block-size: 1px; }
-  .pick:has(:focus-visible), .back:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  .pick:has(:focus-visible), .back:focus-visible, .loop:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
   .note { flex-basis: 100%; text-align: center; opacity: 0.75; }
   .credit { font-size: 0.75rem; opacity: 0.75; }
   .credit a { color: inherit; }
   .stage:not([data-own]) .back, [data-own] .credit { display: none; }
   /* Gallery cards show the picture alone */
-  :root:has(#card:target) :is(.steps, .tools, .credit) { display: none; }
+  :root:has(#card:target) :is(.size, .tools, .credit) { display: none; }
   :root:has(#card:target) .stage { --below: 2rem; }
   /* A file dragged over the window */
   [data-drop] .frame { outline: 3px dashed var(--c-accent); outline-offset: 0.4rem; }
 
   @media (prefers-reduced-motion: reduce) {
-    /* No loop: a still mosaic of the finest tiles until a step is picked. The wipe still works, without the fade */
-    .stage { --level: 0; }
-    .stage:not(:has(.steps :checked)) .grid { animation: none; }
-    .stage .steps output::after { content: counter(pixels) " pixels"; }
-    .stage .steps button { display: none; }
+    /* No loop: a still mosaic at the slider's size. The wipe still works, without the fade */
+    .stage:not([data-picked]) .grid { animation: none; }
+    .stage:not([data-picked]) .size output::after { content: counter(pixels) " pixels"; }
+    .stage .loop { display: none; }
     .grid i { transition: none; }
   }
 }

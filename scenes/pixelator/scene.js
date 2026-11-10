@@ -1,5 +1,5 @@
-// The pixelation is all CSS. This script only swaps the photo: it points --photo at the chosen file and gives the CSS
-// the photo's shape, which CSS has no way to read from an image. The file is read in place and never uploaded.
+// The pixelation is all CSS. This script passes two things in that CSS can't read for itself: the slider's value, and
+// a chosen photo with its shape. The photo is read in place and never uploaded.
 const stage = document.querySelector('.stage');
 const tools = stage.querySelector('.tools');
 const photo = stage.querySelector('.photo');
@@ -42,6 +42,18 @@ addEventListener('dragleave', () => stage.removeAttribute('data-drop'));
 addEventListener('drop', (e) => { e.preventDefault(); stage.removeAttribute('data-drop'); use(e.dataTransfer.files[0]); });
 addEventListener('paste', (e) => use(e.clipboardData.files[0]));
 tools.hidden = false;
+
+// The slider sets the block size and stops the loop; Play loop hands the picture back
+const size = stage.querySelector('.size');
+size.querySelector('input').addEventListener('input', (e) => {
+  stage.style.setProperty('--pick', e.target.value);
+  stage.toggleAttribute('data-picked', true);
+});
+size.querySelector('.loop').addEventListener('click', () => {
+  stage.style.removeProperty('--pick');
+  stage.removeAttribute('data-picked');
+});
+size.hidden = false;
 
 // Browsers without sibling-index() get each tile's index written in
 if (!CSS.supports('order', 'sibling-index()')) {

@@ -4,7 +4,7 @@ slug: pixelator
 ---
 ## The idea
 
-A photo of Michelangelo's David hangs in a frame. A sheet of small square tiles lies over it. Halve merges the tiles into blocks twice as wide, which leaves a quarter as many pixels, and Double splits them again. Left alone, the scene steps through the halvings on a loop. Moving the pointer over the picture wipes the tiles away. A button swaps in a photo of your own.
+A photo of Michelangelo's David hangs in a frame. A sheet of small square tiles lies over it. A slider sets how many tiles wide each pixel is, from 1 to 32. Left alone, the scene grows and shrinks the pixels on a loop. Moving the pointer over the picture wipes the tiles away. A button swaps in a photo of your own.
 
 CSS has no "average this region" and no way to read a pixel. `image-rendering: pixelated` only helps when the source is already small. So the scene does the sampling with a background.
 
@@ -56,50 +56,42 @@ The block's side `--k` is counted in tiles. Rounding a tile's column and row dow
 
 The `min()` keeps the last, cut-off block sampling from inside the photo. The markup never changes: 3,456 tiles are always there, and only the arithmetic makes them look like 54.
 
-### Halving: each step keeps a quarter of the pixels
-
-`--step` counts halvings, and the block's side doubles with each one:
+### The block size is a registered integer
 
 ```css
-@property --step { syntax: "<integer>"; inherits: false; initial-value: 0; }
+@property --k { syntax: "<integer>"; inherits: true; initial-value: 1; }
 
-.grid {
-  --step: var(--level);
-  --k: round(pow(2, var(--step)), 1);
+.grid { --k: var(--pick, var(--size)); }
+
+@keyframes block {
+  0%, 12%, 92%, 100% { --k: 1; }
+  48%, 58% { --k: var(--size); }
 }
 ```
 
-Doubling the side on both axes leaves a quarter as many pixels: David goes 3,456, 864, 216, 54, 15, 6. The last two aren't exact quarters because the blocks at the edges are cut off.
+Because `--k` is registered as an integer, the loop moves it in whole steps, one tile at a time, and the tiles repaint only when it changes. A second animation fades the sheet out at the ends of the loop, which is where the sharp photo shows.
 
-The loop animates `--step` from 0 to `--depth` and back. It is registered as an integer, so it moves in whole steps and the tiles repaint only when it changes. A second animation fades the sheet out at the ends of the loop, which is where the sharp photo shows.
+### The slider
 
-### Halve and Double without a script
+CSS can't read a range input's value, so this is the second job the script has. Moving the slider sets `--pick` on the stage and adds `data-picked`, and the CSS does the rest: `--k` takes the picked value, and the loop's selector, `.stage:not([data-picked]) .grid`, stops matching. Play loop removes both.
 
-The step is held by six radio buttons in a form. `:has()` reads the checked one into `--level`:
-
-```css
-.stage:has(#s2:checked) { --level: 2; }
+```js
+stage.style.setProperty('--pick', e.target.value);
+stage.toggleAttribute('data-picked', true);
 ```
 
-Each radio has a `<label>`. From step 2, the label for step 3 is shown with the word Halve and the label for step 1 with the word Double; the rest stay hidden. Clicking a label checks its radio, which is all a button would do:
-
-```css
-#s2:checked ~ label[for="s3"] { display: block; order: 3; }   /* Halve */
-#s2:checked ~ label[for="s1"] { display: block; order: 1; }   /* Double */
-```
-
-While nothing is checked, the loop plays. The first press of Halve checks step 1 and the loop's selector, `.stage:not(:has(.steps :checked))`, stops matching. Play loop is a plain `<button type="reset">`: resetting the form unchecks every radio, and the loop starts again. The arrow keys move through the radios too.
+The slider goes from 1 tile to 32. At 1 every tile is its own pixel (3,456 of them for David); at 32 the statue is six blocks.
 
 ### Counting pixels with counter()
 
-The readout between the buttons is a CSS counter. A registered integer takes the arithmetic, and `counter-reset` turns it into text:
+The readout beside the slider is a CSS counter. A registered integer takes the arithmetic, and `counter-reset` turns it into text:
 
 ```css
-.steps output {
-  --count: calc(round(up, var(--cols) / pow(2, var(--level)), 1) * round(up, var(--rows) / pow(2, var(--level)), 1));
+.size output {
+  --count: calc(round(up, var(--cols) / var(--pick, var(--size)), 1) * round(up, var(--rows) / var(--pick, var(--size)), 1));
   counter-reset: pixels var(--count);
 }
-.steps output::after { content: counter(pixels) " pixels"; }
+.size output::after { content: counter(pixels) " pixels"; }
 ```
 
 ### The sheet takes the photo's shape
@@ -129,7 +121,7 @@ The transition is declared only on the way back. A tile under the pointer clears
 
 ### Your own photo
 
-The script is the one thing CSS can't do here. It makes an object URL for the file you pick, drop or paste, waits for it to decode, and sets two custom properties on the stage:
+Swapping the photo is the script's other job. It makes an object URL for the file you pick, drop or paste, waits for it to decode, and sets two custom properties on the stage:
 
 ```js
 stage.style.setProperty('--photo', `url("${next}")`);
@@ -142,14 +134,15 @@ The photo is read in place. Nothing is uploaded.
 
 - No `sibling-index()`: the script supplies `--i`.
 - No `round()` or `mod()`, or no script and no `sibling-index()`: the tile sheet stays hidden and the frame shows the photo.
-- Reduced motion: no loop. The finest tiles show until a step is picked, and the wipe works without its fade.
+- No script: the loop still plays; the slider and the photo button stay hidden.
+- Reduced motion: no loop. A still mosaic at the slider's size, and the wipe works without its fade.
 
 ## Numbers
 
-- Page: 5.8 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
+- Page: 5.5 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
 - Default photo: 94 KB JPEG, loaded as a separate file.
 - In software rendering, about one tile in 150 shows a faint two-tone split, because the renderer's interpolation is coarse at this magnification. A GPU should interpolate more finely; that is not checked yet.
-- 3,600 tile elements. A step restyles all of them, which took about 0.2 s in the headless cloud browser used to build this (software rendering, slow CPU). It has not been measured on a real machine yet.
+- 3,600 tile elements. A change of pixel size restyles all of them, which took about 0.2 s in the headless cloud browser used to build this (software rendering, slow CPU). It has not been measured on a real machine yet.
 
 ## Credit
 
