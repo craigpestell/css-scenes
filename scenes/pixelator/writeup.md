@@ -4,35 +4,65 @@ slug: pixelator
 ---
 ## The idea
 
-A photo of Michelangelo's David hangs in a frame. A sheet of small square tiles lies over it. A slider sets how many tiles wide each pixel is, from 1 to 32. Moving the pointer over the picture wipes the tiles away. A button swaps in a photo of your own.
+A photo of Michelangelo's David stands behind a wall of glass blocks. Each block is a small lens: it squeezes a wider view of the statue into itself, so the figure breaks up and repeats from block to block the way it does through real glass brick. A Lens slider takes the blocks from that wide view, through clear glass, through magnifying, to flat pixels. A second slider sets how big the blocks are. Pointing at a block presses it flat, and a button swaps in a photo of your own.
 
-CSS has no "average this region" and no way to read a pixel. `image-rendering: pixelated` only helps when the source is already small. So the scene does the sampling with a background.
+Every block is a real element, so anything CSS can do to a box (shadows, rounding, tilt, blur, hover) can be done per block.
+
+## How others do it
+
+- **SVG filter pixelators** (`feFlood`, `feTile`, `feMorphology`) work on one image with no script, but there are no blocks to style and the output differs between browsers.
+- **Canvas and WebGL shaders** are the usual choice on production sites. They are all script, and again have no elements for CSS to reach.
+- **"Liquid glass"** refraction puts an SVG displacement map in `backdrop-filter`. It bends the backdrop for real, but only Chromium supports SVG filters there.
+- **A background copy per element**, sized and shifted, is plain CSS and works everywhere. This scene uses that.
 
 ## Techniques
 
-### Point sampling: a background magnified until one point is left
+### One background copy per block, lined up with the photo
 
-Every tile paints the whole photo as its background, at 10,000,000% of the tile's size. At that size one source pixel is hundreds of tiles wide, so whatever point of the photo sits inside the tile fills it with a single colour.
-
-`background-position` chooses the point. A percentage position of `p` pins the image's point `p` to the box's point `p`, so `30% 60%` puts the photo's 30%/60% point inside the tile:
+`.photo` shows the photo once. Each block in `.grid` paints the same photo again as its own background. `--sx` is the copy's width measured in blocks:
 
 ```css
 .grid i {
-  background: var(--photo) no-repeat
-    calc((0.5 + (var(--u) - 0.5) * var(--fx)) * 100%)
-    calc((0.5 + (var(--v) - 0.5) * var(--fy)) * 100%) / 10000000% 10000000%;
+  --mag: pow(var(--m), 1 - var(--press));
+  --sx: min(var(--cols) * var(--mag) / var(--fx), 100000);
 }
 ```
 
-`--u` and `--v` are where the tile sits on the sheet, from 0 to 1. `--fx` and `--fy` shrink that range when the photo is cropped to fit the frame.
+At a magnification of 1, the copy is as wide as the wall (`--cols` blocks), exactly like the photo behind. `--fx` allows for a photo cropped to fit the frame.
 
-A smaller magnification shows why the number is so big. At 100,000% each tile carries a visible gradient, and a block of identical tiles shows it as stripes.
+`--u` is the point of the photo behind the block's middle. A `background-position` of `p%` puts the copy's left edge `p%` of the way across the room left over, which is `(1 - sx)` blocks, so solving for the `p` that lands `u` on the middle gives:
 
-This is a point sample, not an average. A busy photo comes out grainier than it would from a real mosaic filter.
+```css
+background-position: calc((0.5 - var(--u) * var(--sx)) / (1 - var(--sx)) * 100%) …;
+background-size: calc(var(--sx) * 100%) calc(var(--sy) * 100%);
+```
+
+With `--m` at 1 the wall is invisible: every block shows exactly what is behind it.
+
+### The magnification is the lens
+
+Only `--m` changes between the looks:
+
+- **Below 1** the copy is smaller than the photo, so each block holds a wider view than its own patch of wall. Neighbouring blocks overlap in what they show, which is the repeated, broken-up figure of glass brick.
+- **1** is clear glass.
+- **Above 1** each block magnifies its middle.
+- **At 100,000** one point of the photo fills the block: a flat colour, a pixel. This is a point sample, not an average, so busy photos look grainier than a true mosaic.
+
+The Lens slider runs 0 to 1 and is squared on the way to an exponent, so most of its travel is spent near 1 where the looks change fastest:
+
+```css
+--m: pow(10, 5.5 * var(--lens) * var(--lens) - 0.5);
+```
+
+A wide view near the wall's edge would run off the photo, so `--u` is clamped to keep the view inside it:
+
+```css
+--u: clamp(0.5 - var(--fx) / 2 + 0.5 / var(--sx), …, 0.5 + var(--fx) / 2 - 0.5 / var(--sx));
+```
 
 ### Column and row from sibling-index()
 
-The tiles are 3,600 empty `<i>` elements with no classes and no inline styles. Each one works out its place from its position among its siblings:
+The blocks are empty `<i>` elements with no classes and no inline styles. Each works out its place from its position among its siblings:
 
 ```css
 .grid i {
@@ -44,97 +74,82 @@ The tiles are 3,600 empty `<i>` elements with no classes and no inline styles. E
 }
 ```
 
-Where `sibling-index()` is missing, the script writes `--i` on each tile and the same rules carry on.
+### Registered properties keep the arithmetic cheap
 
-### round() merges tiles into blocks
-
-The block's side `--k` is counted in tiles. Rounding a tile's column and row down to a multiple of `--k` gives the corner of its block, and half a block more gives the middle. Every tile in a block gets the same answer, so they all show the same colour:
+An unregistered custom property is pasted as text wherever it is used. `--u` uses `--sx` twice, and the background uses both several times, so the formula for one block grew to pages. Registering the per-block numbers makes the browser work each out once:
 
 ```css
---u: calc(min(round(down, var(--x), var(--k)) + var(--k) / 2, var(--cols) - 0.5) / var(--cols));
+@property --sx { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --u { syntax: "<number>"; inherits: false; initial-value: 0; }
 ```
 
-The `min()` keeps the last, cut-off block sampling from inside the photo. The markup never changes: 3,456 tiles are always there, and only the arithmetic makes them look like 54.
+In the headless browser used to build this, a move of the Lens slider went from about 1.7 s of style work to 0.65 s with the properties registered (both with 3,600 blocks in the page).
 
-### The slider
+### The glass
 
-`--size` is the block's side in tiles, and `.grid` hands it to the tiles as `--k`, a registered integer:
+The Glass blocks checkbox is read with `:has()`, with no script. It rounds the blocks, shrinks them a little to show mortar, and adds a bevel of inset shadows and a sheen as a second background layer. The bevel is sized from the block, so it scales with the Block size slider:
 
 ```css
-@property --k { syntax: "<integer>"; inherits: true; initial-value: 1; }
-
-.grid { --k: var(--size); }
-```
-
-CSS can't read a range input's value, so this is one of the two jobs the script has. Moving the slider sets `--size` on the stage, and the CSS does the rest:
-
-```js
-size.querySelector('input').addEventListener('input', (e) => stage.style.setProperty('--size', e.target.value));
-```
-
-The slider goes from 1 tile to 32. At 1 every tile is its own pixel (3,456 of them for David); at 32 the statue is six blocks.
-
-### Counting pixels with counter()
-
-The readout beside the slider is a CSS counter. A registered integer takes the arithmetic, and `counter-reset` turns it into text:
-
-```css
-.size output {
-  --count: calc(round(up, var(--cols) / var(--size), 1) * round(up, var(--rows) / var(--size), 1));
-  counter-reset: pixels var(--count);
+.stage:has(#glass:checked) .grid i {
+  --edge: calc(var(--tile) * 0.07);
+  scale: 0.94;
+  border-radius: 14%;
+  box-shadow:
+    inset 0 0 0 1px #fff6,
+    inset var(--edge) var(--edge) calc(var(--edge) * 2) #fff8,
+    inset calc(var(--edge) * -1) calc(var(--edge) * -1) calc(var(--edge) * 2.4) #0008,
+    inset 0 0 calc(var(--edge) * 4) #fff3;
 }
-.size output::after { content: counter(pixels) " pixels"; }
 ```
 
-### The sheet takes the photo's shape
-
-The script tells CSS one thing about an uploaded photo: its aspect ratio, `--ar`. CSS turns that into columns and rows that keep the tiles square and their number close to `--cells`:
+### Press a block flat
 
 ```css
---shape: clamp(0.34, var(--ar), 3);
+@property --press { syntax: "<number>"; inherits: false; initial-value: 0; }
+
+.grid i { transition: --press var(--t-slow) 0.3s; }
+.grid i:hover { --press: 1; transition: none; }
+```
+
+`--press` takes the block's magnification to 1 through `pow(var(--m), 1 - var(--press))`. The transition is declared only on the way back, so a block under the pointer goes clear at once and eases back to its lens after the pointer has left. Transitioning `--m` itself was a mistake worth recording: it is inherited, so every block started its own transition each time the slider moved.
+
+### The wall takes the photo's shape
+
+The script tells CSS a photo's aspect ratio, `--ar`. CSS turns that and the Block size slider into columns and rows that keep the blocks square:
+
+```css
+--cells: calc(3456 * pow(144, -1 * var(--block)));
 --cols: round(sqrt(var(--cells) * var(--shape)), 1);
 --rows: round(var(--cols) / var(--shape), 1);
 ```
 
-David is 2:3, which gives 48 by 72. A 4:3 photo gets 68 by 51. Tiles left over land in rows below the frame and are clipped. The tile's side is rounded down to a whole pixel, so tiles meet without seams:
+A block's side is rounded down to a whole pixel, so blocks meet without seams. The count beside the slider is a CSS counter fed by a registered integer:
 
 ```css
---tile: max(2px, round(down, min((100cqw - 2rem) / var(--cols), (100cqh - var(--below)) / var(--rows)), 1px));
+.dials output { --count: calc(var(--cols) * var(--rows)); counter-reset: blocks var(--count); }
+.dials output::after { content: counter(blocks) " blocks"; }
 ```
 
-### The wipe
+### What the script does
 
-```css
-.grid i { transition: opacity var(--t-slow) 0.3s; }
-.grid i:hover { opacity: 0; transition: none; }
-```
+Three things CSS can't:
 
-The transition is declared only on the way back. A tile under the pointer clears at once and fades in again after the pointer has left, so a stroke leaves a trail of sharp photo.
-
-### Your own photo
-
-Swapping the photo is the script's other job. It makes an object URL for the file you pick, drop or paste, waits for it to decode, and sets two custom properties on the stage:
-
-```js
-stage.style.setProperty('--photo', `url("${next}")`);
-stage.style.setProperty('--ar', (img.naturalWidth / img.naturalHeight || 1).toFixed(4));
-```
-
-The photo is read in place. Nothing is uploaded.
+- It copies each slider's value into the custom property the slider names.
+- It keeps the number of `<i>` elements equal to `--cols` times `--rows`, read back from the computed style, so the browser never styles blocks nobody can see. With 216 blocks instead of 3,600 in the page, a Lens move dropped from 0.65 s to about 0.06 s in the same headless browser.
+- It points `--photo` at a photo you pick, drop or paste, and sets `--ar`. The photo is read in place; nothing is uploaded.
 
 ## Fallbacks
 
-- No `sibling-index()`: the script supplies `--i`.
-- No `round()` or `mod()`, or no script and no `sibling-index()`: the tile sheet stays hidden and the frame shows the photo.
-- No script: a still mosaic at 8 tiles per pixel; the slider and the photo button stay hidden.
-- Reduced motion: the wipe works without its fade. Nothing else moves.
+- No `sibling-index()`: the script writes `--i` on each block.
+- No `round()`, `mod()`, `sqrt()` or `pow()`, or no script and no `sibling-index()`: the wall stays hidden and the frame shows the photo.
+- No script: the default wall of 216 glass blocks, and the Glass blocks checkbox still works; the sliders and the photo button stay hidden.
+- Reduced motion: a pressed block snaps back instead of easing. Nothing else moves.
 
 ## Numbers
 
-- Page: 5.3 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
+- Page: 6.0 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
 - Default photo: 94 KB JPEG, loaded as a separate file.
-- In software rendering, about one tile in 150 shows a faint two-tone split, because the renderer's interpolation is coarse at this magnification. A GPU should interpolate more finely; that is not checked yet.
-- 3,600 tile elements. A change of pixel size restyles all of them, which took about 0.2 s in the headless cloud browser used to build this (software rendering, slow CPU). It has not been measured on a real machine yet.
+- Timings above are from a headless cloud browser with software rendering. Nothing has been measured on a real machine, in Safari or in Firefox yet. Dragging Block size to its finest end builds 3,456 blocks and was slow there (about 3 s).
 
 ## Credit
 

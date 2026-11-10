@@ -6,7 +6,7 @@ Things noticed while building the Pixelator scene (2026-11-10). None of these ar
 
 1. **No check runs on a PR.** `pnpm build` is the only gate and nothing runs it automatically except Vercel's deploy. A small GitHub Action running `pnpm install --frozen-lockfile && pnpm build` would catch budget failures before review.
 2. **Render checks are rewritten by hand for every scene.** Each scene thread writes throwaway Playwright scripts for the same shots: a frame at a chosen time, dark and light, phone width, reduced motion, the `#card` view. A `pnpm shots <slug>` script next to `og.js` would save that and make reviews comparable.
-3. **`pnpm og` is all or nothing, and picks its frame by waiting 2.5 s.** It re-renders every scene, and a scene whose best frame comes later (Pixelator's blocks are biggest at 8 s) gets a weak preview. Suggest an optional slug argument and a `meta.json` field for the frame time. Pixelator's image in this PR was rendered by hand at 4.7 s.
+3. **`pnpm og` is all or nothing, and picks its frame by waiting 2.5 s.** It re-renders every scene, and a scene whose best frame comes later (a scene that builds up over ten seconds, say) gets a weak preview. Suggest an optional slug argument and a `meta.json` field for the frame time.
 4. **The Controls tab shows in link-preview images.** A page opened at `#card` in its own tab hides the top bar but not the right-edge Controls tab, so every `sites/og/*.jpg` has a "Controls" strip down its right side. `panel.js` skips itself only inside iframes; it should also skip when `#card` or `#preview` is the target.
 5. **The dev server and the `og.js` server are two copies of the same static server**, with different content-type tables (`og.js` served JPEGs as `text/html`; fixed here). Neither knows `.png`, `.webp` or `.avif`. Neither serves clean URLs, so `/scenes/x/source` works on Vercel and 404s locally.
 6. **The dev server rebuilds every scene on every request.** Fine at eleven scenes; it will drag as the gallery grows. Rebuilding only scenes whose files changed is a small change.
@@ -17,13 +17,13 @@ Things noticed while building the Pixelator scene (2026-11-10). None of these ar
 
 9. **`SITE` in `sites/shared/head.js` is still `https://css-scenes.vercel.app`.** The custom domain went live on 2026-11-05, so `og:url`, link-preview image URLs and now the CodePen asset URLs point at the old origin.
 10. **`inspiration` is the only credit field, and it always reads "Inspired by".** Pixelator's photo credit shows as "Inspired by Michelangelo's David, Florence 2019 … by George M. Groutas", which is not quite what it is. A `credits` list with its own label would fit photos, sounds and fonts.
-11. **A range param's `unit` is written into the CSS value.** That makes a label-only unit impossible: "8 tiles" would set `--size: 8 tiles`. A separate `suffix` for display would fix it. Pixelator puts the unit in the label instead.
+11. **A range param's `unit` is written into the CSS value.** That makes a label-only unit impossible: "8 tiles" would set `--size: 8 tiles`. A separate `suffix` for display would fix it. 
 12. **Feature support tests are matched by regex on `features[].name`** (`sites/stats/stats.js`). A slightly different spelling silently drops the live check: "CSS round() / mod()" matched nothing, "CSS round() and mod()" matches. An explicit `test` field in `meta.json`, with the regex table as the fallback, would be sturdier. There are no tests yet for `sqrt()`, container query units or `:has()`.
-13. **Controls can't react to each other.** Pixelator's "Biggest pixel" slider does nothing visible while the loop is in its sharp phase, and there is no way to say so. A `hint` line per param would be enough.
+13. **The Playback section shows for scenes with nothing to play.** Pixelator has no animation, but the Controls column still offers speed, pause and loop. The panel could hide Playback when `.stage` has no running animations.
 
 ## Source viewer
 
-14. **Generated markup is shown raw.** Pixelator's `index.html` holds 3,600 empty `<i>` tags, 36 lines of 700 characters, in the middle of the HTML tab. Either the viewer could fold long runs of identical tags ("× 3,600"), or the build could expand a marker such as `<!--repeat 3600 <i></i>-->` so the authored file stays readable.
+14. **Generated markup is shown raw.** Scenes that repeat an element many times show every copy in the HTML tab (Pixelator's 216 empty `<i>` tags, for one). Either the viewer could fold long runs of identical tags ("× 216"), or the build could expand a marker such as `<!--repeat 216 <i></i>-->` so the authored file stays readable.
 15. **CodePen export assumed a scene is self-contained.** Fixed for site-root asset URLs in this PR. A scene's `scene.js` that fetched anything relative would still break there.
 
 ## Copy and docs

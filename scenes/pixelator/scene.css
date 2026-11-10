@@ -1,26 +1,40 @@
 @import "lib/stage";
 
 /*
-  One photo, drawn twice. .photo shows it as it is. .grid lays a sheet of small square tiles over it, and every tile
-  paints the same photo magnified a hundred thousand times, so that a single point of it fills the whole tile: a flat colour.
-  background-position picks which point. Snapping that point to a coarser grid with round() makes neighbouring tiles
-  agree, which is what turns fine tiles into big pixels.
+  One photo, drawn twice. .photo shows it as it is. .grid lays a wall of square blocks over it, and every block paints
+  the same photo again as its own background, lined up so the block's middle shows what lies behind it. How big that
+  copy is makes the block a lens: the true size is clear glass, smaller is a glass block that squeezes a wider view
+  into itself, bigger magnifies, and a hundred thousand times bigger leaves one point of the photo: a pixel.
 */
-@property --k { syntax: "<integer>"; inherits: true; initial-value: 1; }       /* block size, in tiles */
 @property --count { syntax: "<integer>"; inherits: false; initial-value: 0; }
-@property --cols { syntax: "<integer>"; inherits: true; initial-value: 48; }
-@property --rows { syntax: "<integer>"; inherits: true; initial-value: 72; }
+@property --cols { syntax: "<integer>"; inherits: true; initial-value: 12; }
+@property --rows { syntax: "<integer>"; inherits: true; initial-value: 18; }
+@property --press { syntax: "<number>"; inherits: false; initial-value: 0; }  /* 1 while a block is pressed flat */
+/* Registering the per-block numbers makes the browser work each one out once, instead of pasting its whole formula
+   into every place that uses it */
+@property --m { syntax: "<number>"; inherits: true; initial-value: 1; }
+@property --sx { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --sy { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --u { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --v { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --fx { syntax: "<number>"; inherits: true; initial-value: 1; }
+@property --fy { syntax: "<number>"; inherits: true; initial-value: 1; }
 
 @layer scene {
   .stage {
     --photo: url(/scenes/pixelator/assets/david.jpg); /* from the site root: the page is served with and without a trailing slash */
     --ar: 0.6667;    /* the photo's width / height. CSS can't read that from an image, so the script sets it for an upload */
     /* Controls */
-    --size: 8;       /* the block's side in tiles; the slider sets it */
-    --cells: 3456;   /* how many tiles to aim for; the markup holds 3,600 */
-    --below: 10.5rem; /* room under the frame for the buttons and the credit */
+    --block: 0.55;   /* block size, 0 (finest) to 1 (biggest); the slider sets it */
+    --lens: 0.19;    /* 0 squeezes a wide view into each block, 0.3 is clear glass, 1 is a flat pixel; the slider sets it */
+    /* How many blocks to aim for: 3,456 at the finest, 24 at the biggest. The markup holds 216 and the script keeps
+       the count in step */
+    --cells: calc(3456 * pow(144, -1 * var(--block)));
+    /* The magnification runs from 0.3 to 100,000, and the slider spends most of its travel near 1 */
+    --m: pow(10, 5.5 * var(--lens) * var(--lens) - 0.5);
+    --below: 14rem;  /* room under the frame for the controls and the credit */
 
-    /* The tile sheet takes the photo's shape: cols x rows comes as close to --cells as whole numbers allow.
+    /* The wall takes the photo's shape: cols x rows comes as close to --cells as whole numbers allow.
        Very long or tall photos are cropped to 3:1. */
     --shape: clamp(0.34, var(--ar), 3);
     --cols: round(sqrt(var(--cells) * var(--shape)), 1);
@@ -30,6 +44,7 @@
     --fy: min(1, var(--ar) * var(--rows) / var(--cols));
 
     --frame-edge: light-dark(#14121f33, #ffffff29);
+    --mortar: light-dark(#d9dedc, #23262b);
     container-type: size;
     display: grid;
     grid-template-rows: 1fr auto auto auto;
@@ -51,7 +66,7 @@
   }
 
   .frame {
-    /* A whole number of pixels per tile, so tiles meet without seams */
+    /* A whole number of pixels per block, so blocks meet without seams */
     --tile: max(2px, round(down, min((100cqw - 2rem) / var(--cols), (100cqh - var(--below)) / var(--rows)), 1px));
     position: relative;
     inline-size: calc(var(--cols) * var(--tile));
@@ -65,54 +80,76 @@
     display: none;
     grid-template-columns: repeat(var(--cols), var(--tile));
     grid-auto-rows: var(--tile);
-    overflow: clip;   /* spare tiles land in rows below the frame */
-    --k: var(--size);
+    overflow: clip;
   }
   .grid i {
     /* Column and row, counted from 0 */
     --x: mod(var(--i) - 1, var(--cols));
     --y: round(down, (var(--i) - 1) / var(--cols));
-    /* The middle of this tile's k x k block, as a fraction of the sheet. Tiles in one block get the same answer. */
-    --u: calc(min(round(down, var(--x), var(--k)) + var(--k) / 2, var(--cols) - 0.5) / var(--cols));
-    --v: calc(min(round(down, var(--y), var(--k)) + var(--k) / 2, var(--rows) - 0.5) / var(--rows));
-    /* A background-position of p% pins the photo's point p to the tile's point p. At this size the rest of the photo
-       is far outside the tile, and that one point is all that shows. */
+    /* The photo's size in blocks. At a magnification of 1 it spans the whole wall, as the photo behind does. Capped
+       where browsers stop trusting very large boxes. */
+    --mag: pow(var(--m), 1 - var(--press));
+    --sx: min(var(--cols) * var(--mag) / var(--fx), 100000);
+    --sy: min(var(--rows) * var(--mag) / var(--fy), 100000);
+    /* The point of the photo behind the block's middle, as a fraction of the photo. It is kept far enough from the
+       photo's edges that a wide view never runs off the picture. */
+    --u: clamp(0.5 - var(--fx) / 2 + 0.5 / var(--sx), 0.5 + ((var(--x) + 0.5) / var(--cols) - 0.5) * var(--fx), 0.5 + var(--fx) / 2 - 0.5 / var(--sx));
+    --v: clamp(0.5 - var(--fy) / 2 + 0.5 / var(--sy), 0.5 + ((var(--y) + 0.5) / var(--rows) - 0.5) * var(--fy), 0.5 + var(--fy) / 2 - 0.5 / var(--sy));
+    /* A background-position of p% puts the copy's left edge p% of the way across the room left over, (1 - sx) blocks,
+       so this is the p that lands point u on the block's middle. */
     background: var(--photo) no-repeat
-      calc((0.5 + (var(--u) - 0.5) * var(--fx)) * 100%)
-      calc((0.5 + (var(--v) - 0.5) * var(--fy)) * 100%) / 10000000% 10000000%;
-    transition: opacity var(--t-slow) 0.3s;
+      calc((0.5 - var(--u) * var(--sx)) / (1 - var(--sx)) * 100%)
+      calc((0.5 - var(--v) * var(--sy)) / (1 - var(--sy)) * 100%) / calc(var(--sx) * 100%) calc(var(--sy) * 100%);
+    transition: --press var(--t-slow) 0.3s;
   }
-  /* Wipe: a tile under the pointer clears at once and fades back after the pointer has gone */
-  .grid i:hover { opacity: 0; transition: none; }
+  /* Press a block flat: under the pointer it turns to clear glass at once, and eases back after the pointer has gone */
+  .grid i:hover { --press: 1; transition: none; }
 
-  /* The tiles need round() and mod(), and an index: sibling-index(), or --i set by the script where that is missing.
+  /* Glass: rounded blocks set in mortar, each with a bevel of inset light and shade and a sheen across it */
+  .stage:has(#glass:checked) .grid { background: var(--mortar); }
+  .stage:has(#glass:checked) .grid i {
+    --edge: calc(var(--tile) * 0.07);
+    scale: 0.94;
+    border-radius: 14%;
+    background-image: linear-gradient(135deg, #fff5, #fff0 38%, #0000 60%, #0003), var(--photo);
+    background-size: 100% 100%, calc(var(--sx) * 100%) calc(var(--sy) * 100%);
+    background-position: 0 0, calc((0.5 - var(--u) * var(--sx)) / (1 - var(--sx)) * 100%) calc((0.5 - var(--v) * var(--sy)) / (1 - var(--sy)) * 100%);
+    box-shadow:
+      inset 0 0 0 1px #fff6,
+      inset var(--edge) var(--edge) calc(var(--edge) * 2) #fff8,
+      inset calc(var(--edge) * -1) calc(var(--edge) * -1) calc(var(--edge) * 2.4) #0008,
+      inset 0 0 calc(var(--edge) * 4) #fff3;
+  }
+
+  /* The blocks need round() and mod(), and an index: sibling-index(), or --i set by the script where that is missing.
      Without them the frame simply shows the photo. */
   @supports (order: sibling-index()) {
     .grid i { --i: sibling-index(); }
   }
-  @supports (width: round(down, mod(5px, 2px), 1px)) and (width: calc(sqrt(4) * 1px)) {
+  @supports (width: round(down, mod(5px, 2px), 1px)) and (width: calc(sqrt(pow(2, 2)) * 1px)) {
     @supports (order: sibling-index()) { .grid { display: grid; } }
     [data-indexed] .grid { display: grid; }
   }
 
-  .size {
-    display: flex;
+  .dials {
+    display: grid;
+    grid-template-columns: auto minmax(6rem, 14rem) auto;
     align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.4rem 0.6rem;
+    gap: 0.35rem 0.6rem;
     font-size: 0.9rem;
   }
-  .size[hidden] { display: none; }
-  .size input { inline-size: min(14rem, 40cqw); accent-color: var(--c-accent); }
-  /* The readout counts the blocks, cut-off ones at the edges included */
-  .size output {
-    min-inline-size: 6.5rem;
+  .dials input[type="range"] { inline-size: 100%; accent-color: var(--c-accent); }
+  .dials:not([data-live]) :is(label[for="block"], label[for="lens"], input[type="range"], output, span) { display: none; }
+  /* The readout counts the blocks */
+  .dials output {
     font-variant-numeric: tabular-nums;
-    --count: calc(round(up, var(--cols) / var(--size), 1) * round(up, var(--rows) / var(--size), 1));
-    counter-reset: pixels var(--count);
+    --count: calc(var(--cols) * var(--rows));
+    counter-reset: blocks var(--count);
   }
-  .size output::after { content: counter(pixels) " pixels"; }
+  .dials output::after { content: counter(blocks) " blocks"; }
+  .dials span { opacity: 0.75; }
+  .dials .glass { grid-column: 1 / -1; justify-self: center; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+  .glass input { accent-color: var(--c-accent); inline-size: 1rem; block-size: 1rem; }
 
   .tools {
     display: flex;
@@ -140,13 +177,13 @@
   .credit a { color: inherit; }
   .stage:not([data-own]) .back, [data-own] .credit { display: none; }
   /* Gallery cards show the picture alone */
-  :root:has(#card:target) :is(.size, .tools, .credit) { display: none; }
+  :root:has(#card:target) :is(.dials, .tools, .credit) { display: none; }
   :root:has(#card:target) .stage { --below: 2rem; }
   /* A file dragged over the window */
   [data-drop] .frame { outline: 3px dashed var(--c-accent); outline-offset: 0.4rem; }
 
   @media (prefers-reduced-motion: reduce) {
-    /* The wipe still works, without the fade */
+    /* Pressing a block flat still works, without the ease back */
     .grid i { transition: none; }
   }
 }
