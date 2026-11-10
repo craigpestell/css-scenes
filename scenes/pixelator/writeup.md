@@ -4,7 +4,7 @@ slug: pixelator
 ---
 ## The idea
 
-A photo of Michelangelo's David hangs in a frame. A sheet of small square tiles lies over it. A slider sets how many tiles wide each pixel is, from 1 to 32. Left alone, the scene grows and shrinks the pixels on a loop. Moving the pointer over the picture wipes the tiles away. A button swaps in a photo of your own.
+A photo of Michelangelo's David hangs in a frame. A sheet of small square tiles lies over it. A slider sets how many tiles wide each pixel is, from 1 to 32. Moving the pointer over the picture wipes the tiles away. A button swaps in a photo of your own.
 
 CSS has no "average this region" and no way to read a pixel. `image-rendering: pixelated` only helps when the source is already small. So the scene does the sampling with a background.
 
@@ -56,28 +56,20 @@ The block's side `--k` is counted in tiles. Rounding a tile's column and row dow
 
 The `min()` keeps the last, cut-off block sampling from inside the photo. The markup never changes: 3,456 tiles are always there, and only the arithmetic makes them look like 54.
 
-### The block size is a registered integer
+### The slider
+
+`--size` is the block's side in tiles, and `.grid` hands it to the tiles as `--k`, a registered integer:
 
 ```css
 @property --k { syntax: "<integer>"; inherits: true; initial-value: 1; }
 
-.grid { --k: var(--pick, var(--size)); }
-
-@keyframes block {
-  0%, 12%, 92%, 100% { --k: 1; }
-  48%, 58% { --k: var(--size); }
-}
+.grid { --k: var(--size); }
 ```
 
-Because `--k` is registered as an integer, the loop moves it in whole steps, one tile at a time, and the tiles repaint only when it changes. A second animation fades the sheet out at the ends of the loop, which is where the sharp photo shows.
-
-### The slider
-
-CSS can't read a range input's value, so this is the second job the script has. Moving the slider sets `--pick` on the stage and adds `data-picked`, and the CSS does the rest: `--k` takes the picked value, and the loop's selector, `.stage:not([data-picked]) .grid`, stops matching. Play loop removes both.
+CSS can't read a range input's value, so this is one of the two jobs the script has. Moving the slider sets `--size` on the stage, and the CSS does the rest:
 
 ```js
-stage.style.setProperty('--pick', e.target.value);
-stage.toggleAttribute('data-picked', true);
+size.querySelector('input').addEventListener('input', (e) => stage.style.setProperty('--size', e.target.value));
 ```
 
 The slider goes from 1 tile to 32. At 1 every tile is its own pixel (3,456 of them for David); at 32 the statue is six blocks.
@@ -88,7 +80,7 @@ The readout beside the slider is a CSS counter. A registered integer takes the a
 
 ```css
 .size output {
-  --count: calc(round(up, var(--cols) / var(--pick, var(--size)), 1) * round(up, var(--rows) / var(--pick, var(--size)), 1));
+  --count: calc(round(up, var(--cols) / var(--size), 1) * round(up, var(--rows) / var(--size), 1));
   counter-reset: pixels var(--count);
 }
 .size output::after { content: counter(pixels) " pixels"; }
@@ -134,12 +126,12 @@ The photo is read in place. Nothing is uploaded.
 
 - No `sibling-index()`: the script supplies `--i`.
 - No `round()` or `mod()`, or no script and no `sibling-index()`: the tile sheet stays hidden and the frame shows the photo.
-- No script: the loop still plays; the slider and the photo button stay hidden.
-- Reduced motion: no loop. A still mosaic at the slider's size, and the wipe works without its fade.
+- No script: a still mosaic at 8 tiles per pixel; the slider and the photo button stay hidden.
+- Reduced motion: the wipe works without its fade. Nothing else moves.
 
 ## Numbers
 
-- Page: 5.5 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
+- Page: 5.3 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
 - Default photo: 94 KB JPEG, loaded as a separate file.
 - In software rendering, about one tile in 150 shows a faint two-tone split, because the renderer's interpolation is coarse at this magnification. A GPU should interpolate more finely; that is not checked yet.
 - 3,600 tile elements. A change of pixel size restyles all of them, which took about 0.2 s in the headless cloud browser used to build this (software rendering, slow CPU). It has not been measured on a real machine yet.

@@ -5,7 +5,7 @@
 <meta name="color-scheme" content="light dark">
 <title>Pixelator</title>
 <!--css-->
-<main class="stage" aria-label="A photo of Michelangelo's David breaks into a mosaic of square tiles. Left alone, the tiles merge into bigger and bigger blocks until the statue is a handful of flat colours, then split again until the photo is sharp. A slider sets the pixel size by hand, one tile at a time. Move the pointer across the picture to wipe the tiles away, or swap in a photo of your own.">
+<main class="stage" aria-label="A photo of Michelangelo's David under a sheet of square tiles that turn it into a mosaic of flat colours. A slider sets the pixel size, one tile at a time, from a fine grid to a handful of blocks. Move the pointer across the picture to wipe the tiles away, or swap in a photo of your own.">
 <div class="frame">
 <div class="photo" role="img" aria-label="Michelangelo's David in the Galleria dell'Accademia, Florence"></div>
 <!-- 3,600 empty tiles: each one works out its own column and row from sibling-index() and shows one point of the photo -->
@@ -52,7 +52,6 @@
 <label for="size">Pixel size</label>
 <input type="range" id="size" min="1" max="32" value="8">
 <output for="size" aria-hidden="true"></output>
-<button type="button" class="loop">Play loop</button>
 </div>
 <div class="tools" role="group" aria-label="Photo" hidden>
 <label class="pick"><input type="file" accept="image/*">Use your photo</label>

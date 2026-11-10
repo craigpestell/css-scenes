@@ -43,16 +43,9 @@ addEventListener('drop', (e) => { e.preventDefault(); stage.removeAttribute('dat
 addEventListener('paste', (e) => use(e.clipboardData.files[0]));
 tools.hidden = false;
 
-// The slider sets the block size and stops the loop; Play loop hands the picture back
+// The slider sets the block size
 const size = stage.querySelector('.size');
-size.querySelector('input').addEventListener('input', (e) => {
-  stage.style.setProperty('--pick', e.target.value);
-  stage.toggleAttribute('data-picked', true);
-});
-size.querySelector('.loop').addEventListener('click', () => {
-  stage.style.removeProperty('--pick');
-  stage.removeAttribute('data-picked');
-});
+size.querySelector('input').addEventListener('input', (e) => stage.style.setProperty('--size', e.target.value));
 size.hidden = false;
 
 // Browsers without sibling-index() get each tile's index written in

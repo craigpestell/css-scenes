@@ -5,7 +5,6 @@
     "point sampling: a background magnified 100,000 times shows one colour per tile",
     "column and row from sibling-index() with mod() and round()",
     "round() snaps neighbouring tiles to one sample, so blocks grow without touching the markup",
-    "block size as a registered integer that animates in whole steps",
     "a pixel size slider: the script passes its value in as one custom property",
     "a live pixel count through a registered integer and counter()",
     "tile count from sqrt() of the photo's aspect ratio",
@@ -28,7 +27,6 @@
     "rasterImage": "assets/david.jpg (800x1200 JPEG, 94 KB) is the default photo, asked for by the founder on 2026-11-10. It loads as a separate file and is not part of the 14 KiB page budget."
   },
   "params": [
-    { "type": "range", "label": "Biggest pixel in the loop (tiles)", "var": "--size", "min": 1, "max": 32, "step": 1, "value": 8 },
     { "type": "range", "label": "Tiles", "var": "--cells", "min": 384, "max": 3456, "step": 96, "value": 3456 }
   ]
 }

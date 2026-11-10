@@ -16,9 +16,8 @@
     --photo: url(/scenes/pixelator/assets/david.jpg); /* from the site root: the page is served with and without a trailing slash */
     --ar: 0.6667;    /* the photo's width / height. CSS can't read that from an image, so the script sets it for an upload */
     /* Controls */
-    --size: 8;       /* the biggest block in the loop, in tiles */
+    --size: 8;       /* the block's side in tiles; the slider sets it */
     --cells: 3456;   /* how many tiles to aim for; the markup holds 3,600 */
-    --loop: 16s;
     --below: 10.5rem; /* room under the frame for the buttons and the credit */
 
     /* The tile sheet takes the photo's shape: cols x rows comes as close to --cells as whole numbers allow.
@@ -67,7 +66,7 @@
     grid-template-columns: repeat(var(--cols), var(--tile));
     grid-auto-rows: var(--tile);
     overflow: clip;   /* spare tiles land in rows below the frame */
-    --k: var(--pick, var(--size));   /* --pick is the slider's value, once it has been moved */
+    --k: var(--size);
   }
   .grid i {
     /* Column and row, counted from 0 */
@@ -96,20 +95,6 @@
     [data-indexed] .grid { display: grid; }
   }
 
-  /* The loop: sharp photo, finest tiles, bigger and bigger blocks, and back. --k is an integer, so it moves in whole
-     steps and the tiles repaint only when it does. Moving the slider stops the loop. */
-  .stage:not([data-picked]) .grid {
-    animation: block var(--loop) linear infinite both, veil var(--loop) linear infinite both; /* paint-ok: --k repaints the tiles about twice a second */
-  }
-  @keyframes block {
-    0%, 12%, 92%, 100% { --k: 1; }
-    48%, 58% { --k: var(--size); }
-  }
-  @keyframes veil {
-    0%, 5%, 97%, 100% { opacity: 0; }
-    10%, 93% { opacity: 1; }
-  }
-
   .size {
     display: flex;
     align-items: center;
@@ -124,12 +109,10 @@
   .size output {
     min-inline-size: 6.5rem;
     font-variant-numeric: tabular-nums;
-    --count: calc(round(up, var(--cols) / var(--pick, var(--size)), 1) * round(up, var(--rows) / var(--pick, var(--size)), 1));
+    --count: calc(round(up, var(--cols) / var(--size), 1) * round(up, var(--rows) / var(--size), 1));
     counter-reset: pixels var(--count);
   }
   .size output::after { content: counter(pixels) " pixels"; }
-  .stage:not([data-picked]) .size output::after { content: "Looping"; }
-  .stage:not([data-picked]) .loop { display: none; }
 
   .tools {
     display: flex;
@@ -140,7 +123,7 @@
     font-size: 0.9rem;
   }
   .tools[hidden] { display: none; }
-  .pick, .back, .loop {
+  .pick, .back {
     padding: 0.5rem 1rem;
     border: 1px solid var(--c-ink);
     border-radius: 99rem;
@@ -149,10 +132,9 @@
     cursor: pointer;
   }
   .pick { background: var(--c-ink); color: var(--c-paper); }
-  .back, .loop { background: none; color: inherit; }
-  .loop { padding-block: 0.3rem; }
+  .back { background: none; color: inherit; }
   .pick input { position: absolute; opacity: 0; inline-size: 1px; block-size: 1px; }
-  .pick:has(:focus-visible), .back:focus-visible, .loop:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  .pick:has(:focus-visible), .back:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
   .note { flex-basis: 100%; text-align: center; opacity: 0.75; }
   .credit { font-size: 0.75rem; opacity: 0.75; }
   .credit a { color: inherit; }
@@ -164,10 +146,7 @@
   [data-drop] .frame { outline: 3px dashed var(--c-accent); outline-offset: 0.4rem; }
 
   @media (prefers-reduced-motion: reduce) {
-    /* No loop: a still mosaic at the slider's size. The wipe still works, without the fade */
-    .stage:not([data-picked]) .grid { animation: none; }
-    .stage:not([data-picked]) .size output::after { content: counter(pixels) " pixels"; }
-    .stage .loop { display: none; }
+    /* The wipe still works, without the fade */
     .grid i { transition: none; }
   }
 }
