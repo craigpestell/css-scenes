@@ -1,5 +1,5 @@
 // The lenses are all CSS, and the sliders belong to the Controls panel, which writes their values onto the stage. This
-// script does what CSS can't: it keeps the number of blocks in the page equal to the number the CSS asks for, and
+// script does what CSS can't: it keeps the number of blocks in the page equal to the number the wall needs, and
 // swaps in a photo the visitor chooses. The photo is read in place and never uploaded.
 const stage = document.querySelector('.stage');
 const photo = stage.querySelector('.photo');
@@ -43,15 +43,22 @@ addEventListener('dragleave', () => stage.removeAttribute('data-drop'));
 addEventListener('drop', (e) => { e.preventDefault(); stage.removeAttribute('data-drop'); use(e.dataTransfer.files[0]); });
 addEventListener('paste', (e) => use(e.clipboardData.files[0]));
 
-// CSS decides how many columns and rows the wall has; this keeps exactly that many blocks in the page, so the browser
-// never styles blocks nobody can see. Where sibling-index() is missing, each block's index is written in.
+// How many columns and rows the wall has. The CSS works out the same numbers for the page as it first loads; working
+// them out here as well lets the blocks be added or removed before the browser restyles, so it restyles the wall once
+// per change and not twice. Where sibling-index() is missing, each block's index is written in.
 const indexed = CSS.supports('order', 'sibling-index()');
 function fit() {
-  const wall = getComputedStyle(grid);
-  const want = wall.getPropertyValue('--cols') * wall.getPropertyValue('--rows');
+  const block = parseFloat(stage.style.getPropertyValue('--block') || 55);
+  const ar = parseFloat(stage.style.getPropertyValue('--ar') || 0.6667);
+  const shape = Math.min(3, Math.max(0.34, ar));
+  const cols = Math.round(Math.sqrt(3456 * 144 ** (block / -100) * shape));
+  const rows = Math.round(cols / shape);
+  if (stage.style.getPropertyValue('--cols') != cols) stage.style.setProperty('--cols', cols);
+  if (stage.style.getPropertyValue('--rows') != rows) stage.style.setProperty('--rows', rows);
+  const want = cols * rows;
   while (grid.children.length > want) grid.lastElementChild.remove();
-  while (grid.children.length < want) grid.append(document.createElement('i'));
-  if (!indexed) [...grid.children].forEach((block, n) => block.style.setProperty('--i', n + 1));
+  if (grid.children.length < want) grid.append(...Array.from({ length: want - grid.children.length }, () => document.createElement('i')));
+  if (!indexed) [...grid.children].forEach((b, n) => b.style.setProperty('--i', n + 1));
 }
 stage.toggleAttribute('data-indexed', !indexed);
 fit();

@@ -22,10 +22,7 @@ Every block is a real element, so anything CSS can do to a box (shadows, roundin
 `.photo` shows the photo once. Each block in `.grid` paints the same photo again as its own background. `--sx` is the copy's width measured in blocks:
 
 ```css
-.grid i {
-  --mag: pow(var(--m), 1 - var(--press));
-  --sx: min(var(--cols) * var(--mag) / var(--fx), 100000);
-}
+.grid { --sx: min(var(--cols) * var(--m) / var(--fx), 100000); }
 ```
 
 At a magnification of 1, the copy is as wide as the wall (`--cols` blocks), exactly like the photo behind. `--fx` allows for a photo cropped to fit the frame.
@@ -74,44 +71,43 @@ The blocks are empty `<i>` elements with no classes and no inline styles. Each w
 }
 ```
 
-### Registered properties keep the arithmetic cheap
+### Keeping a slider move cheap
 
-An unregistered custom property is pasted as text wherever it is used. `--u` uses `--sx` twice, and the background uses both several times, so the formula for one block grew to pages. Registering the per-block numbers makes the browser work each out once:
+Every slider move restyles every block, so the cost per block decides how the scene feels. Four things brought a Lens move on the finest wall (3,456 blocks) from about 650 ms of style work to about 100 ms, and a Block size move from about 3.8 s to 0.3 s with Frosted on, in the headless browser used to build this:
 
-```css
-@property --sx { syntax: "<number>"; inherits: false; initial-value: 1; }
-@property --u { syntax: "<number>"; inherits: false; initial-value: 0; }
-```
+- **Register the numbers.** An unregistered custom property is pasted as text wherever it is used, so a formula is worked out again at each use. `--tile` was the worst: its container-query formula was pasted into every length of every block's bevel.
+- **Work shared numbers out once.** `--sx`, `--sy` and the limits `--lx` and `--ly` are the same for every block, so they are set on `.grid` and inherited. A block works out only its column, its row and the point `--u`, `--v` behind it.
+- **One sheet for the glass.** The sheen and bevel were four inset shadows and a gradient on every block. They are now one pseudo-element over the wall, with a background pattern one block wide. Frosted is one `backdrop-filter` on the same sheet; a blur per block cost a compositing layer each, over a second of layer work on the finest wall.
+- **Change the blocks before the restyle.** The script used to read `--cols` and `--rows` back from the computed style, which forced a restyle, then added blocks, which forced another. It now works the two numbers out itself.
 
-In the headless browser used to build this, a move of the Lens slider went from about 1.7 s of style work to 0.65 s with the properties registered (both with 3,600 blocks in the page).
+The photo's file format is not part of this: the JPEG is decoded once (about 10 ms) and every block draws from the same decoded bitmap.
 
 ### The glass
 
-The Glass blocks switch in the Controls panel sets a `data-glass` attribute on the stage, which the markup carries by default. It rounds the blocks, shrinks them a little to show mortar, and adds a bevel of inset shadows and a sheen as a second background layer. The bevel is sized from the block, so it scales with the Block size slider:
+The Glass blocks switch in the Controls panel sets a `data-glass` attribute on the stage, which the markup carries by default. Blocks are rounded and shrunk a little to show mortar. The sheen and bevel are a pattern on a sheet over the wall:
 
 ```css
-[data-glass] .grid i {
-  --edge: calc(var(--tile) * 0.07);
-  scale: 0.94;
-  border-radius: 14%;
-  box-shadow:
-    inset 0 0 0 1px #fff6,
-    inset var(--edge) var(--edge) calc(var(--edge) * 2) #fff8,
-    inset calc(var(--edge) * -1) calc(var(--edge) * -1) calc(var(--edge) * 2.4) #0008,
-    inset 0 0 calc(var(--edge) * 4) #fff3;
+[data-glass] .grid i { scale: 0.94; border-radius: 14%; }
+[data-glass] .grid::after {
+  background:
+    linear-gradient(135deg, #fff4 3%, #fff0 38%, #0000 60%, #0002 97%),
+    linear-gradient(#fff0 3%, #fff6 3%, #fff2 9%, #fff0 17%),
+    /* and the left, bottom and right edges */;
+  background-size: var(--tile) var(--tile);
 }
 ```
 
 ### Press a block flat
 
 ```css
-@property --press { syntax: "<number>"; inherits: false; initial-value: 0; }
-
-.grid i { transition: --press var(--t-slow) 0.3s; }
-.grid i:hover { --press: 1; transition: none; }
+.grid i:hover {
+  --sx: calc(var(--cols) / var(--fx));
+  position: relative; z-index: 1;
+}
+.grid:hover i:not(:hover) { transition: --sx var(--t-slow) 0.3s, --sy var(--t-slow) 0.3s; }
 ```
 
-`--press` takes the block's magnification to 1 through `pow(var(--m), 1 - var(--press))`. The transition is declared only on the way back, so a block under the pointer goes clear at once and eases back to its lens after the pointer has left. Transitioning `--m` itself was a mistake worth recording: it is inherited, so every block started its own transition each time the slider moved.
+A block under the pointer takes a magnification of 1 and lifts above the glass sheet. The ease back is declared only while the pointer is on the wall. `--sx` is inherited, and a transition declared all the time would start on every block each time a slider moved; that mistake cost about 3 s a move when first made.
 
 ### The wall takes the photo's shape
 
@@ -127,12 +123,11 @@ A block's side is rounded down to a whole pixel, so blocks meet without seams.
 
 ### Frosted
 
-The Frosted switch sets `data-frost`, which lays a sheet over each block with `backdrop-filter: blur()`. The blur is sized from the block, so the frost keeps its look at every block size, and the bevel is drawn again on the sheet so it stays sharp. A pressed block is clear. Safari's own Liquid Glass is not available here: its only CSS hook, `-apple-visual-effect: -apple-system-glass-material`, is private and works in apps' web views, not in pages Safari loads.
+The Frosted switch sets `data-frost`, which adds a `backdrop-filter: blur()` to the glass sheet. The blur is sized from the block, so the frost keeps its look at every block size. It softens the mortar a little, which a blur per block did not, and costs one layer and not thousands. A pressed block sits above the sheet and is clear. Safari's own Liquid Glass is not available here: its only CSS hook, `-apple-visual-effect: -apple-system-glass-material`, is private and works in apps' web views, not in pages Safari loads.
 
 ```css
-[data-frost] .grid i:not(:hover)::after {
-  content: ""; position: absolute; inset: 0;
-  border-radius: inherit; box-shadow: inherit; background: #fff2;
+[data-frost] .grid::after {
+  background-color: #fff2;
   backdrop-filter: blur(calc(var(--tile) * 0.07));
 }
 ```
@@ -145,7 +140,7 @@ Nothing sits on the stage but the wall and the photo credit. The sliders, the gl
 
 Two things CSS can't:
 
-- It keeps the number of `<i>` elements equal to `--cols` times `--rows`, read back from the computed style whenever the stage's inline style changes, so the browser never styles blocks nobody can see. With 216 blocks instead of 3,600 in the page, a Lens move dropped from 0.65 s to about 0.06 s in the same headless browser.
+- It keeps the number of `<i>` elements equal to columns times rows whenever the stage's inline style changes, so the browser never styles blocks nobody can see. It works the two numbers out with the same formula as the CSS and sets `--cols` and `--rows`, so the two can't disagree.
 - It points `--photo` at a photo you pick, drop or paste, and sets `--ar`. The photo is read in place; nothing is uploaded.
 
 ## Fallbacks
@@ -157,7 +152,7 @@ Two things CSS can't:
 
 ## Numbers
 
-- Page: 5.5 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
+- Page: 5.8 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
 - Default photo: 94 KB JPEG, loaded as a separate file.
 - Timings above are from a headless cloud browser with software rendering. Nothing has been measured on a real machine, in Safari or in Firefox yet. Dragging Block size to its finest end builds 3,456 blocks and was slow there (about 3 s).
 

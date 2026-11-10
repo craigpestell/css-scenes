@@ -20,7 +20,7 @@ Status: APPROVED. The owner asked for this scene on 2026-11-10 ("a css image 'pi
 ## Motion plan
 | element | property | trigger | duration | compositor-safe? |
 |---|---|---|---|---|
-| block | `--press` (registered number) 1 → 0, which eases its magnification back | hover ends | `--t-slow` | paint-ok: one block repaints |
+| block | `--sx`, `--sy` (registered numbers) ease from a magnification of 1 back to the lens | hover ends | `--t-slow` | paint-ok: one block repaints |
 
 ## Techniques (Baseline status and fallback)
 - **A background copy per block**, sized by the magnification and positioned so the block's middle shows what is behind it. Widely available.

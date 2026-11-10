@@ -6,19 +6,22 @@
   copy is makes the block a lens: the true size is clear glass, smaller is a glass block that squeezes a wider view
   into itself, bigger magnifies, and a hundred thousand times bigger leaves one point of the photo: a pixel.
 */
-@property --count { syntax: "<integer>"; inherits: false; initial-value: 0; }
 @property --cols { syntax: "<integer>"; inherits: true; initial-value: 12; }
 @property --rows { syntax: "<integer>"; inherits: true; initial-value: 18; }
-@property --press { syntax: "<number>"; inherits: false; initial-value: 0; }  /* 1 while a block is pressed flat */
-/* Registering the per-block numbers makes the browser work each one out once, instead of pasting its whole formula
-   into every place that uses it */
+/* Registering a number makes the browser work it out once, where it is set, instead of pasting its whole formula into
+   every place that uses it. Everything the blocks share is worked out once on the wall and inherited */
 @property --m { syntax: "<number>"; inherits: true; initial-value: 1; }
-@property --sx { syntax: "<number>"; inherits: false; initial-value: 1; }
-@property --sy { syntax: "<number>"; inherits: false; initial-value: 1; }
-@property --u { syntax: "<number>"; inherits: false; initial-value: 0; }
-@property --v { syntax: "<number>"; inherits: false; initial-value: 0; }
 @property --fx { syntax: "<number>"; inherits: true; initial-value: 1; }
 @property --fy { syntax: "<number>"; inherits: true; initial-value: 1; }
+@property --sx { syntax: "<number>"; inherits: true; initial-value: 1; }
+@property --sy { syntax: "<number>"; inherits: true; initial-value: 1; }
+@property --lx { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --ly { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --tile { syntax: "<length>"; inherits: true; initial-value: 0px; }
+@property --x { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --y { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --u { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --v { syntax: "<number>"; inherits: false; initial-value: 0; }
 
 @layer scene {
   .stage {
@@ -81,55 +84,57 @@
     grid-template-columns: repeat(var(--cols), var(--tile));
     grid-auto-rows: var(--tile);
     overflow: clip;
+    /* The photo's size in blocks. At a magnification of 1 it spans the whole wall, as the photo behind does. Capped
+       where browsers stop trusting very large boxes. */
+    --sx: min(var(--cols) * var(--m) / var(--fx), 100000);
+    --sy: min(var(--rows) * var(--m) / var(--fy), 100000);
+    /* How far from the photo's middle a block may look, so a wide view never runs off the picture */
+    --lx: calc(var(--fx) / 2 - 0.5 / var(--sx));
+    --ly: calc(var(--fy) / 2 - 0.5 / var(--sy));
   }
   .grid i {
     /* Column and row, counted from 0 */
     --x: mod(var(--i) - 1, var(--cols));
     --y: round(down, (var(--i) - 1) / var(--cols));
-    /* The photo's size in blocks. At a magnification of 1 it spans the whole wall, as the photo behind does. Capped
-       where browsers stop trusting very large boxes. */
-    --mag: pow(var(--m), 1 - var(--press));
-    --sx: min(var(--cols) * var(--mag) / var(--fx), 100000);
-    --sy: min(var(--rows) * var(--mag) / var(--fy), 100000);
-    /* The point of the photo behind the block's middle, as a fraction of the photo. It is kept far enough from the
-       photo's edges that a wide view never runs off the picture. */
-    --u: clamp(0.5 - var(--fx) / 2 + 0.5 / var(--sx), 0.5 + ((var(--x) + 0.5) / var(--cols) - 0.5) * var(--fx), 0.5 + var(--fx) / 2 - 0.5 / var(--sx));
-    --v: clamp(0.5 - var(--fy) / 2 + 0.5 / var(--sy), 0.5 + ((var(--y) + 0.5) / var(--rows) - 0.5) * var(--fy), 0.5 + var(--fy) / 2 - 0.5 / var(--sy));
+    /* The point of the photo behind the block's middle, as a fraction of the photo */
+    --u: calc(0.5 + clamp(-1 * var(--lx), ((var(--x) + 0.5) / var(--cols) - 0.5) * var(--fx), var(--lx)));
+    --v: calc(0.5 + clamp(-1 * var(--ly), ((var(--y) + 0.5) / var(--rows) - 0.5) * var(--fy), var(--ly)));
     /* A background-position of p% puts the copy's left edge p% of the way across the room left over, (1 - sx) blocks,
        so this is the p that lands point u on the block's middle. */
     background: var(--photo) no-repeat
       calc((0.5 - var(--u) * var(--sx)) / (1 - var(--sx)) * 100%)
       calc((0.5 - var(--v) * var(--sy)) / (1 - var(--sy)) * 100%) / calc(var(--sx) * 100%) calc(var(--sy) * 100%);
-    transition: --press var(--t-slow) 0.3s;
   }
-  /* Press a block flat: under the pointer it turns to clear glass at once, and eases back after the pointer has gone */
-  .grid i:hover { --press: 1; transition: none; }
+  /* Press a block flat: under the pointer it is clear glass, lifted above the glass sheet. It eases back only while
+     the pointer is still on the wall, so moving a slider never starts a transition on every block */
+  .grid i:hover {
+    --sx: calc(var(--cols) / var(--fx));
+    --sy: calc(var(--rows) / var(--fy));
+    --lx: calc(var(--fx) / 2 - 0.5 / var(--sx));
+    --ly: calc(var(--fy) / 2 - 0.5 / var(--sy));
+    position: relative;
+    z-index: 1;
+  }
+  .grid:hover i:not(:hover) { transition: --sx var(--t-slow) 0.3s, --sy var(--t-slow) 0.3s; }
 
-  /* Glass: rounded blocks set in mortar, each with a bevel of inset light and shade and a sheen across it */
+  /* Glass: rounded blocks set in mortar. The sheen and the bevel of every block are one sheet over the wall, a
+     pattern one block wide, so the browser paints them once and not once per block */
   [data-glass] .grid { background: var(--mortar); }
-  [data-glass] .grid i {
-    --edge: calc(var(--tile) * 0.07);
-    scale: 0.94;
-    border-radius: 14%;
-    background-image: linear-gradient(135deg, #fff5, #fff0 38%, #0000 60%, #0003), var(--photo);
-    background-size: 100% 100%, calc(var(--sx) * 100%) calc(var(--sy) * 100%);
-    background-position: 0 0, calc((0.5 - var(--u) * var(--sx)) / (1 - var(--sx)) * 100%) calc((0.5 - var(--v) * var(--sy)) / (1 - var(--sy)) * 100%);
-    box-shadow:
-      inset 0 0 0 1px #fff6,
-      inset var(--edge) var(--edge) calc(var(--edge) * 2) #fff8,
-      inset calc(var(--edge) * -1) calc(var(--edge) * -1) calc(var(--edge) * 2.4) #0008,
-      inset 0 0 calc(var(--edge) * 4) #fff3;
+  [data-glass] .grid i { scale: 0.94; border-radius: 14%; }
+  .grid::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+  [data-glass] .grid::after {
+    background:
+      linear-gradient(135deg, #fff4 3%, #fff0 38%, #0000 60%, #0002 97%),
+      linear-gradient(#fff0 3%, #fff6 3%, #fff2 9%, #fff0 17%),
+      linear-gradient(90deg, #fff0 3%, #fff6 3%, #fff2 9%, #fff0 17%),
+      linear-gradient(0deg, #0000 3%, #0006 3%, #0002 10%, #0000 19%),
+      linear-gradient(270deg, #0000 3%, #0006 3%, #0002 10%, #0000 19%);
+    background-size: var(--tile) var(--tile);
   }
-  /* Frosted: a sheet over each block blurs the block's own picture behind it and milks it a little. The blur is sized
-     from the block, the bevel is drawn again on the sheet so it stays sharp, and a pressed block is clear */
-  [data-frost] .grid i { position: relative; }
-  [data-frost] .grid i:not(:hover)::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    box-shadow: inherit;
-    background: #fff2;
+  /* Frosted: the same sheet blurs the wall behind it and milks it a little. One blur for the whole wall, sized from
+     the block; a blur per block cost a compositing layer each */
+  [data-frost] .grid::after {
+    background-color: #fff2;
     -webkit-backdrop-filter: blur(calc(var(--tile) * 0.07));
     backdrop-filter: blur(calc(var(--tile) * 0.07));
   }
@@ -157,6 +162,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     /* Pressing a block flat still works, without the ease back */
-    .grid i { transition: none; }
+    .grid:hover i:not(:hover) { transition: none; }
   }
 }
