@@ -25,14 +25,14 @@
     --photo: url(/scenes/pixelator/assets/david.jpg); /* from the site root: the page is served with and without a trailing slash */
     --ar: 0.6667;    /* the photo's width / height. CSS can't read that from an image, so the script sets it for an upload */
     /* Controls */
-    --block: 0.55;   /* block size, 0 (finest) to 1 (biggest); the slider sets it */
-    --lens: 0.19;    /* 0 squeezes a wide view into each block, 0.3 is clear glass, 1 is a flat pixel; the slider sets it */
+    --block: 55;     /* block size, 0 (finest) to 100 (biggest); the Controls panel sets it */
+    --lens: 19;      /* 0 squeezes a wide view into each block, 30 is clear glass, 100 is a flat pixel; the panel sets it */
     /* How many blocks to aim for: 3,456 at the finest, 24 at the biggest. The markup holds 216 and the script keeps
        the count in step */
-    --cells: calc(3456 * pow(144, -1 * var(--block)));
+    --cells: calc(3456 * pow(144, var(--block) / -100));
     /* The magnification runs from 0.3 to 100,000, and the slider spends most of its travel near 1 */
-    --m: pow(10, 5.5 * var(--lens) * var(--lens) - 0.5);
-    --below: 14rem;  /* room under the frame for the controls and the credit */
+    --m: pow(10, 5.5 * pow(var(--lens) / 100, 2) - 0.5);
+    --below: 5rem;   /* room under the frame for the credit */
 
     /* The wall takes the photo's shape: cols x rows comes as close to --cells as whole numbers allow.
        Very long or tall photos are cropped to 3:1. */
@@ -47,7 +47,7 @@
     --mortar: light-dark(#d9dedc, #23262b);
     container-type: size;
     display: grid;
-    grid-template-rows: 1fr auto auto auto;
+    grid-template-rows: 1fr auto auto;
     justify-items: center;
     align-items: center;
     gap: 0.6rem;
@@ -106,8 +106,8 @@
   .grid i:hover { --press: 1; transition: none; }
 
   /* Glass: rounded blocks set in mortar, each with a bevel of inset light and shade and a sheen across it */
-  .stage:has(#glass:checked) .grid { background: var(--mortar); }
-  .stage:has(#glass:checked) .grid i {
+  [data-glass] .grid { background: var(--mortar); }
+  [data-glass] .grid i {
     --edge: calc(var(--tile) * 0.07);
     scale: 0.94;
     border-radius: 14%;
@@ -131,53 +131,13 @@
     [data-indexed] .grid { display: grid; }
   }
 
-  .dials {
-    display: grid;
-    grid-template-columns: auto minmax(6rem, 14rem) auto;
-    align-items: center;
-    gap: 0.35rem 0.6rem;
-    font-size: 0.9rem;
-  }
-  .dials input[type="range"] { inline-size: 100%; accent-color: var(--c-accent); }
-  .dials:not([data-live]) :is(label[for="block"], label[for="lens"], input[type="range"], output, span) { display: none; }
-  /* The readout counts the blocks */
-  .dials output {
-    font-variant-numeric: tabular-nums;
-    --count: calc(var(--cols) * var(--rows));
-    counter-reset: blocks var(--count);
-  }
-  .dials output::after { content: counter(blocks) " blocks"; }
-  .dials span { opacity: 0.75; }
-  .dials .glass { grid-column: 1 / -1; justify-self: center; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
-  .glass input { accent-color: var(--c-accent); inline-size: 1rem; block-size: 1rem; }
-
-  .tools {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-  }
-  .tools[hidden] { display: none; }
-  .pick, .back {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--c-ink);
-    border-radius: 99rem;
-    font: inherit;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .pick { background: var(--c-ink); color: var(--c-paper); }
-  .back { background: none; color: inherit; }
-  .pick input { position: absolute; opacity: 0; inline-size: 1px; block-size: 1px; }
-  .pick:has(:focus-visible), .back:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
-  .note { flex-basis: 100%; text-align: center; opacity: 0.75; }
+  .note { font-size: 0.9rem; }
+  .note:empty { display: none; }
   .credit { font-size: 0.75rem; opacity: 0.75; }
   .credit a { color: inherit; }
-  .stage:not([data-own]) .back, [data-own] .credit { display: none; }
+  [data-file] .credit { display: none; }
   /* Gallery cards show the picture alone */
-  :root:has(#card:target) :is(.dials, .tools, .credit) { display: none; }
+  :root:has(#card:target) .credit { display: none; }
   :root:has(#card:target) .stage { --below: 2rem; }
   /* A file dragged over the window */
   [data-drop] .frame { outline: 3px dashed var(--c-accent); outline-offset: 0.4rem; }

@@ -1,12 +1,11 @@
-// The lenses are all CSS. This script passes in what CSS can't read for itself (the sliders' values, and a chosen photo
-// with its shape) and keeps the number of blocks in the page equal to the number the CSS asks for. The photo is read in
-// place and never uploaded.
+// The lenses are all CSS, and the sliders belong to the Controls panel, which writes their values onto the stage. This
+// script does what CSS can't: it keeps the number of blocks in the page equal to the number the CSS asks for, and
+// swaps in a photo the visitor chooses. The photo is read in place and never uploaded.
 const stage = document.querySelector('.stage');
-const tools = stage.querySelector('.tools');
 const photo = stage.querySelector('.photo');
 const grid = stage.querySelector('.grid');
-const note = tools.querySelector('.note');
-const original = { label: photo.ariaLabel, note: note.textContent };
+const note = stage.querySelector('.note');
+const label = photo.ariaLabel;
 let url = '';
 
 async function use(file) {
@@ -21,31 +20,28 @@ async function use(file) {
   }
   stage.style.setProperty('--photo', `url("${next}")`);
   stage.style.setProperty('--ar', (img.naturalWidth / img.naturalHeight || 1).toFixed(4));
-  stage.toggleAttribute('data-own', true);
+  stage.toggleAttribute('data-file', true); // the panel shows "Back to David" while this is set
   photo.ariaLabel = 'Your photo';
-  note.textContent = original.note;
+  note.textContent = '';
   URL.revokeObjectURL(url);
   url = next;
-  fit();
 }
 function restore() {
   stage.style.removeProperty('--photo');
   stage.style.removeProperty('--ar');
-  stage.removeAttribute('data-own');
-  photo.ariaLabel = original.label;
+  stage.removeAttribute('data-file');
+  photo.ariaLabel = label;
+  note.textContent = '';
   URL.revokeObjectURL(url);
   url = '';
-  fit();
 }
 
-tools.querySelector('input').addEventListener('change', (e) => { use(e.target.files[0]); e.target.value = ''; });
-tools.querySelector('.back').addEventListener('click', restore);
-// A photo can also be dropped on the window or pasted
+// The panel's photo button sends the file here, or nothing to go back. A photo can also be dropped or pasted
+stage.addEventListener('scene:photo', (e) => (e.detail ? use(e.detail) : restore()));
 addEventListener('dragover', (e) => { e.preventDefault(); stage.toggleAttribute('data-drop', true); });
 addEventListener('dragleave', () => stage.removeAttribute('data-drop'));
 addEventListener('drop', (e) => { e.preventDefault(); stage.removeAttribute('data-drop'); use(e.dataTransfer.files[0]); });
 addEventListener('paste', (e) => use(e.clipboardData.files[0]));
-tools.hidden = false;
 
 // CSS decides how many columns and rows the wall has; this keeps exactly that many blocks in the page, so the browser
 // never styles blocks nobody can see. Where sibling-index() is missing, each block's index is written in.
@@ -59,12 +55,5 @@ function fit() {
 }
 stage.toggleAttribute('data-indexed', !indexed);
 fit();
-
-// Each slider writes its value to the custom property it names
-const dials = stage.querySelector('.dials');
-dials.addEventListener('input', (e) => {
-  if (!e.target.dataset.var) return;
-  stage.style.setProperty(e.target.dataset.var, e.target.value);
-  fit();
-});
-dials.toggleAttribute('data-live', true);
+// The count changes when a slider or a new photo changes the stage's inline style
+new MutationObserver(fit).observe(stage, { attributeFilter: ['style'] });

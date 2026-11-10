@@ -304,6 +304,10 @@ class SceneControls extends HTMLElement {
   render() {
     if (!this.body) return;
     const off = reduced.matches;
+    // A scene with nothing to play (transitions aside) has no Playback section; once one has animated, it stays
+    this.animated ||= off || stageAnims().some((a) => !(a instanceof CSSTransition));
+    this.body.querySelector('.playback').hidden = !this.animated;
+    this.handle.querySelector('.icon').hidden = !this.animated;
     this.body.querySelector('.reduced').hidden = !off;
     this.body.querySelectorAll('.playback :is(button,input)').forEach((el) => { el.disabled = off; });
     const pause = this.body.querySelector('[data-a=pause]');
@@ -332,7 +336,11 @@ const makeRoom = () => html.toggleAttribute('data-sheet-open', Boolean(panel?.sh
  *   { "type": "color", "label", "var", "target"?, "value" }
  *   { "type": "toggle", "label", "attr": "data-x", "target"?, "value"?: false }
  *     adds or removes a boolean attribute on target; a scene script or CSS reacts to it.
- * Playback (speed, loop, pause) lives in the edge tab, not here.
+ *   { "type": "file", "label", "accept"?, "event", "target"?, "clear"?, "note"? }
+ *     a file button. The chosen file never leaves the page: it is handed to the scene's own script as the detail of
+ *     a CustomEvent named `event` on target. `clear` labels a second button that sends the event with no file, as
+ *     Reset does; it shows while target carries the attribute data-file, which the scene script sets and removes.
+ * Playback (speed, loop, pause) sits above these, and only for scenes that animate.
  */
 const counts = new Map(); // selector -> { template, homes: [{ parent, anchor }], initial }
 const countSetup = (p) => {
@@ -403,6 +411,11 @@ const controlsSection = {
         return `<div class="row" data-p="${i}"><label class="switch"><span>${esc(p.label)}</span>
           <input type="checkbox" role="switch" id="${id(i)}"${p.value ? ' checked' : ''}></label></div>`;
       }
+      if (p.type === 'file') {
+        return `<div class="row file" data-p="${i}"><label class="btn"><input type="file" id="${id(i)}"${p.accept ? ` accept="${esc(p.accept)}"` : ''}>${esc(p.label)}</label>
+          ${p.clear ? `<button type="button" class="btn" data-a="clear" hidden>${esc(p.clear)}</button>` : ''}
+          ${p.note ? `<p>${esc(p.note)}</p>` : ''}</div>`;
+      }
       const input = p.type === 'color'
         ? `<input type="color" id="${id(i)}" value="${esc(p.value)}">`
         : `<input type="range" id="${id(i)}" min="${p.min}" max="${p.max}" step="${p.step ?? 1}" value="${p.value}">`;
@@ -415,6 +428,16 @@ const controlsSection = {
       ${rows}
       <button type="button" class="btn reset" data-a="reset">Reset all</button>`;
 
+    // A file goes to the scene's script; the clear button follows the data-file attribute the script keeps
+    const send = (p, file) => targets(p).forEach((t) => t.dispatchEvent(new CustomEvent(p.event, { detail: file ?? null })));
+    data.params.forEach((p, i) => {
+      const clear = p.type === 'file' && el.querySelector(`[data-p="${i}"] [data-a=clear]`);
+      const t = clear && targets(p)[0];
+      if (!t) return;
+      const sync = () => { clear.hidden = !t.hasAttribute('data-file'); };
+      new MutationObserver(sync).observe(t, { attributeFilter: ['data-file'] });
+      sync();
+    });
     const out = (id, v) => { el.querySelector(`output[for="${id}"]`).value = v; };
     const applyParam = (p, v) => {
       if (p.type === 'count') {
@@ -432,19 +455,23 @@ const controlsSection = {
       else {
         const p = data.params[t.closest('[data-p]')?.dataset.p];
         if (!p) return;
+        if (p.type === 'file') { send(p, t.files[0]); t.value = ''; return; }
         if (p.type === 'toggle') return applyParam(p, t.checked);
         out(t.id, show(p, t.value));
         applyParam(p, t.value);
       }
     });
     el.addEventListener('click', (e) => {
-      if (e.target.closest('button')?.dataset.a !== 'reset') return;
+      const b = e.target.closest('button');
+      if (b?.dataset.a === 'clear') return send(data.params[b.closest('[data-p]').dataset.p]);
+      if (b?.dataset.a !== 'reset') return;
       play.scheme = '';
       html.style.colorScheme = '';
       el.querySelector('[data-a=scheme]').value = '';
       data.params.forEach((p, i) => {
         const input = el.querySelector(`#${id(i)}`);
         if (!input) return;
+        if (p.type === 'file') return send(p);
         if (p.type === 'toggle') { input.checked = p.value; return applyParam(p, p.value); }
         input.value = p.value;
         out(input.id, show(p, p.value));
@@ -564,6 +591,11 @@ input[type=color]{block-size:1.6rem;padding:0;border:1px solid var(--line);borde
 .row{display:grid;grid-template-columns:1fr auto;gap:0 .5rem}
 .row output{color:var(--dim)}
 .row input{grid-column:1/-1;inline-size:100%;margin:.25rem 0 0;accent-color:var(--fg)}
+.row.file{display:flex;flex-wrap:wrap;gap:.5rem}
+.row.file .btn{position:relative;text-align:center;cursor:pointer}
+.row.file input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
+.row.file .btn:has(:focus-visible){outline:2px solid currentColor;outline-offset:2px}
+.row.file p{flex-basis:100%;margin:0;color:var(--dim)}
 .switch{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .switch input{appearance:none;position:relative;inline-size:2.1rem;block-size:1.2rem;margin:0;border-radius:99rem;background:var(--line);cursor:pointer;transition:background .15s}
 .switch input::before{content:"";position:absolute;inset:.15rem auto .15rem .15rem;aspect-ratio:1;border-radius:50%;background:var(--bg);box-shadow:0 1px 2px #0004;transition:translate .15s}

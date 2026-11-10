@@ -48,10 +48,10 @@ Only `--m` changes between the looks:
 - **Above 1** each block magnifies its middle.
 - **At 100,000** one point of the photo fills the block: a flat colour, a pixel. This is a point sample, not an average, so busy photos look grainier than a true mosaic.
 
-The Lens slider runs 0 to 1 and is squared on the way to an exponent, so most of its travel is spent near 1 where the looks change fastest:
+The Lens slider, in the Controls panel, runs 0 to 100 and is squared on the way to an exponent, so most of its travel is spent near 1 where the looks change fastest:
 
 ```css
---m: pow(10, 5.5 * var(--lens) * var(--lens) - 0.5);
+--m: pow(10, 5.5 * pow(var(--lens) / 100, 2) - 0.5);
 ```
 
 A wide view near the wall's edge would run off the photo, so `--u` is clamped to keep the view inside it:
@@ -87,10 +87,10 @@ In the headless browser used to build this, a move of the Lens slider went from 
 
 ### The glass
 
-The Glass blocks checkbox is read with `:has()`, with no script. It rounds the blocks, shrinks them a little to show mortar, and adds a bevel of inset shadows and a sheen as a second background layer. The bevel is sized from the block, so it scales with the Block size slider:
+The Glass blocks switch in the Controls panel sets a `data-glass` attribute on the stage, which the markup carries by default. It rounds the blocks, shrinks them a little to show mortar, and adds a bevel of inset shadows and a sheen as a second background layer. The bevel is sized from the block, so it scales with the Block size slider:
 
 ```css
-.stage:has(#glass:checked) .grid i {
+[data-glass] .grid i {
   --edge: calc(var(--tile) * 0.07);
   scale: 0.94;
   border-radius: 14%;
@@ -118,36 +118,34 @@ The Glass blocks checkbox is read with `:has()`, with no script. It rounds the b
 The script tells CSS a photo's aspect ratio, `--ar`. CSS turns that and the Block size slider into columns and rows that keep the blocks square:
 
 ```css
---cells: calc(3456 * pow(144, -1 * var(--block)));
+--cells: calc(3456 * pow(144, var(--block) / -100));
 --cols: round(sqrt(var(--cells) * var(--shape)), 1);
 --rows: round(var(--cols) / var(--shape), 1);
 ```
 
-A block's side is rounded down to a whole pixel, so blocks meet without seams. The count beside the slider is a CSS counter fed by a registered integer:
+A block's side is rounded down to a whole pixel, so blocks meet without seams.
 
-```css
-.dials output { --count: calc(var(--cols) * var(--rows)); counter-reset: blocks var(--count); }
-.dials output::after { content: counter(blocks) " blocks"; }
-```
+### The controls
+
+Nothing sits on the stage but the wall and the photo credit. The sliders, the glass switch and the photo button are `params` in `meta.json`, drawn by the site's Controls panel, which writes `--block` and `--lens` onto the stage. The photo button is a new `file` param: the panel hands the chosen file to the scene's script in a `scene:photo` event. The panel's Playback section now shows only for scenes that animate, so it is absent here.
 
 ### What the script does
 
-Three things CSS can't:
+Two things CSS can't:
 
-- It copies each slider's value into the custom property the slider names.
-- It keeps the number of `<i>` elements equal to `--cols` times `--rows`, read back from the computed style, so the browser never styles blocks nobody can see. With 216 blocks instead of 3,600 in the page, a Lens move dropped from 0.65 s to about 0.06 s in the same headless browser.
+- It keeps the number of `<i>` elements equal to `--cols` times `--rows`, read back from the computed style whenever the stage's inline style changes, so the browser never styles blocks nobody can see. With 216 blocks instead of 3,600 in the page, a Lens move dropped from 0.65 s to about 0.06 s in the same headless browser.
 - It points `--photo` at a photo you pick, drop or paste, and sets `--ar`. The photo is read in place; nothing is uploaded.
 
 ## Fallbacks
 
 - No `sibling-index()`: the script writes `--i` on each block.
 - No `round()`, `mod()`, `sqrt()` or `pow()`, or no script and no `sibling-index()`: the wall stays hidden and the frame shows the photo.
-- No script: the default wall of 216 glass blocks, and the Glass blocks checkbox still works; the sliders and the photo button stay hidden.
+- No script: the default wall of 216 glass blocks, with no controls.
 - Reduced motion: a pressed block snaps back instead of easing. Nothing else moves.
 
 ## Numbers
 
-- Page: 6.0 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
+- Page: 5.5 KiB Brotli of a 14 KiB budget (HTML, CSS and script).
 - Default photo: 94 KB JPEG, loaded as a separate file.
 - Timings above are from a headless cloud browser with software rendering. Nothing has been measured on a real machine, in Safari or in Firefox yet. Dragging Block size to its finest end builds 3,456 blocks and was slow there (about 3 s).
 

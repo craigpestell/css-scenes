@@ -19,7 +19,7 @@ Things noticed while building the Pixelator scene (2026-11-10). None of these ar
 10. **`inspiration` is the only credit field, and it always reads "Inspired by".** Pixelator's photo credit shows as "Inspired by Michelangelo's David, Florence 2019 … by George M. Groutas", which is not quite what it is. A `credits` list with its own label would fit photos, sounds and fonts.
 11. **A range param's `unit` is written into the CSS value.** That makes a label-only unit impossible: "8 tiles" would set `--size: 8 tiles`. A separate `suffix` for display would fix it. 
 12. **Feature support tests are matched by regex on `features[].name`** (`sites/stats/stats.js`). A slightly different spelling silently drops the live check: "CSS round() / mod()" matched nothing, "CSS round() and mod()" matches. An explicit `test` field in `meta.json`, with the regex table as the fallback, would be sturdier. There are no tests yet for `sqrt()`, container query units or `:has()`.
-13. **The Playback section shows for scenes with nothing to play.** Pixelator has no animation, but the Controls column still offers speed, pause and loop. The panel could hide Playback when `.stage` has no running animations.
+13. **The Playback section shows for scenes with nothing to play.** Done in the Pixelator PR at the owner's request: the panel hides Playback until `.stage` has an animation that is not a transition.
 
 ## Source viewer
 

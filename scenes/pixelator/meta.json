@@ -1,30 +1,91 @@
 {
   "title": "Pixelator",
-  "tags": ["interactive", "image", "glass", "mosaic", "your-photo"],
+  "tags": [
+    "interactive",
+    "image",
+    "glass",
+    "mosaic",
+    "your-photo"
+  ],
   "techniques": [
     "a background copy of the photo per block, sized and positioned so each block is a lens",
     "one magnification from wide glass block (below 1) through clear (1) to a flat pixel (100,000)",
     "column and row from sibling-index() with mod() and round()",
     "registered numbers so each block's arithmetic is computed once",
-    "glass bevel from inset box-shadows and a sheen layer, switched with :has()",
+    "glass bevel from inset box-shadows and a sheen layer, switched by an attribute",
     "press a block flat: a one-way transition on a registered number",
-    "columns and rows from sqrt() of the photo's aspect ratio; a counter() readout",
-    "a small script passes slider values in, keeps the block count in step and swaps in your own photo"
+    "columns and rows from sqrt() of the photo's aspect ratio",
+    "a small script keeps the block count in step and swaps in your own photo; the sliders are the Controls panel's"
   ],
   "features": [
-    { "name": "sibling-index()", "baseline": "newly available (2026-08-18); the script writes --i where it is missing, and without either the frame shows the plain photo" },
-    { "name": "CSS round() and mod()", "baseline": "newly available (2024-05); plain photo without them" },
-    { "name": "CSS sqrt() / pow()", "baseline": "widely available" },
-    { "name": "@property", "baseline": "newly available (2024-07)" },
-    { "name": ":has()", "baseline": "widely available" },
-    { "name": "container query units (cqw, cqh)", "baseline": "widely available" },
-    { "name": "light-dark()", "baseline": "newly available (2024-05-13)" }
+    {
+      "name": "sibling-index()",
+      "baseline": "newly available (2026-08-18); the script writes --i where it is missing, and without either the frame shows the plain photo"
+    },
+    {
+      "name": "CSS round() and mod()",
+      "baseline": "newly available (2024-05); plain photo without them"
+    },
+    {
+      "name": "CSS sqrt() / pow()",
+      "baseline": "widely available"
+    },
+    {
+      "name": "@property",
+      "baseline": "newly available (2024-07)"
+    },
+    {
+      "name": "container query units (cqw, cqh)",
+      "baseline": "widely available"
+    },
+    {
+      "name": "light-dark()",
+      "baseline": "newly available (2024-05-13)"
+    }
   ],
   "inspiration": [
-    { "title": "Michelangelo's David, Florence 2019 (the default photo, CC BY 2.0, resized)", "author": "George M. Groutas", "url": "https://commons.wikimedia.org/wiki/File:Michelangelo%E2%80%99s_David,_Florence_2019_-_48170169936.jpg" }
+    {
+      "title": "Michelangelo's David, Florence 2019 (the default photo, CC BY 2.0, resized)",
+      "author": "George M. Groutas",
+      "url": "https://commons.wikimedia.org/wiki/File:Michelangelo%E2%80%99s_David,_Florence_2019_-_48170169936.jpg"
+    }
   ],
   "exceptions": {
-    "script": "scene.js passes the sliders' values to the CSS, keeps the number of block elements equal to the columns times rows the CSS computes, swaps the photo for one the visitor picks, drops or pastes, and writes --i where sibling-index() is missing. The lenses and the glass are CSS.",
+    "script": "scene.js keeps the number of block elements equal to the columns times rows the CSS computes, swaps the photo for one the visitor picks in the Controls panel, drops or pastes, and writes --i where sibling-index() is missing. The lenses and the glass are CSS.",
     "rasterImage": "assets/david.jpg (800x1200 JPEG, 94 KB) is the default photo, asked for by the founder on 2026-11-10. It loads as a separate file and is not part of the 14 KiB page budget."
-  }
+  },
+  "params": [
+    {
+      "type": "range",
+      "label": "Block size",
+      "var": "--block",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "value": 55
+    },
+    {
+      "type": "range",
+      "label": "Lens: wide, clear, pixel",
+      "var": "--lens",
+      "min": 0,
+      "max": 100,
+      "step": 0.5,
+      "value": 19
+    },
+    {
+      "type": "toggle",
+      "label": "Glass blocks",
+      "attr": "data-glass",
+      "value": true
+    },
+    {
+      "type": "file",
+      "label": "Use your photo",
+      "accept": "image/*",
+      "event": "scene:photo",
+      "clear": "Back to David",
+      "note": "Your photo never leaves this device. You can also drop or paste one."
+    }
+  ]
 }

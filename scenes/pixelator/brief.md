@@ -15,7 +15,7 @@ Status: APPROVED. The owner asked for this scene on 2026-11-10 ("a css image 'pi
 1. Wall: the photo again, covering the stage, blurred (`.stage::before`).
 2. `.photo`: the photo, sharp, in a frame with the photo's shape.
 3. `.grid`: 24 to 3,456 square blocks (`<i>`), 216 by default, each painting its own copy of the photo.
-4. Under the frame: Block size and Lens sliders, a Glass blocks checkbox, the photo button, a privacy line and the photo credit.
+4. Under the frame: the photo credit only. Block size and Lens sliders, a Glass blocks switch and the photo button are in the site's Controls panel (owner's request, 2026-11-10), which shows no Playback section for this scene.
 
 ## Motion plan
 | element | property | trigger | duration | compositor-safe? |
@@ -27,14 +27,13 @@ Status: APPROVED. The owner asked for this scene on 2026-11-10 ("a css image 'pi
 - **`sibling-index()`** gives each block its number; `mod()` and `round()` turn it into a column and row. Newly available (2026-08); the script writes `--i` where it is missing.
 - **`pow()` and `sqrt()`** for the lens curve and the wall's columns and rows. Widely available.
 - **`@property`** numbers so each block's arithmetic is done once, and for the press transition. Newly available (2024-07).
-- **`:has()`** reads the Glass blocks checkbox. Widely available.
 - Without `round()`/`mod()` the frame shows the plain photo. Baseline notes are from knowledge; `modern-web-guidance` is blocked in the cloud sandbox.
 
 ## Reduced-motion frame
 The same still wall. A pressed block snaps back instead of easing.
 
 ## Exceptions
-- **JavaScript (`scene.js`):** CSS can't read a slider's value, open a file or read an image's shape. The script copies slider values into custom properties, keeps the number of block elements equal to the columns times rows the CSS computes, sets `--photo` and `--ar` for a photo that is picked, dropped or pasted, and writes `--i` for browsers without `sibling-index()`. The photo never leaves the device.
+- **JavaScript (`scene.js`):** CSS can't open a file or read an image's shape. The script keeps the number of block elements equal to the columns times rows the CSS computes, sets `--photo` and `--ar` for a photo that is picked, dropped or pasted, and writes `--i` for browsers without `sibling-index()`. The photo never leaves the device.
 - **Raster image (`assets/david.jpg`, 94 KB):** the default photo the owner asked for. George M. Groutas, CC BY 2.0, from Wikimedia Commons, resized to 800×1200; credited on the stage and in `meta.json`. It ships as a separate file, outside the 14 KiB page budget. The build now copies `scenes/<slug>/assets/`.
 
 ## Snippets reused / candidates to extract
