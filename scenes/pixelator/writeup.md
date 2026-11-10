@@ -125,6 +125,18 @@ The script tells CSS a photo's aspect ratio, `--ar`. CSS turns that and the Bloc
 
 A block's side is rounded down to a whole pixel, so blocks meet without seams.
 
+### Frosted
+
+The Frosted switch sets `data-frost`, which lays a sheet over each block with `backdrop-filter: blur()`. The blur is sized from the block, so the frost keeps its look at every block size, and the bevel is drawn again on the sheet so it stays sharp. A pressed block is clear. Safari's own Liquid Glass is not available here: its only CSS hook, `-apple-visual-effect: -apple-system-glass-material`, is private and works in apps' web views, not in pages Safari loads.
+
+```css
+[data-frost] .grid i:not(:hover)::after {
+  content: ""; position: absolute; inset: 0;
+  border-radius: inherit; box-shadow: inherit; background: #fff2;
+  backdrop-filter: blur(calc(var(--tile) * 0.07));
+}
+```
+
 ### The controls
 
 Nothing sits on the stage but the wall and the photo credit. The sliders, the glass switch and the photo button are `params` in `meta.json`, drawn by the site's Controls panel, which writes `--block` and `--lens` onto the stage. The photo button is a new `file` param: the panel hands the chosen file to the scene's script in a `scene:photo` event. The panel's Playback section now shows only for scenes that animate, so it is absent here.

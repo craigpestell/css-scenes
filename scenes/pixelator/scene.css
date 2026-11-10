@@ -120,6 +120,19 @@
       inset calc(var(--edge) * -1) calc(var(--edge) * -1) calc(var(--edge) * 2.4) #0008,
       inset 0 0 calc(var(--edge) * 4) #fff3;
   }
+  /* Frosted: a sheet over each block blurs the block's own picture behind it and milks it a little. The blur is sized
+     from the block, the bevel is drawn again on the sheet so it stays sharp, and a pressed block is clear */
+  [data-frost] .grid i { position: relative; }
+  [data-frost] .grid i:not(:hover)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inherit;
+    background: #fff2;
+    -webkit-backdrop-filter: blur(calc(var(--tile) * 0.07));
+    backdrop-filter: blur(calc(var(--tile) * 0.07));
+  }
 
   /* The blocks need round() and mod(), and an index: sibling-index(), or --i set by the script where that is missing.
      Without them the frame simply shows the photo. */

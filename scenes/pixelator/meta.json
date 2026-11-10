@@ -13,6 +13,7 @@
     "column and row from sibling-index() with mod() and round()",
     "registered numbers so each block's arithmetic is computed once",
     "glass bevel from inset box-shadows and a sheen layer, switched by an attribute",
+    "frosted glass: a backdrop-filter blur on a sheet over each block, sized from the block",
     "press a block flat: a one-way transition on a registered number",
     "columns and rows from sqrt() of the photo's aspect ratio",
     "a small script keeps the block count in step and swaps in your own photo; the sliders are the Controls panel's"
@@ -41,6 +42,10 @@
     {
       "name": "light-dark()",
       "baseline": "newly available (2024-05-13)"
+    },
+    {
+      "name": "backdrop-filter",
+      "baseline": "newly available (2024-09); without it the Frosted switch only milks the glass"
     }
   ],
   "inspiration": [
@@ -78,6 +83,11 @@
       "label": "Glass blocks",
       "attr": "data-glass",
       "value": true
+    },
+    {
+      "type": "toggle",
+      "label": "Frosted",
+      "attr": "data-frost"
     },
     {
       "type": "file",

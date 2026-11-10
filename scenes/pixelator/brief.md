@@ -15,7 +15,7 @@ Status: APPROVED. The owner asked for this scene on 2026-11-10 ("a css image 'pi
 1. Wall: the photo again, covering the stage, blurred (`.stage::before`).
 2. `.photo`: the photo, sharp, in a frame with the photo's shape.
 3. `.grid`: 24 to 3,456 square blocks (`<i>`), 216 by default, each painting its own copy of the photo.
-4. Under the frame: the photo credit only. Block size and Lens sliders, a Glass blocks switch and the photo button are in the site's Controls panel (owner's request, 2026-11-10), which shows no Playback section for this scene.
+4. Under the frame: the photo credit only. Block size and Lens sliders, Glass blocks and Frosted switches (Frosted added at the owner's request, 2026-11-10; Safari's Liquid Glass has no public CSS) and the photo button are in the site's Controls panel (owner's request, 2026-11-10), which shows no Playback section for this scene.
 
 ## Motion plan
 | element | property | trigger | duration | compositor-safe? |
