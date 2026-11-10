@@ -4,6 +4,7 @@
  * The scene's Source button shows this page in a dialog at source.html#embed, which drops the page's own navigation. */
 import { esc, highlight } from './highlight.js';
 import { renderMarkdown } from './markdown.js';
+import { SITE } from '../shared/head.js';
 
 /** CodePen's HTML panel is the body, so drop the document head and the build placeholders. */
 const bodyOf = (html) => html
@@ -44,7 +45,8 @@ export function renderSource({ meta, html, css, js, writeup, bundled, size, page
   const pen = JSON.stringify({
     title: `${meta.title} (CSS Scenes)`,
     html: bodyOf(html),
-    css: bundled,
+    // A scene's own files (assets/) aren't on CodePen, so point site-root URLs at the live copies
+    css: bundled.replaceAll(/url\((['"]?)\/(?!\/)/g, `url($1${SITE}/`),
     js: js ?? '',
     editors: js ? '111' : '110',
   });

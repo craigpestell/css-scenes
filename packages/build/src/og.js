@@ -22,7 +22,7 @@ const server = createServer(async (req, res) => {
   if (p.endsWith('/')) p += 'index.html';
   try {
     const body = await readFile(path.join(dist, p));
-    res.writeHead(200, { 'content-type': p.endsWith('.js') ? 'text/javascript' : p.endsWith('.svg') ? 'image/svg+xml' : 'text/html' });
+    res.writeHead(200, { 'content-type': p.endsWith('.js') ? 'text/javascript' : p.endsWith('.svg') ? 'image/svg+xml' : p.endsWith('.jpg') ? 'image/jpeg' : 'text/html' });
     res.end(body);
   } catch { res.writeHead(404); res.end(); }
 }).listen(0);

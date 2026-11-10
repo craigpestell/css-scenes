@@ -1,0 +1,148 @@
+@import "lib/stage";
+
+/*
+  One photo, drawn twice. .photo shows it as it is. .grid lays a sheet of small square tiles over it, and every tile
+  paints the same photo magnified a hundred thousand times, so that a single point of it fills the whole tile: a flat colour.
+  background-position picks which point. Snapping that point to a coarser grid with round() makes neighbouring tiles
+  agree, which is what turns fine tiles into big pixels.
+*/
+@property --k { syntax: "<integer>"; inherits: true; initial-value: 1; }       /* block size, in tiles */
+@property --cols { syntax: "<integer>"; inherits: true; initial-value: 48; }
+@property --rows { syntax: "<integer>"; inherits: true; initial-value: 72; }
+
+@layer scene {
+  .stage {
+    --photo: url(/scenes/pixelator/assets/david.jpg); /* from the site root: the page is served with and without a trailing slash */
+    --ar: 0.6667;    /* the photo's width / height. CSS can't read that from an image, so the script sets it for an upload */
+    /* Controls */
+    --size: 8;       /* the biggest block, in tiles */
+    --cells: 3456;   /* how many tiles to aim for; the markup holds 3,600 */
+    --loop: 16s;
+    --below: 7.5rem; /* room under the frame for the button and the credit */
+
+    /* The tile sheet takes the photo's shape: cols x rows comes as close to --cells as whole numbers allow.
+       Very long or tall photos are cropped to 3:1. */
+    --shape: clamp(0.34, var(--ar), 3);
+    --cols: round(sqrt(var(--cells) * var(--shape)));
+    --rows: round(var(--cols) / var(--shape));
+    /* How much of the photo the sheet covers each way once it is cropped to fit (1 = all of it) */
+    --fx: min(1, var(--cols) / var(--rows) / var(--ar));
+    --fy: min(1, var(--ar) * var(--rows) / var(--cols));
+
+    --frame-edge: light-dark(#14121f33, #ffffff29);
+    container-type: size;
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+    justify-items: center;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1rem 1rem 0.75rem;
+    background: var(--c-paper);
+  }
+  /* The photo again, blurred, as the wall behind the frame */
+  .stage::before {
+    content: "";
+    position: absolute;
+    inset: -4rem;
+    z-index: -1;
+    background: var(--photo) center / cover;
+    filter: blur(3rem) saturate(1.3);
+    opacity: 0.45;
+  }
+
+  .frame {
+    /* A whole number of pixels per tile, so tiles meet without seams */
+    --tile: max(2px, round(down, min((100cqw - 2rem) / var(--cols), (100cqh - var(--below)) / var(--rows)), 1px));
+    position: relative;
+    inline-size: calc(var(--cols) * var(--tile));
+    block-size: calc(var(--rows) * var(--tile));
+    box-shadow: 0 0 0 1px var(--frame-edge), 0 1.5rem 4rem -1rem #000a;
+  }
+  .photo, .grid { position: absolute; inset: 0; }
+  .photo { background: var(--photo) center / cover; }
+
+  .grid {
+    display: none;
+    grid-template-columns: repeat(var(--cols), var(--tile));
+    grid-auto-rows: var(--tile);
+    overflow: clip;   /* spare tiles land in rows below the frame */
+    --k: var(--size);
+  }
+  .grid i {
+    /* Column and row, counted from 0 */
+    --x: mod(var(--i) - 1, var(--cols));
+    --y: round(down, (var(--i) - 1) / var(--cols));
+    /* The middle of this tile's k x k block, as a fraction of the sheet. Tiles in one block get the same answer. */
+    --u: calc(min(round(down, var(--x), var(--k)) + var(--k) / 2, var(--cols) - 0.5) / var(--cols));
+    --v: calc(min(round(down, var(--y), var(--k)) + var(--k) / 2, var(--rows) - 0.5) / var(--rows));
+    /* A background-position of p% pins the photo's point p to the tile's point p. At this size the rest of the photo
+       is far outside the tile, and that one point is all that shows. */
+    background: var(--photo) no-repeat
+      calc((0.5 + (var(--u) - 0.5) * var(--fx)) * 100%)
+      calc((0.5 + (var(--v) - 0.5) * var(--fy)) * 100%) / 10000000% 10000000%;
+    transition: opacity var(--t-slow) 0.3s;
+  }
+  /* Wipe: a tile under the pointer clears at once and fades back after the pointer has gone */
+  .grid i:hover { opacity: 0; transition: none; }
+
+  /* The tiles need round() and mod(), and an index: sibling-index(), or --i set by the script where that is missing.
+     Without them the frame simply shows the photo. */
+  @supports (order: sibling-index()) {
+    .grid i { --i: sibling-index(); }
+  }
+  @supports (width: round(down, mod(5px, 2px), 1px)) and (width: calc(sqrt(4) * 1px)) {
+    @supports (order: sibling-index()) { .grid { display: grid; } }
+    [data-indexed] .grid { display: grid; }
+  }
+
+  /* The loop: sharp photo, finest tiles, bigger and bigger blocks, and back. --k is an integer, so it moves in steps,
+     and the tiles repaint only when it does. */
+  [data-auto] .grid {
+    animation: block var(--loop) linear infinite both, veil var(--loop) linear infinite both; /* paint-ok: --k repaints the tiles about twice a second */
+  }
+  @keyframes block {
+    0%, 12%, 92%, 100% { --k: 1; }
+    48%, 58% { --k: var(--size); }
+  }
+  @keyframes veil {
+    0%, 5%, 97%, 100% { opacity: 0; }
+    10%, 93% { opacity: 1; }
+  }
+
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+  .tools[hidden] { display: none; }
+  .pick, .back {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--c-ink);
+    border-radius: 99rem;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .pick { background: var(--c-ink); color: var(--c-paper); }
+  .back { background: none; color: inherit; }
+  .pick input { position: absolute; opacity: 0; inline-size: 1px; block-size: 1px; }
+  .pick:has(:focus-visible), .back:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  .note { flex-basis: 100%; text-align: center; opacity: 0.75; }
+  .credit { font-size: 0.75rem; opacity: 0.75; }
+  .credit a { color: inherit; }
+  .stage:not([data-own]) .back, [data-own] .credit { display: none; }
+  /* Gallery cards show the picture alone */
+  :root:has(#card:target) :is(.tools, .credit) { display: none; }
+  :root:has(#card:target) .stage { --below: 2rem; }
+  /* A file dragged over the window */
+  [data-drop] .frame { outline: 3px dashed var(--c-accent); outline-offset: 0.4rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* A still mosaic at the chosen block size; the wipe still works, without the fade */
+    [data-auto] .grid { animation: none; }
+    .grid i { transition: none; }
+  }
+}
