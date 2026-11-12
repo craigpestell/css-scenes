@@ -28,8 +28,8 @@
     --photo: url(/scenes/pixelator/assets/david.jpg); /* from the site root: the page is served with and without a trailing slash */
     --ar: 0.6667;    /* the photo's width / height. CSS can't read that from an image, so the script sets it for an upload */
     /* Controls */
-    --block: 55;     /* block size, 0 (finest) to 100 (biggest); the Controls panel sets it */
-    --lens: 19;      /* 0 squeezes a wide view into each block, 30 is clear glass, 100 is a flat pixel; the panel sets it */
+    --block: 55;     /* block size, 0 (finest) to 100 (biggest); the Controls panel sets it, up to 72 */
+    --lens: 19;      /* 0 squeezes a wide view into each block, 30 is clear glass, 100 is a flat pixel; the panel sets it, up to 75 */
     /* How many blocks to aim for: 3,456 at the finest, 24 at the biggest. The markup holds 216 and the script keeps
        the count in step */
     --cells: calc(3456 * pow(144, var(--block) / -100));

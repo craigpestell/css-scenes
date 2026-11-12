@@ -45,7 +45,7 @@ Only `--m` changes between the looks:
 - **Above 1** each block magnifies its middle.
 - **At 100,000** one point of the photo fills the block: a flat colour, a pixel. This is a point sample, not an average, so busy photos look grainier than a true mosaic.
 
-The Lens slider, in the Controls panel, runs 0 to 100 and is squared on the way to an exponent, so most of its travel is spent near 1 where the looks change fastest:
+The Lens slider, in the Controls panel, runs 0 to 75 on a scale of 100 and is squared on the way to an exponent, so most of its travel is spent near 1 where the looks change fastest:
 
 ```css
 --m: pow(10, 5.5 * pow(var(--lens) / 100, 2) - 0.5);
