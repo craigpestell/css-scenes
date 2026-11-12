@@ -1,6 +1,5 @@
 /** Build-time half of the stats panel: per-scene data embedded as JSON, read by panel.js in the browser. */
 import { brotliCompressSync } from 'node:zlib';
-import { MODES, modeOf } from '../index/cards.js';
 
 /**
  * How the panel checks a meta.json feature in the current browser, matched against the feature name in order.
@@ -30,20 +29,12 @@ const br = (s) => brotliCompressSync(Buffer.from(s)).length;
 const part = (s) => ({ raw: Buffer.byteLength(s), br: br(s) });
 
 /**
- * @param {{ meta: object, markup: string, css: string, js: string | null, size: { br: number, budget: number },
- *           description: string }} scene
- *   markup is the page minus its CSS and JS; size is the measured page the budget applies to; description is the stage's label.
+ * @param {{ meta: object, markup: string, css: string, js: string | null, size: { br: number, budget: number } }} scene
+ *   markup is the page minus its CSS and JS; size is the measured page the budget applies to.
  */
-export function sceneStats({ meta, markup, css, js, size, description }) {
+export function sceneStats({ meta, markup, css, js, size }) {
   return {
     title: meta.title,
-    // the sheet's About tab
-    about: {
-      hint: MODES[modeOf(meta)].hint,
-      description,
-      techniques: meta.techniques ?? [],
-      inspiration: (meta.inspiration ?? []).map(({ title, author, url }) => ({ title, author, url })),
-    },
     sizes: { html: part(markup), css: part(css), js: js ? part(js) : null, total: size.br, budget: size.budget },
     features: (meta.features ?? []).map((f) => ({
       name: f.name,

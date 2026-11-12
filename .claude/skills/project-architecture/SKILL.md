@@ -51,17 +51,17 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
   (`packages/build/src/og.js`) regenerates them from `dist/` with Playwright, which is not a project dependency;
   rerun it after a scene's look changes. A page with no image simply gets no `og:image`.
 - `sites/index/`: gallery shell, card renderer, gallery styling, and the scene dock (`sceneChrome`).
-- `sites/source/`: the generated How it's made page (write-up beside the code), syntax highlighting, and a small
+- `sites/source/`: the generated About & source page (what the scene is and its write-up beside the code), syntax highlighting, and a small
   Markdown renderer (`markdown.js`) for `writeup.md`. It supports only what write-ups use; extend it when one needs more.
 - `sites/stats/stats.js`: build-time stats and feature-test mapping.
-- `sites/stats/panel.js`: browser-only. A sheet below the toolbar with About and Stats (performance, size,
-  compatibility, environment) tabs, and `<scene-controls>`, a column on the window's right edge (a bottom sheet on
-  phones) with playback (speed, loop, pause, restart, applied to `.stage` animations through the Web Animations API)
-  and the scene settings (colour scheme, `params`). It wires the dock's About, Controls and Stats buttons, which
-  `sceneChrome` renders hidden up front. Scenes play on the clock, never on scroll.
+- `sites/stats/panel.js`: browser-only. `<scene-controls>`, a column on the window's right edge (a bottom sheet on
+  phones) with two tabs: Controls, with playback (speed, loop, pause, restart, applied to `.stage` animations through
+  the Web Animations API) and the scene settings (colour scheme, `params`), and Stats (performance, size,
+  compatibility, environment). It wires the toolbar's Controls and fps buttons, which `sceneChrome` renders hidden up
+  front. Scenes play on the clock, never on scroll.
 - Chrome never covers a scene: `sceneChrome` insets `.stage` by `--chrome-top` (the toolbar), `--chrome-right` (the
   Controls column) and `--chrome-bottom` (the phone sheet). Scenes should size from the stage (%), not the viewport,
-  where they can. Only the About/Stats sheet and the Source dialog float, and `html[data-sheet-open]` marks the sheet.
+  where they can. Only the About & source dialog floats, and it stops at the Controls column too.
 - `.claude/`: scene design/build/review/write-up workflow; `/new-scene` is the
   human-approval-gated orchestrator.
 - `vercel.json`: static deployment of `dist/`; no framework runtime or serverless functions.
@@ -106,7 +106,7 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 
 1. Run `pnpm build`.
 2. Require exit code 0 and every row in the size table to remain within budget.
-3. For UI changes, run `pnpm dev` and inspect gallery, scene, source dialog/page, and stats panel.
+3. For UI changes, run `pnpm dev` and inspect gallery, scene, the About & source dialog/page, and the Controls and Stats tabs.
 4. Check light/dark, mobile/desktop, reduced motion, and feature fallback when relevant.
 5. Confirm `git status` contains authored files only, never `dist/`, `.env.local`, or `.vercel/`.
 

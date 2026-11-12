@@ -21,6 +21,11 @@
   .masthead nav a:hover { color: var(--c-ink); }
   h1 { font-size: clamp(2rem, 6vw, 3.5rem); font-weight: 800; line-height: 1; letter-spacing: -0.04em; text-wrap: balance; }
   h1 span { color: var(--c-accent); }
+  h1, .lede, .credits { flex-basis: 100%; }
+  .lede { max-inline-size: 46rem; line-height: 1.5; text-wrap: pretty; }
+  .credits { margin-block-start: -0.35rem; color: var(--dim); font-size: 0.9rem; }
+  .credits a { text-underline-offset: 2px; }
+  .credits a:hover { color: var(--c-ink); }
 
   .facts {
     display: flex;
@@ -32,6 +37,9 @@
   }
   .facts li { padding: 0.25rem 0.65rem; border: 1px solid var(--line); border-radius: 99rem; color: var(--dim); }
   .facts :is(.no-js, .js) { border-color: transparent; background: color-mix(in oklab, var(--c-accent) 18%, transparent); color: var(--c-ink); }
+  /* The way down to the code, for when it sits below the write-up instead of beside it */
+  .facts .to-code { display: none; border-color: var(--c-accent); color: var(--c-ink); }
+  .facts .to-code a { text-decoration: none; }
 
   form { margin-inline-start: auto; }
   form button {
@@ -54,10 +62,15 @@
   }
   .has-story .tabs { position: sticky; top: 1rem; }
   .has-story .code { max-block-size: calc(100dvh - 9rem); }
+  /* Narrower, as in the scene's dialog beside the Controls column: the two share the width evenly */
   @media (width < 64rem) {
+    .layout.has-story { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 1.25rem; }
+  }
+  @media (width < 52rem) {
     .layout.has-story { grid-template-columns: minmax(0, 1fr); }
     .has-story .tabs { position: static; }
     .has-story .code { max-block-size: 70dvh; }
+    .facts .to-code { display: block; }
   }
 
   /* The write-up */
@@ -66,6 +79,7 @@
   .story h2 { margin-block-start: 2.5rem; font-size: 1.5rem; line-height: 1.2; letter-spacing: -0.02em; text-wrap: balance; }
   .story h3 { margin-block-start: 2rem; font-size: 1.1rem; line-height: 1.3; text-wrap: balance; }
   .story h2 + *, .story h3 + * { margin-block-start: 0.6rem; }
+  .story > :first-child { margin-block-start: 0; }
   .story :is(h2, h3) code { font-size: 0.85em; }
   .story p, .story li { text-wrap: pretty; }
   .story ul { padding-inline-start: 1.2rem; }

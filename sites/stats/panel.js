@@ -1,16 +1,13 @@
 /**
- * The scene sheet for scene pages: one tabbed panel below the scene dock. About describes the scene; Stats shows live frame
- * rate, code sizes against the budget, feature support in this browser and the viewing environment; Controls drives the
- * page. Loaded as one shared script (dist/stats.js) and kept out of every scene's budget; it reads its build-time data from
- * <script id="scene-stats">. Skipped inside the index page's previews.
+ * The scene panel for scene pages: <scene-controls>, one column on the window's right edge (a sheet at the bottom on
+ * phones) with two tabs. Controls holds playback (speed, loop, pause, restart), the colour scheme and the scene's own
+ * meta.json `params`. Stats shows live frame rate, code sizes against the budget, feature support in this browser and
+ * the viewing environment. Loaded as one shared script (dist/stats.js) and kept out of every scene's budget; it reads its
+ * build-time data from <script id="scene-stats">. Skipped inside the index page's previews.
  *
- * The tab buttons go into the dock's tools (light DOM, styled by the dock) and the sheet lives in a shadow root. Each tab
- * holds { title, render(el), update?(el) } sections, so new sections slot in without touching the shell.
- *
- * Controls is its own panel, <scene-controls>, on a tab fixed to the window's right edge (the dock's Controls button opens
- * it too): playback (speed, loop, pause, restart) on top, then the colour scheme and the scene's own meta.json `params`.
- * Only one of the sheet and Controls is open at a time. Nothing in Controls persists; Reset restores the page as authored.
- * Which sheet tab is open, and whether Controls is open, are remembered.
+ * The toolbar's Controls and fps buttons open the column on their tab; the handle on the window's edge and C toggle it.
+ * The stage and the About dialog both stop at the column, so nothing is covered. Nothing in Controls persists; Reset
+ * restores the page as authored. Whether the column is open, and on which tab, is remembered.
  */
 const data = JSON.parse(document.getElementById('scene-stats')?.textContent ?? 'null');
 const html = document.documentElement;
@@ -39,7 +36,7 @@ const frames = { fps: 0, avg: 0, worst: 0, long: 0, history: [] };
       frames.worst = worst;
       frames.history = [...frames.history.slice(-59), frames.fps];
       start = now; count = 0; sum = 0; worst = 0;
-      panel?.update();
+      playback?.update();
     }
     requestAnimationFrame(tick);
   };
@@ -54,28 +51,8 @@ const supports = (test) => {
   try { return CSS.supports(test); } catch { return false; }
 };
 
-/* About: what the scene is, how to play it, how it's made and who inspired it. */
-const aboutSection = {
-  title: 'About',
-  render: (el) => {
-    const a = data.about ?? {};
-    const list = (items) => `<ul class="bullets">${items.join('')}</ul>`;
-    el.innerHTML = `<p class="kicker">${esc(a.hint ?? '')} · ${kb(data.sizes.total)} of ${kb(data.sizes.budget)}</p>
-      ${a.description ? `<p class="lede">${esc(a.description)}</p>` : ''}
-      ${a.techniques?.length ? `<h3>Techniques</h3>${list(a.techniques.map((t) => `<li>${esc(t)}</li>`))}` : ''}
-      ${a.inspiration?.length ? `<h3>Inspired by</h3>${list(a.inspiration.map((c) => `<li><a href="${esc(c.url)}">${esc(c.title)}</a> by ${esc(c.author)}</li>`))}` : ''}
-      <p class="more"><a href="source.html" data-a="source">How it's made <span aria-hidden="true">→</span></a></p>`;
-    // The link opens the source dialog like the dock's Source; modified clicks get the page
-    el.querySelector('[data-a=source]').addEventListener('click', (e) => {
-      const dock = document.querySelector('.scene-dock [href="source.html"]');
-      if (!dock || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      e.preventDefault();
-      dock.click();
-    });
-  },
-};
-
-const SECTIONS = [
+/* The Stats tab: each entry is { title, render(el), update?(el) }, so new sections slot in without touching the shell. */
+const STATS = [
   {
     title: 'Performance',
     render: (el) => {
@@ -230,37 +207,76 @@ const progress = () => {
   return t.direction === 'reverse' || (t.direction === 'alternate' && t.currentIteration % 2) ? 1 - p : p;
 };
 
+/* The panel: one column on the window's right edge with two tabs, Controls and Stats. */
+const TABS = [{ id: 'controls', label: 'Controls' }, { id: 'stats', label: 'Stats' }];
+const phone = matchMedia('(width < 40rem)');
+
 class SceneControls extends HTMLElement {
   connectedCallback() {
+    data.params ??= [];
     const root = this.attachShadow({ mode: 'open' });
-    root.innerHTML = `<style>${PLAYBACK_CSS}</style>
+    root.innerHTML = `<style>${PANEL_CSS}</style>
       <div class="tab">
-        <button class="handle" aria-expanded="false" aria-controls="controls" title="Controls (C)">
+        <button class="handle" aria-expanded="false" aria-controls="panel" title="Controls and stats (C)">
           <span class="icon" aria-hidden="true"></span><span class="word">Controls</span></button>
-        <div id="controls" class="body" role="group" aria-label="${esc(data.title)} controls" hidden>
-          <section class="playback" aria-label="Playback"><h3>Playback</h3>
-          <p class="reduced" hidden>Your system asks for reduced motion, so this scene shows a still frame.</p>
-          <div class="buttons">
-            <button type="button" class="btn" data-a="pause" aria-pressed="false">Pause</button>
-            <button type="button" class="btn" data-a="restart">Restart</button>
+        <div id="panel" class="body" role="group" aria-label="${esc(data.title)} controls and stats" hidden>
+          <header><div role="tablist" aria-label="Panel">${TABS.map((t) =>
+            `<button role="tab" id="tab-${t.id}" aria-controls="panel-${t.id}" aria-selected="false" tabindex="-1">${t.label}</button>`).join('')}</div>
+            <button class="close" aria-label="Close panel" title="Close (Esc)">×</button></header>
+          <div role="tabpanel" id="panel-controls" aria-labelledby="tab-controls">
+            <section class="playback" aria-label="Playback"><h3>Playback</h3>
+            <p class="reduced" hidden>Your system asks for reduced motion, so this scene shows a still frame.</p>
+            <div class="buttons">
+              <button type="button" class="btn" data-a="pause" aria-pressed="false">Pause</button>
+              <button type="button" class="btn" data-a="restart">Restart</button>
+            </div>
+            <div class="row"><label for="pb-rate">Speed</label><output for="pb-rate">1×</output>
+              <input type="range" id="pb-rate" min="0.1" max="4" step="0.05" value="1" list="pb-marks">
+              <datalist id="pb-marks"><option value="0.5"></option><option value="1"></option><option value="2"></option></datalist></div>
+            <label class="switch"><span>Loop</span><input type="checkbox" role="switch" data-a="loop" checked></label>
+            <div class="progress" aria-hidden="true"><i></i></div>
+            <p class="state" aria-live="polite"></p>
+            </section>
+            <section aria-label="Scene"><h3>Scene</h3><div class="scene"></div></section>
           </div>
-          <div class="row"><label for="pb-rate">Speed</label><output for="pb-rate">1×</output>
-            <input type="range" id="pb-rate" min="0.1" max="4" step="0.05" value="1" list="pb-marks">
-            <datalist id="pb-marks"><option value="0.5"></option><option value="1"></option><option value="2"></option></datalist></div>
-          <label class="switch"><span>Loop</span><input type="checkbox" role="switch" data-a="loop" checked></label>
-          <div class="progress" aria-hidden="true"><i></i></div>
-          <p class="state" aria-live="polite"></p>
-          </section>
-          <section aria-label="Scene"><h3>Scene</h3><div class="scene"></div></section>
+          <div role="tabpanel" id="panel-stats" class="stats" aria-labelledby="tab-stats">${STATS.map((s) =>
+            `<section aria-label="${s.title}"><h3>${s.title}</h3><div></div></section>`).join('')}</div>
         </div>
       </div>`;
     controlsSection.render(root.querySelector('.scene'));
+    const bodies = root.querySelectorAll('.stats section > div');
+    STATS.forEach((s, i) => { s.body = bodies[i]; s.render(s.body); });
     this.handle = root.querySelector('.handle');
-    this.body = root.getElementById('controls');
+    this.body = root.getElementById('panel');
+    this.tabs = [...root.querySelectorAll('[role=tab]')];
     this.rate = root.getElementById('pb-rate');
     this.bar = root.querySelector('.progress i');
     this.state = root.querySelector('.state');
+
+    // The toolbar renders its Controls and Stats (live fps) buttons hidden, so it keeps its width when this loads
+    this.dock = {};
+    for (const t of TABS) {
+      const b = document.querySelector(`.scene-dock [data-tab="${t.id}"]`);
+      if (!b) continue;
+      b.classList.remove('pending'); b.removeAttribute('aria-hidden'); b.removeAttribute('tabindex');
+      b.addEventListener('click', () => this.show(t.id));
+      this.dock[t.id] = b;
+    }
+    this.fps = this.dock.stats?.querySelector('output');
+
     this.handle.addEventListener('click', () => this.toggle());
+    root.querySelector('.close').addEventListener('click', () => this.toggle(false));
+    this.tabs.forEach((b, i) => {
+      b.addEventListener('click', () => this.toggle(true, TABS[i].id));
+      // Arrow keys move along the tabs, as tablists do
+      b.addEventListener('keydown', (e) => {
+        const d = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+        if (!d) return;
+        e.preventDefault(); e.stopPropagation();
+        const n = this.tabs[(i + d + this.tabs.length) % this.tabs.length];
+        n.focus(); n.click();
+      });
+    });
     this.body.addEventListener('input', (e) => {
       if (e.target === this.rate) { play.rate = +this.rate.value; syncPlayback(); }
       if (e.target.dataset.a === 'loop') setLoop(e.target.checked);
@@ -275,30 +291,58 @@ class SceneControls extends HTMLElement {
     addEventListener('keydown', (e) => {
       if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return;
       if (e.composedPath().some((el) => el.matches?.('input,select,textarea,[contenteditable]'))) return;
-      if (e.key === 'Escape' && !this.body.hidden) { this.toggle(false); this.handle.focus(); }
+      // Escape closes the About dialog first, when both are open
+      if (e.key === 'Escape' && !this.body.hidden && !document.getElementById('scene-source')?.open) { this.toggle(false); this.handle.focus(); }
       else if (e.key === 'c' || e.key === 'C') this.toggle();
     });
     reduced.addEventListener('change', () => this.render());
+    addEventListener('resize', () => this.update());
     // While open, the progress bar follows the cycle every frame
-    this.tick = () => { if (!this.body.hidden) { this.paint(); requestAnimationFrame(this.tick); } };
-    this.toggle(store.get('controls') === 'open');
+    this.tick = () => {
+      if (this.body.hidden) { this.ticking = false; return; }
+      this.paint();
+      requestAnimationFrame(this.tick);
+    };
+    this.toggle(store.get('controls') === 'open', store.get('panel') === 'stats' ? 'stats' : 'controls');
   }
 
-  toggle(open = this.body.hidden) {
-    if (open) { panel?.close(); document.getElementById('scene-source')?.close(); } // one panel at a time
+  /** Open on a tab, or close when that tab is already showing: what the toolbar buttons do. */
+  show(tab) { this.toggle(this.body.hidden || this.tab !== tab, tab); }
+
+  toggle(open = this.body.hidden, tab = this.tab) {
+    this.tab = tab;
+    // On a phone the panel is a sheet at the bottom, which the About dialog would cover: one at a time there
+    if (open && phone.matches) document.getElementById('scene-source')?.close();
     this.body.hidden = !open;
     this.handle.setAttribute('aria-expanded', open);
-    document.querySelector('.scene-dock [data-tab=controls]')?.setAttribute('aria-expanded', open);
-    html.toggleAttribute('data-controls-open', open); // the stage makes room for the column (dock styles)
+    TABS.forEach((t, i) => {
+      const on = t.id === tab;
+      this.tabs[i].setAttribute('aria-selected', on);
+      this.tabs[i].tabIndex = on ? 0 : -1;
+      this.body.querySelector(`#panel-${t.id}`).hidden = !on;
+      this.dock[t.id]?.setAttribute('aria-expanded', open && on);
+    });
+    html.toggleAttribute('data-controls-open', open); // the stage makes room for the column (toolbar styles)
     store.set('controls', open ? 'open' : '');
+    store.set('panel', tab);
     this.render();
-    if (open) requestAnimationFrame(this.tick);
+    this.update();
+    if (open && !this.ticking) { this.ticking = true; requestAnimationFrame(this.tick); }
   }
 
   paint() {
     const p = progress();
     this.bar.parentElement.hidden = p === null || reduced.matches;
     if (p !== null) this.bar.style.scale = `${p} 1`;
+  }
+
+  /** Twice a second, from the frame sampler: the toolbar's fps, playback, and the Stats tab while it shows. */
+  update() {
+    if (this.fps) this.fps.value = frames.fps;
+    // Green at 55+ fps, amber at 30+, red below.
+    this.dock.stats?.style.setProperty('--state', frames.fps >= 55 ? '#5fd38d' : frames.fps >= 30 ? '#f5c451' : '#ff8a80');
+    syncPlayback(); // CSS restarts animations when their properties change; keep new ones at the chosen speed and loop
+    if (!this.body.hidden && this.tab === 'stats') STATS.forEach((s) => s.update?.(s.body));
   }
 
   render() {
@@ -323,9 +367,6 @@ class SceneControls extends HTMLElement {
   }
 }
 let playback;
-/* Scenes can make room for the sheet, which floats over the right of the stage: html[data-sheet-open] is set while it
-   is open (see kaleidoscope). Controls needs no such help, since the stage itself shrinks beside it. */
-const makeRoom = () => html.toggleAttribute('data-sheet-open', Boolean(panel?.sheet?.matches(':popover-open')));
 
 /* Controls. Scene params come from meta.json:
  *   { "type": "range", "label", "var": "--x", "target"?: ".stage", "min", "max", "step", "value", "unit"? }
@@ -483,83 +524,24 @@ const controlsSection = {
   },
 };
 
-const CSS_TEXT = `
-:host{all:initial;color-scheme:inherit;--bg:light-dark(#fffe,#0f0e18f0);--fg:light-dark(#14121f,#f4f1ff);--dim:light-dark(#5d5a70,#a29fb8);
-  --line:light-dark(#14121f1f,#fff2);--accent:var(--c-accent,#9d85ff);--yes:light-dark(#08703a,#5fd38d);--no:light-dark(#b3261e,#ff8a80);
-  font:12px/1.45 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--fg)}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-button,select{font:inherit;color:inherit;cursor:pointer}
-:focus-visible{outline:2px solid currentColor;outline-offset:2px}
-[popover]{position:fixed;inset:calc(var(--chrome-top,0px) + .5rem) calc(var(--chrome-right,0px) + .5rem) auto auto;margin:0;
-  width:min(22rem,calc(100vw - 1.5rem));max-height:min(calc(100dvh - var(--chrome-top,0px) - 1.5rem),40rem);overflow:auto;padding:0;
-  border:0;border-radius:1rem;background:var(--bg);color:var(--fg);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
-  box-shadow:0 0 0 1px var(--line),0 1rem 3rem #0005}
-@media (width < 40rem){[popover]{max-height:58dvh}}
-@media (prefers-reduced-motion:no-preference){[popover]:popover-open{animation:in .18s ease-out}}
-@keyframes in{from{opacity:0;translate:0 -.4rem}}
-header{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:.25rem;padding:.4rem;border-bottom:1px solid var(--line);background:var(--bg)}
-[role=tablist]{display:flex;gap:.2rem;flex:1}
-[role=tab]{padding:.4rem .7rem;border:0;border-radius:99rem;background:none;font-weight:600;color:var(--dim)}
-[role=tab]:hover{color:var(--fg)}
-[role=tab][aria-selected=true]{background:light-dark(#14121f14,#fff2);color:var(--fg)}
-.close{border:0;background:none;padding:.3rem .55rem;font-size:16px;line-height:1;border-radius:99rem}
-.close:hover{background:light-dark(#14121f14,#fff2)}
-[role=tabpanel]:not(.on){display:none}
-.kicker{margin:0 0 .5rem;color:var(--accent);font:600 10.5px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase}
-.lede{margin:0 0 .8rem;font-size:13px;line-height:1.5}
-.bullets{display:block;margin:0 0 .8rem;padding-left:1rem;list-style:disc}
-.bullets li{display:list-item;margin:.2rem 0}
-a{color:inherit;text-underline-offset:2px}
-.more{margin:.2rem 0 0}.more a{color:var(--accent);font-weight:600;text-decoration:none}
-section{padding:.6rem .8rem;border-bottom:1px solid var(--line)}
-section:last-child{border:0}
-h3{margin:0 0 .4rem;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)}
-section h3+div>h3{margin-top:.8rem}
-dl{display:grid;grid-template-columns:auto auto;gap:.15rem 1rem;margin:0}
-dt{color:var(--dim)}dd{margin:0;text-align:end}
-small{display:block;color:var(--dim);font-size:11px}
-dd small{display:inline}
-.big{margin:0;font-size:28px;font-weight:700;line-height:1}.big span{font-size:12px;font-weight:400;color:var(--dim)}
-.spark{display:block;width:100%;height:30px;margin:.3rem 0 .5rem}
-.spark polyline{fill:none;stroke:currentColor;stroke-width:1.5;vector-effect:non-scaling-stroke}
-.note{margin:.3rem 0;color:var(--dim)}
-meter{display:block;width:100%;height:.5rem}
-ul{list-style:none;margin:.3rem 0 0;padding:0;display:grid;gap:.35rem}
-li{display:grid;grid-template-columns:auto 1fr;gap:.5rem;align-items:start}
-.dot{width:.6rem;height:.6rem;margin-top:.3em;border-radius:50%;background:var(--dim)}
-.yes .dot{background:var(--yes)}.no .dot{background:var(--no)}.na .dot{background:none;border:1px solid var(--dim)}
-.row{display:grid;grid-template-columns:1fr auto;gap:0 .5rem;margin:0 0 .5rem}
-.row output{color:var(--dim)}
-.row input{grid-column:1/-1;width:100%;margin:.2rem 0 0;accent-color:var(--fg)}
-input[type=color]{height:1.6rem;padding:0;border:1px solid var(--line);border-radius:.3rem;background:none}
-[hidden]{display:none!important}
-.pair{display:flex;gap:.5rem;align-items:center;justify-content:space-between;margin:0 0 .3rem}
-.btn{padding:.3rem .7rem;border:1px solid var(--line);border-radius:99rem;background:none}
-.btn[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-.pick{display:flex;gap:.4rem;align-items:center;color:var(--dim)}
-select{padding:.2rem .3rem;border:1px solid var(--line);border-radius:.3rem;background:none}
-.reset{display:block;margin:.6rem 0 0 auto}
-.row .switch{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
-.row .switch input{appearance:none;position:relative;width:2.1rem;block-size:1.2rem;margin:0;border-radius:99rem;background:var(--line);cursor:pointer;transition:background .15s}
-.row .switch input::before{content:"";position:absolute;inset:.15rem auto .15rem .15rem;aspect-ratio:1;border-radius:50%;background:var(--bg);box-shadow:0 1px 2px #0004;transition:translate .15s}
-.row .switch input:checked{background:var(--fg)}
-.row .switch input:checked::before{translate:.9rem 0}
-`;
-
-/* Controls: a column on the window's right edge, below the toolbar. Closed, it is a slim handle; open, the panel sits
+/* The panel is a column on the window's right edge, below the toolbar. Closed, it is a slim handle; open, the panel sits
    beside the handle. The stage is inset by the column's width (--chrome-right, set from html[data-controls-open] in the
-   dock styles), so the scene shrinks to fit beside it instead of being covered. On phones it opens as a sheet at the
-   bottom (the dock's Controls button opens it) and the stage gives up that height instead. */
-const PLAYBACK_CSS = `
+   toolbar styles), so the scene shrinks to fit beside it instead of being covered, and the About dialog stays clear of
+   it too. On phones it opens as a sheet at the bottom (the toolbar's Controls button opens it) and the stage gives up
+   that height instead. */
+const PANEL_CSS = `
 :host{all:initial;color-scheme:inherit;position:fixed;z-index:9;inset:var(--chrome-top,0px) 0 0 auto;
-  --bg:light-dark(#fff,#0f0e18);--fg:light-dark(#14121f,#f4f1ff);--dim:light-dark(#5d5a70,#a29fb8);--line:light-dark(#14121f1f,#fff2);
-  font:12px/1.45 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--fg)}
+  --bg:light-dark(#fff,#0b0a14);--fg:light-dark(#14121f,#f4f1ff);--dim:light-dark(#5d5a70,#a29fb8);--line:light-dark(#14121f1f,#fff2);
+  --hover:light-dark(#14121f14,#fff2);--yes:light-dark(#08703a,#5fd38d);--no:light-dark(#b3261e,#ff8a80);
+  font:13px/1.45 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--fg)}
 .tab{display:flex;block-size:100%;background:var(--bg);box-shadow:-1px 0 0 var(--line)}
-button,input{font:inherit;color:inherit}
-button{cursor:pointer}
+button,input,select{font:inherit;color:inherit}
+button,select{cursor:pointer}
 :focus-visible{outline:2px solid currentColor;outline-offset:-2px}
+[hidden]{display:none!important}
+:disabled{opacity:.45;cursor:not-allowed}
 .handle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;box-sizing:border-box;inline-size:2.25rem;
-  padding:.8rem 0;border:0;background:none;font-weight:600}
+  padding:.8rem 0;border:0;background:none;font-weight:600;font-size:12px}
 .handle:hover,.handle[aria-expanded=true]{background:light-dark(#14121f0d,#fff1)}
 .word{writing-mode:vertical-rl;rotate:180deg;letter-spacing:.04em}
 .icon{inline-size:.7rem;aspect-ratio:1;background:currentColor;clip-path:polygon(15% 0,100% 50%,15% 100%)}
@@ -570,23 +552,27 @@ button{cursor:pointer}
   :host{inset:auto 0 0 0;block-size:var(--chrome-bottom,0px)}
   .tab{box-shadow:0 -1px 0 var(--line)}
   .handle{display:none}
-  .body{inline-size:100%;border:0}
+  .body{inline-size:100%;border:0;padding-block-end:env(safe-area-inset-bottom)}
 }
-section{display:grid;gap:.7rem;padding:.8rem;border-block-end:1px solid var(--line)}
+header{position:sticky;inset-block-start:0;z-index:1;display:flex;align-items:center;gap:.25rem;padding:.4rem;border-block-end:1px solid var(--line);background:var(--bg)}
+[role=tablist]{display:flex;gap:.2rem;flex:1}
+[role=tab]{padding:.4rem .75rem;border:0;border-radius:99rem;background:none;font-weight:600;color:var(--dim)}
+[role=tab]:hover{color:var(--fg)}
+[role=tab][aria-selected=true]{background:var(--hover);color:var(--fg)}
+.close{padding:.3rem .55rem;border:0;border-radius:99rem;background:none;font-size:16px;line-height:1}
+.close:hover{background:var(--hover)}
+section{display:grid;gap:.7rem;padding:.9rem .8rem;border-block-end:1px solid var(--line)}
 section:last-child{border:0}
 h3{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim)}
-.scene{display:grid;gap:.6rem}
+.scene{display:grid;gap:.7rem}
 .pair{display:flex;gap:.5rem;align-items:center;justify-content:space-between}
-.pick{display:flex;gap:.4rem;align-items:center;color:var(--dim)}
-select{padding:.2rem .3rem;border:1px solid var(--line);border-radius:.3rem;background:none;font:inherit;color:inherit;cursor:pointer}
+.pick{display:flex;flex:1;gap:.4rem;align-items:center;justify-content:space-between}
+select{padding:.2rem .3rem;border:1px solid var(--line);border-radius:.3rem;background:none}
 input[type=color]{block-size:1.6rem;padding:0;border:1px solid var(--line);border-radius:.3rem;background:none}
-.row .switch{grid-column:1/-1}
-.row .switch input{inline-size:2.1rem;margin:0}
 .reset{flex:none;justify-self:end}
-[hidden]{display:none!important}
 .buttons{display:flex;gap:.4rem}
 .btn{flex:1;padding:.35rem .7rem;border:1px solid var(--line);border-radius:99rem;background:none;font-weight:600}
-.btn:hover{background:light-dark(#14121f14,#fff2)}
+.btn:hover{background:var(--hover)}
 .btn[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .row{display:grid;grid-template-columns:1fr auto;gap:0 .5rem}
 .row output{color:var(--dim)}
@@ -596,7 +582,7 @@ input[type=color]{block-size:1.6rem;padding:0;border:1px solid var(--line);borde
 .row.file input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
 .row.file .btn:has(:focus-visible){outline:2px solid currentColor;outline-offset:2px}
 .row.file p{flex-basis:100%;margin:0;color:var(--dim)}
-.switch{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.switch{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .switch input{appearance:none;position:relative;inline-size:2.1rem;block-size:1.2rem;margin:0;border-radius:99rem;background:var(--line);cursor:pointer;transition:background .15s}
 .switch input::before{content:"";position:absolute;inset:.15rem auto .15rem .15rem;aspect-ratio:1;border-radius:50%;background:var(--bg);box-shadow:0 1px 2px #0004;transition:translate .15s}
 .switch input:checked{background:var(--fg)}
@@ -605,122 +591,23 @@ input[type=color]{block-size:1.6rem;padding:0;border:1px solid var(--line);borde
 .progress i{display:block;block-size:100%;background:var(--fg);transform-origin:0 50%;scale:0 1}
 .state,.reduced{margin:0;color:var(--dim)}
 .state:empty{display:none}
-:disabled{opacity:.45;cursor:not-allowed}
+.stats section>div{display:grid;gap:.5rem}
+dl{display:grid;grid-template-columns:auto auto;gap:.2rem 1rem;margin:0}
+dt{color:var(--dim)}dd{margin:0;text-align:end}
+small{display:block;color:var(--dim);font-size:11.5px}
+dd small{display:inline}
+.big{margin:0;font-size:28px;font-weight:700;line-height:1}.big span{font-size:12px;font-weight:400;color:var(--dim)}
+.spark{display:block;inline-size:100%;block-size:30px}
+.spark polyline{fill:none;stroke:currentColor;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.note{margin:0;color:var(--dim)}
+meter{display:block;inline-size:100%;block-size:.5rem}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:.45rem}
+li{display:grid;grid-template-columns:auto 1fr;gap:.5rem;align-items:start}
+.dot{inline-size:.6rem;block-size:.6rem;margin-block-start:.3em;border-radius:50%;background:var(--dim)}
+.yes .dot{background:var(--yes)}.no .dot{background:var(--no)}.na .dot{background:none;border:1px solid var(--dim)}
 `;
 
-let panel;
-
-const TABS = [
-  { id: 'about', label: 'About', sections: [aboutSection] },
-  { id: 'stats', label: 'Stats', sections: SECTIONS },
-];
-
-class SceneStats extends HTMLElement {
-  connectedCallback() {
-    const root = this.attachShadow({ mode: 'open' });
-    data.params ??= [];
-    this.sections = TABS.flatMap((t) => t.sections);
-    root.innerHTML = `<style>${CSS_TEXT}</style>
-      <div id="sheet" popover="manual" role="dialog" aria-label="${esc(data.title)}">
-        <header><div role="tablist" aria-label="${esc(data.title)}">${TABS.map((t) =>
-          `<button role="tab" id="tab-${t.id}" aria-controls="panel-${t.id}" aria-selected="false" tabindex="-1">${t.label}</button>`).join('')}</div>
-          <button class="close" aria-label="Close">×</button></header>
-        ${TABS.map((t) => `<div role="tabpanel" id="panel-${t.id}" aria-labelledby="tab-${t.id}">${t.sections.map((s) =>
-          `<section aria-label="${s.title}">${t.sections.length > 1 ? `<h3>${s.title}</h3>` : ''}<div></div></section>`).join('')}</div>`).join('')}
-      </div>`;
-    const bodies = [...root.querySelectorAll('section > div')];
-    this.sections.forEach((s, i) => { s.body = bodies[i]; s.render(s.body); });
-    this.sheet = root.getElementById('sheet');
-    this.tabs = [...root.querySelectorAll('[role=tab]')];
-
-    // The dock buttons: About before Source, Controls and the live fps (Stats) after it
-    const tools = document.querySelector('.scene-dock .tools');
-    // The dock renders these buttons already, hidden, so it doesn't change width (and move the arrows) when this loads
-    const make = (t, html, onClick) => {
-      let b = tools?.querySelector(`[data-tab="${t.id}"]`);
-      if (b) { b.classList.remove('pending'); b.removeAttribute('aria-hidden'); b.removeAttribute('tabindex'); }
-      else { b = document.createElement('button'); b.type = 'button'; b.dataset.tab = t.id; b.innerHTML = html; }
-      b.setAttribute('aria-expanded', 'false');
-      b.addEventListener('click', onClick ?? (() => (this.tab === t.id && this.sheet.matches(':popover-open') ? this.close() : this.open(t.id))));
-      return b;
-    };
-    this.buttons = {
-      about: make(TABS[0], 'About'),
-      // Controls isn't a sheet tab: it opens the Controls panel on the window's edge
-      controls: make({ id: 'controls' }, 'Controls', () => playback?.toggle()),
-      stats: make(TABS[1], '<i class="fps-dot"></i><output>–</output><span class="unit">fps</span>'),
-    };
-    this.buttons.stats.classList.add('fps');
-    this.buttons.stats.setAttribute('aria-label', 'Stats');
-    if (!this.buttons.about.isConnected) tools?.prepend(this.buttons.about);
-    if (!this.buttons.controls.isConnected) tools?.append(this.buttons.controls, this.buttons.stats);
-    this.fps = this.buttons.stats.querySelector('output');
-
-    this.tabs.forEach((b, i) => {
-      b.addEventListener('click', () => this.open(TABS[i].id));
-      // Arrow keys move along the tabs, as tablists do
-      b.addEventListener('keydown', (e) => {
-        const d = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
-        if (!d) return;
-        e.preventDefault(); e.stopPropagation();
-        const n = this.tabs[(i + d + this.tabs.length) % this.tabs.length];
-        n.focus(); n.click();
-      });
-    });
-    root.querySelector('.close').addEventListener('click', () => this.close());
-    this.sheet.addEventListener('toggle', (e) => {
-      const open = e.newState === 'open';
-      makeRoom();
-      store.set('tab', open ? this.tab : '');
-      this.sync();
-      if (open) this.update();
-    });
-    // Manual popovers don't light-dismiss, so the scene stays usable with the sheet open; Escape closes it.
-    addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.sheet.matches(':popover-open') && !document.getElementById('scene-source')?.open) this.close();
-    });
-    const saved = store.get('tab');
-    if (TABS.some((t) => t.id === saved)) this.open(saved);
-    addEventListener('resize', () => this.update());
-  }
-
-  open(id) {
-    this.tab = id;
-    document.getElementById('scene-source')?.close(); // one panel at a time
-    playback?.toggle(false);
-    if (!this.sheet.matches(':popover-open')) this.sheet.showPopover();
-    store.set('tab', id);
-    this.sync();
-    this.update();
-  }
-
-  close() { if (this.sheet?.matches(':popover-open')) this.sheet.hidePopover(); }
-
-  sync() {
-    const open = this.sheet.matches(':popover-open');
-    TABS.forEach((t, i) => {
-      const on = t.id === this.tab;
-      this.tabs[i].setAttribute('aria-selected', on);
-      this.tabs[i].tabIndex = on ? 0 : -1;
-      this.sheet.querySelector(`#panel-${t.id}`).classList.toggle('on', on);
-      this.buttons[t.id].setAttribute('aria-expanded', open && on);
-    });
-    document.querySelector('.scene-dock')?.classList.toggle('awake', open); // the dock stays lit while the sheet is open
-  }
-
-  update() {
-    this.fps.value = frames.fps;
-    // Green at 55+ fps, amber at 30+, red below.
-    this.buttons.stats.style.setProperty('--state', frames.fps >= 55 ? '#5fd38d' : frames.fps >= 30 ? '#f5c451' : '#ff8a80');
-    syncPlayback(); // CSS restarts animations when their properties change; keep new ones at the chosen speed and loop
-    if (!this.sheet.matches(':popover-open')) return;
-    TABS.find((t) => t.id === this.tab)?.sections.forEach((s) => s.update?.(s.body));
-  }
-}
-
 if (data && window === window.top) {
-  customElements.define('scene-stats', SceneStats);
-  panel = document.body.appendChild(document.createElement('scene-stats'));
   customElements.define('scene-controls', SceneControls);
   playback = document.body.appendChild(document.createElement('scene-controls'));
   syncPlayback();
