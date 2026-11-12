@@ -89,7 +89,7 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `features[].name` is pattern-matched in `sites/stats/stats.js` for live support checks.
 - `inspiration` renders credits; relative URLs are re-rooted from the scene directory.
 - `exceptions.extraBytes` raises only that scene's size budget.
-- `params` declares the stats panel's scene controls (`range`, `count`, `color`); shapes are documented
+- `params` declares the stats panel's scene controls (`range`, `count`, `color`, `toggle`, `file`); shapes are documented
   at the top of the Controls block in `sites/stats/panel.js`. `count` sets `--i`/`--n` inline on each element.
 
 ## Change workflows

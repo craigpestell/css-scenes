@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, readdir, copyFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, copyFile, cp } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { gzipSync, brotliCompressSync } from 'node:zlib';
@@ -83,6 +83,8 @@ async function build() {
     const outDir = path.join(dist, 'scenes', slug);
     await mkdir(outDir, { recursive: true });
     const size = measure(slug, out, meta.exceptions?.extraBytes);
+    // Optional scenes/<slug>/assets/ (a photo, say) ships beside the page; it is outside the page budget
+    if (existsSync(path.join(root, 'scenes', slug, 'assets'))) await cp(path.join(root, 'scenes', slug, 'assets'), path.join(outDir, 'assets'), { recursive: true });
     const markup = html.replace('<!--css-->', () => chrome);
     await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size, description })));
     const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
@@ -102,7 +104,7 @@ async function build() {
   const featured = shown.find((s) => s.slug === indexHtml.match(/<!--hero:([\w-]+)-->/)?.[1]) ?? shown[0];
   const avg = shown.reduce((t, s) => t + s.size.br, 0) / shown.length;
   const index = indexHtml
-    .replace('<!--head-->', () => headTags({ root: '', title: 'CSS Scenes', description: 'Full-window scenes and animations built with modern CSS. No images, and no JavaScript unless a scene needs it.', path: '/', image: ogImage('index') }))
+    .replace('<!--head-->', () => headTags({ root: '', title: 'CSS Scenes', description: 'Full-window scenes and animations built with modern CSS. No images or JavaScript unless a scene needs them.', path: '/', image: ogImage('index') }))
     .replace('<!--css-->', `<style>${await bundleCss(indexCss, tokensCss, 'index.css')}</style>`)
     .replace(/<!--hero:[\w-]*-->/, () => renderHero(featured))
     .replaceAll('<!--count-->', String(cards.length))
