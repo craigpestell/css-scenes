@@ -86,9 +86,9 @@ async function build() {
     // Optional scenes/<slug>/assets/ (a photo, say) ships beside the page; it is outside the page budget
     if (existsSync(path.join(root, 'scenes', slug, 'assets'))) await cp(path.join(root, 'scenes', slug, 'assets'), path.join(outDir, 'assets'), { recursive: true });
     const markup = html.replace('<!--css-->', () => chrome);
-    await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size, description })));
+    await writeFile(path.join(outDir, 'index.html'), out + statsTags(sceneStats({ meta, markup, css: minCss, js, size })));
     const bundled = await bundleCss(css, tokensCss, 'scene.css', false);
-    await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, writeup, bundled, size, pageCss: sourceCss, hint: MODES[modeOf(meta)].hint,
+    await writeFile(path.join(outDir, 'source.html'), renderSource({ slug, meta, html, css, js, writeup, bundled, size, description, pageCss: sourceCss, hint: MODES[modeOf(meta)].hint,
       head: headTags({ root: '../../', title: `${meta.title}: how it's made · CSS Scenes`, description, path: `/scenes/${slug}/source`, image: ogImage(slug) }) }));
     shown.push({ slug, meta, description, hasJs: Boolean(js), size });
     cards.push(renderCard(shown.at(-1)));

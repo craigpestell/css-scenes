@@ -1,7 +1,9 @@
-/** Render a scene's How it's made page: the write-up beside the code. The write-up (writeup.md, when the scene has one) gets
- * a section index; the code shows each authored file and the bundled CSS that ships, in tabs, with line numbers, a wrap
- * toggle and a copy button, plus an Open in CodePen button. Scenes without a write-up get the code alone.
- * The scene's Source button shows this page in a dialog at source.html#embed, which drops the page's own navigation. */
+/** Render a scene's About & source page: what the scene is and how it's made, beside its code, in one view. The top says
+ * what the scene is, how it plays, what it weighs and who inspired it. The write-up (writeup.md, when the scene has one)
+ * gets a section index; scenes without one list their techniques and features from meta.json instead. The code shows
+ * each authored file and the bundled CSS that ships, in tabs, with line numbers, a wrap toggle and a copy button, plus
+ * an Open in CodePen button.
+ * The scene's About & source button shows this page in a dialog at source.html#embed, which drops the page's own navigation. */
 import { esc, highlight } from './highlight.js';
 import { renderMarkdown } from './markdown.js';
 import { SITE } from '../shared/head.js';
@@ -17,9 +19,11 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 
 /**
  * @param {{ slug: string, meta: object, html: string, css: string, js: string | null, writeup: string | null,
- *           bundled: string, size: { br: number, budget: number }, pageCss: string, hint: string, head: string }} scene
+ *           bundled: string, size: { br: number, budget: number }, description: string, pageCss: string, hint: string,
+ *           head: string }} scene
+ *   description is the stage's label; inspiration links are relative to the scene folder, as this page is.
  */
-export function renderSource({ meta, html, css, js, writeup, bundled, size, pageCss, hint, head }) {
+export function renderSource({ meta, html, css, js, writeup, bundled, size, description, pageCss, hint, head }) {
   const files = [
     { name: 'index.html', code: html, lang: 'html' },
     { name: 'scene.css', code: css, lang: 'css' },
@@ -37,6 +41,11 @@ export function renderSource({ meta, html, css, js, writeup, bundled, size, page
   }).join('\n    ');
 
   const story = writeup ? renderMarkdown(writeup) : null;
+  // No write-up yet: the scene's own notes stand in for it
+  const list = (title, items) => (items.length ? `<h2>${title}</h2>\n    <ul>${items.map((t) => `<li>${t}</li>`).join('')}</ul>` : '');
+  const notes = story ? '' : list('Techniques', (meta.techniques ?? []).map(esc))
+    + list('Features', (meta.features ?? []).map((f) => `<code>${esc(f.name)}</code>: ${esc(f.baseline)}`));
+  const credits = (meta.inspiration ?? []).map((c) => `<a href="${esc(c.url)}">${esc(c.title)}</a> by ${esc(c.author)}`).join(', ');
   // The index lists every section, and the techniques under Techniques
   let section = '';
   const toc = story?.toc.filter((t) => (t.level === 2 ? (section = t.id) : section === 'techniques'))
@@ -69,23 +78,28 @@ if (location.hash === '#embed') {
 <style>${pageCss}</style>
 <header class="masthead">
   <nav><a class="wordmark" href="../../">CSS Scenes</a> <span aria-hidden="true">/</span> <a href="./">${esc(meta.title)}</a></nav>
-  <h1>${esc(meta.title)} <span>${story ? 'how it’s made' : 'source'}</span></h1>
+  <h1>${esc(meta.title)} <span>how it’s made</span></h1>
+  ${description ? `<p class="lede">${esc(description)}</p>` : ''}
+  ${credits ? `<p class="credits">Inspired by ${credits}</p>` : ''}
   <ul class="facts" role="list">
     <li>${esc(hint)}</li>
     <li class="${js ? 'js' : 'no-js'}">${js ? 'Uses JavaScript' : 'No JavaScript'}</li>
     <li>${kb(size.br)} of ${kb(size.budget)} budget (brotli)</li>
+    <li class="to-code"><a href="#code">Source code <span aria-hidden="true">↓</span></a></li>
   </ul>
   <form action="https://codepen.io/pen/define" method="post" target="_blank">
     <input type="hidden" name="data" value="${esc(pen)}">
     <button>Open in CodePen</button>
   </form>
 </header>
-<div class="layout${story ? ' has-story' : ''}">
+<div class="layout${story || notes ? ' has-story' : ''}">
   ${story ? `<article class="story">
     <nav class="toc" aria-label="Sections"><ul role="list">${toc}</ul></nav>
     ${story.html}
+  </article>` : notes ? `<article class="story notes">
+    ${notes}
   </article>` : ''}
-  <main class="tabs">
+  <main class="tabs" id="code">
     <div class="toolbar">
       <div class="tablist" role="radiogroup" aria-label="Source file">
       ${tabs}

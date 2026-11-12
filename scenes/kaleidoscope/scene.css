@@ -25,13 +25,6 @@
       radial-gradient(circle, light-dark(#0000, #2a1c4a66) 0 calc(var(--r) + var(--rim)), #0000 70%) content-box no-repeat,
       light-dark(#e6dfd0, #0d0b14);
   }
-  /* Make room for the Controls sheet on wide windows, so it never sits over the glass: a sheet over this many
-     animated layers can fail to paint (it showed as an empty translucent box), and its blur would re-read them. */
-  @media (width >= 48rem) {
-    :root[data-sheet-open] .stage {
-      padding-inline-end: calc(min(22rem, 100vw - 1.5rem) + 1.5rem);
-    }
-  }
   @media (prefers-color-scheme: light) {
     .stage { --blend: multiply; } /* ...and filters it like stained glass held up to a window */
   }
