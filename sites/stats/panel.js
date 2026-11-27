@@ -607,7 +607,8 @@ li{display:grid;grid-template-columns:auto 1fr;gap:.5rem;align-items:start}
 .yes .dot{background:var(--yes)}.no .dot{background:var(--no)}.na .dot{background:none;border:1px solid var(--dim)}
 `;
 
-if (data && window === window.top) {
+// Gallery previews (#card, #preview) show the bare scene, even when opened in a tab of their own for a poster capture
+if (data && window === window.top && !/^#(card|preview)$/.test(location.hash)) {
   customElements.define('scene-controls', SceneControls);
   playback = document.body.appendChild(document.createElement('scene-controls'));
   syncPlayback();

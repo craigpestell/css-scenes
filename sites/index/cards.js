@@ -1,15 +1,9 @@
-/** Render the index page's scene cards from each scene's meta.json and index.html. */
+/** Shared scene facts (description, mode) and the chrome every scene page gets. The home page lives in home.js. */
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /** The stage's aria-label doubles as the card description. */
 export const describe = (html) => html.match(/<main class="stage"[^>]*aria-label="([^"]*)"/)?.[1] ?? '';
-
-/** Credit links are written relative to the scene folder; re-root them for the index. */
-function href(url, slug) {
-  if (/^[a-z]+:/i.test(url)) return url;
-  return new URL(url, `http://x/scenes/${slug}/`).pathname.slice(1);
-}
 
 /** How a visitor drives the scene; the gallery filters on it. */
 export function modeOf(meta) {
@@ -20,70 +14,14 @@ export function modeOf(meta) {
 }
 
 export const MODES = {
-  story: { label: 'Stories', hint: 'Plays through' },
-  interactive: { label: 'Interactive', hint: 'Interactive' },
-  loop: { label: 'Ambient loops', hint: 'Loops' },
+  story: { label: 'Stories', hint: 'Plays through', short: 'Story' },
+  interactive: { label: 'Interactive', hint: 'Interactive', short: 'Interactive' },
+  loop: { label: 'Loops', hint: 'Loops', short: 'Ambient loop' },
 };
-
-const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
-const techTags = (meta) => (meta.tags ?? []).filter((t) => t !== 'no-js');
-
-/** The featured scene opens the gallery, live and interactive, in a large frame. */
-export function renderHero({ slug, meta, description, size }) {
-  return `<figure class="hero-scene">
-    <div class="mat"><iframe src="scenes/${esc(slug)}/#preview" title="${esc(meta.title)}, live" loading="eager" scrolling="no"></iframe></div>
-    <figcaption>
-      <span class="plate"><b>Now showing</b> ${esc(meta.title)}</span>
-      <span class="plate-meta">${esc(kb(size.br))} brotli · ${esc(MODES[modeOf(meta)].hint)}</span>
-      <a class="enter" href="scenes/${esc(slug)}/">Enter scene <span aria-hidden="true">→</span></a>
-    </figcaption>
-    <p class="sr">${esc(description)}</p>
-  </figure>`;
-}
-
-export function renderCard({ slug, meta, description, hasJs, size }) {
-  const mode = modeOf(meta);
-  const tags = techTags(meta).slice(0, 4).map((t) => `<li>${esc(t)}</li>`).join('');
-  const techniques = (meta.techniques ?? []).map((t) => `<li>${esc(t)}</li>`).join('');
-  const features = (meta.features ?? [])
-    .map((f) => `<li><span>${esc(f.name)}</span> <small>${esc(f.baseline)}</small></li>`).join('');
-  const credits = (meta.inspiration ?? [])
-    .map((c) => `<a href="${esc(href(c.url, slug))}">${esc(c.title)}</a> by ${esc(c.author)}`).join(', ');
-
-  return `    <li class="card" data-mode="${mode}">
-      <div class="preview" style="view-transition-name: scene-${esc(slug)}" inert>
-        <iframe src="scenes/${esc(slug)}/#card" title="${esc(meta.title)} preview" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
-      </div>
-      <div class="body">
-        <p class="kicker"><span>${esc(MODES[mode].hint)}</span> <span>${esc(kb(size.br))}${hasJs ? ' · uses JS' : ''}</span></p>
-        <h2><a href="scenes/${esc(slug)}/">${esc(meta.title)}</a></h2>
-        ${description ? `<p class="desc">${esc(description)}</p>` : ''}
-        ${tags ? `<ul class="tags" role="list">${tags}</ul>` : ''}
-        ${credits ? `<p class="credits">Inspired by ${credits}</p>` : ''}
-      </div>
-      <div class="foot">
-        ${techniques || features ? `<details>
-          <summary>How it's made</summary>
-          ${techniques ? `<h3>Techniques</h3><ul>${techniques}</ul>` : ''}
-          ${features ? `<h3>Features</h3><ul class="features">${features}</ul>` : ''}
-        </details>` : ''}
-        <a class="source" href="scenes/${esc(slug)}/source.html">Source<span class="sr"> for ${esc(meta.title)}</span></a>
-      </div>
-    </li>`;
-}
 
 /** The 404 page's way back: every scene as a link, with how to play it. Root-absolute, since a 404 answers any path. */
 export const renderLost = (scenes) => scenes.map(({ slug, meta }) =>
   `<li><a href="/scenes/${esc(slug)}/">${esc(meta.title)}</a> <small>${esc(MODES[modeOf(meta)].hint)}</small></li>`).join('\n      ');
-
-/** Filter chips for the gallery: radios, so :has() filters the grid without JavaScript. */
-export function renderFilters(modes) {
-  const counts = Object.fromEntries(Object.keys(MODES).map((m) => [m, modes.filter((x) => x === m).length]));
-  const chip = (value, label, n, checked = false) =>
-    `<label><input type="radio" name="mode" value="${value}"${checked ? ' checked' : ''}> ${esc(label)} <small>${n}</small></label>`;
-  return [chip('all', 'All scenes', modes.length, true),
-    ...Object.entries(MODES).filter(([m]) => counts[m]).map(([m, { label }]) => chip(m, label, counts[m]))].join('\n      ');
-}
 
 /** Chrome added to every scene page, generated from the scene list: a toolbar across the top holding the way home,
  * previous/next scene links (wrapping at the ends) around the title and how to play the scene, and the scene's tools:

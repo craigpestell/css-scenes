@@ -1,6 +1,6 @@
 /** Head tags every page shares: the site icon and link-preview (Open Graph) tags. Preview images are pre-rendered into
  * sites/og/ by `pnpm og` and copied to dist/og/; link previews need absolute URLs, so they point at production. */
-export const SITE = 'https://css-scenes.vercel.app';
+export const SITE = 'https://css-scenes.bizrocket.ca';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
