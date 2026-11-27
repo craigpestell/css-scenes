@@ -531,8 +531,8 @@ const controlsSection = {
    that height instead. */
 const PANEL_CSS = `
 :host{all:initial;color-scheme:inherit;position:fixed;z-index:9;inset:var(--chrome-top,0px) 0 0 auto;
-  --bg:light-dark(#fff,#0b0a14);--fg:light-dark(#14121f,#f4f1ff);--dim:light-dark(#5d5a70,#a29fb8);--line:light-dark(#14121f1f,#fff2);
-  --hover:light-dark(#14121f14,#fff2);--yes:light-dark(#08703a,#5fd38d);--no:light-dark(#b3261e,#ff8a80);
+  --bg:light-dark(#f6f4ef,#09080e);--fg:light-dark(#16131d,#f2eee6);--dim:light-dark(#5f5a68,#a8a39b);--line:light-dark(#16131d1f,#f2eee62b);
+  --hover:light-dark(#16131d12,#f2eee617);--yes:light-dark(#08703a,#5fd38d);--no:light-dark(#b3261e,#ff8a80);
   font:13px/1.45 system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--fg)}
 .tab{display:flex;block-size:100%;background:var(--bg);box-shadow:-1px 0 0 var(--line)}
 button,input,select{font:inherit;color:inherit}
@@ -542,7 +542,7 @@ button,select{cursor:pointer}
 :disabled{opacity:.45;cursor:not-allowed}
 .handle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;box-sizing:border-box;inline-size:2.25rem;
   padding:.8rem 0;border:0;background:none;font-weight:600;font-size:12px}
-.handle:hover,.handle[aria-expanded=true]{background:light-dark(#14121f0d,#fff1)}
+.handle:hover,.handle[aria-expanded=true]{background:light-dark(#16131d0d,#f2eee612)}
 .word{writing-mode:vertical-rl;rotate:180deg;letter-spacing:.04em}
 .icon{inline-size:.7rem;aspect-ratio:1;background:currentColor;clip-path:polygon(15% 0,100% 50%,15% 100%)}
 .handle[data-state=paused] .icon{clip-path:polygon(0 0,35% 0,35% 100%,0 100%,0 0,65% 0,100% 0,100% 100%,65% 100%,65% 0)}
@@ -607,8 +607,97 @@ li{display:grid;grid-template-columns:auto 1fr;gap:.5rem;align-items:start}
 .yes .dot{background:var(--yes)}.no .dot{background:var(--no)}.na .dot{background:none;border:1px solid var(--dim)}
 `;
 
-if (data && window === window.top) {
+// Gallery previews (#card, #preview) show the bare scene, even when opened in a tab of their own for a poster capture
+if (data && window === window.top && !/^#(card|preview)$/.test(location.hash)) {
   customElements.define('scene-controls', SceneControls);
   playback = document.body.appendChild(document.createElement('scene-controls'));
   syncPlayback();
+}
+
+/* The scene switcher: every scene as a poster, opened from the toolbar's scene number (or G), as a popover anchored
+ * under it. It reads the scene list from /scenes.json the first time it opens. Without this script the number is a
+ * link to the gallery. */
+const SWITCHER_CSS = `
+:host{all:initial;color-scheme:inherit;position:fixed;inset:calc(var(--chrome-top,3.25rem) + .4rem) auto auto max(.5rem,env(safe-area-inset-left));
+  margin:0;padding:0;border:0;background:none;overflow:visible;
+  --bg:light-dark(#f6f4efF2,#13111bF2);--fg:light-dark(#16131d,#f2eee6);--dim:light-dark(#5f5a68,#a8a39b);--line:light-dark(#16131d1f,#f2eee62b);
+  font:13px/1.4 system-ui,sans-serif;color:var(--fg)}
+.box{box-sizing:border-box;inline-size:min(54rem,100vw - 1rem);max-block-size:calc(100dvh - var(--chrome-top,3.25rem) - 1.25rem);overflow:auto;overscroll-behavior:contain;
+  display:grid;gap:.9rem;padding:1rem;border-radius:1rem;background:var(--bg);backdrop-filter:blur(20px);box-shadow:0 0 0 1px var(--line),0 1.75rem 4.5rem #000a}
+@media (prefers-reduced-motion:no-preference){:host(:popover-open) .box{animation:in .18s cubic-bezier(.22,1,.36,1)}@keyframes in{from{opacity:0;translate:0 -.4rem}}}
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:.6rem}
+h2{margin:0;font:500 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.seg{display:inline-flex;margin:0;padding:.2rem;border:1px solid var(--line);border-radius:99rem}
+.seg label{position:relative;padding:.35rem .75rem;border-radius:99rem;color:var(--dim);font-weight:600;cursor:pointer}
+.seg label:has(:checked){background:var(--fg);color:light-dark(#f6f4ef,#09080e)}
+.seg label:has(:focus-visible){outline:2px solid currentColor;outline-offset:2px}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+ol{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(10.5rem,calc(50% - .35rem)),1fr));gap:.9rem .7rem;margin:0;padding:0;list-style:none}
+a{display:grid;gap:.4rem;color:var(--fg);text-decoration:none;font-weight:600}
+a:focus-visible{outline:none}
+img{display:block;inline-size:100%;block-size:auto;aspect-ratio:16/10;object-fit:cover;border-radius:.55rem;background:var(--line);outline:1px solid var(--line);transition:outline-color .15s}
+a:is(:hover,:focus-visible) img{outline:2px solid var(--fg);outline-offset:2px}
+a:focus-visible img{outline-color:light-dark(#6a46f5,#b19cff)}
+[aria-current] img{outline:2px solid var(--fg);outline-offset:2px}
+span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+small{margin-inline-end:.4rem;color:var(--dim);font:500 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+.box:has([value=story]:checked) li:not([data-mode=story]),.box:has([value=interactive]:checked) li:not([data-mode=interactive]),.box:has([value=loop]:checked) li:not([data-mode=loop]){display:none}
+footer{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem;color:var(--dim);font-size:12px}
+kbd{display:inline-block;min-inline-size:1.1rem;margin-inline-end:.3rem;padding:.1rem .3rem;border:1px solid var(--line);border-radius:.3rem;font:500 11px ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center}
+@media (hover:none){footer{display:none}}
+`;
+const MODE_LABELS = { story: 'Stories', interactive: 'Interactive', loop: 'Loops' };
+
+class SceneSwitcher extends HTMLElement {
+  connectedCallback() {
+    this.popover = 'auto';
+    this.id = 'scene-switcher';
+    this.setAttribute('role', 'dialog');
+    this.setAttribute('aria-label', 'All scenes');
+    this.attachShadow({ mode: 'open' }).innerHTML = `<style>${SWITCHER_CSS}</style><div class="box"><header><h2>Jump to a scene</h2></header><ol></ol>
+      <footer><span><kbd>←</kbd><kbd>→</kbd>previous / next</span><span><kbd>G</kbd>this list</span><span><kbd>S</kbd>how it’s made</span><span><kbd>C</kbd>controls</span><span><kbd>Esc</kbd>close</span></footer></div>`;
+    this.addEventListener('toggle', (e) => {
+      this.button?.setAttribute('aria-expanded', e.newState === 'open');
+      if (e.newState === 'open') this.fill().then(() => this.shadowRoot.querySelector('[aria-current]')?.focus({ preventScroll: true }));
+    });
+  }
+  async fill() {
+    if (this.filled) return;
+    this.filled = true;
+    const list = await fetch('/scenes.json').then((r) => r.json()).catch(() => []);
+    const here = location.pathname.match(/\/scenes\/([\w-]+)/)?.[1];
+    const modes = Object.keys(MODE_LABELS).filter((m) => list.some((x) => x.mode === m));
+    const chip = (v, label, on) => `<label><input type="radio" name="m" value="${v}"${on ? ' checked' : ''}>${label}</label>`;
+    this.shadowRoot.querySelector('header').insertAdjacentHTML('beforeend', `<fieldset class="seg" aria-label="Show">${chip('all', 'All', true)}${modes.map((m) => chip(m, MODE_LABELS[m])).join('')}</fieldset>`);
+    this.shadowRoot.querySelector('ol').innerHTML = list.map((x, i) => `<li data-mode="${esc(x.mode)}"><a href="/scenes/${esc(x.slug)}/"${x.slug === here ? ' aria-current="page"' : ''}>
+      <img src="/posters/${esc(x.slug)}-sm.jpg" alt="" width="480" height="300"><span><small>${String(i + 1).padStart(2, '0')}</small>${esc(x.title)}</span></a></li>`).join('');
+  }
+}
+
+if (window === window.top && !/^#(card|preview)$/.test(location.hash)) {
+  const button = document.querySelector('.scene-dock .idx');
+  if (button) {
+    customElements.define('scene-switcher', SceneSwitcher);
+    const sw = document.body.appendChild(document.createElement('scene-switcher'));
+    sw.button = button;
+    // Anchored under the scene number where anchor positioning exists. Set here, in the page's own scope, because anchor
+    // names don't cross into a shadow root; elsewhere the stylesheet's fixed spot under the toolbar applies.
+    if (CSS.supports('position-area: bottom')) {
+      Object.assign(sw.style, { positionAnchor: '--scene-idx', positionArea: 'bottom span-right', inset: 'auto', margin: '.45rem 0 0 -.5rem', positionTryFallbacks: 'flip-inline' });
+    }
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.setAttribute('aria-expanded', 'false');
+    button.setAttribute('aria-controls', sw.id);
+    button.addEventListener('pointerenter', () => sw.fill(), { once: true });
+    button.addEventListener('click', (e) => {
+      if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      e.preventDefault();
+      sw.togglePopover();
+    });
+    addEventListener('keydown', (e) => {
+      if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey || e.key.toLowerCase() !== 'g') return;
+      if (e.composedPath().some((el) => el.matches?.('input,select,textarea,[contenteditable]'))) return;
+      sw.togglePopover();
+    });
+  }
 }

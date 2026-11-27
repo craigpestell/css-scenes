@@ -1,15 +1,9 @@
-/** Render the index page's scene cards from each scene's meta.json and index.html. */
+/** Shared scene facts (description, mode) and the chrome every scene page gets. The home page lives in home.js. */
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 /** The stage's aria-label doubles as the card description. */
 export const describe = (html) => html.match(/<main class="stage"[^>]*aria-label="([^"]*)"/)?.[1] ?? '';
-
-/** Credit links are written relative to the scene folder; re-root them for the index. */
-function href(url, slug) {
-  if (/^[a-z]+:/i.test(url)) return url;
-  return new URL(url, `http://x/scenes/${slug}/`).pathname.slice(1);
-}
 
 /** How a visitor drives the scene; the gallery filters on it. */
 export function modeOf(meta) {
@@ -20,87 +14,32 @@ export function modeOf(meta) {
 }
 
 export const MODES = {
-  story: { label: 'Stories', hint: 'Plays through' },
-  interactive: { label: 'Interactive', hint: 'Interactive' },
-  loop: { label: 'Ambient loops', hint: 'Loops' },
+  story: { label: 'Stories', hint: 'Plays through', short: 'Story' },
+  interactive: { label: 'Interactive', hint: 'Interactive', short: 'Interactive' },
+  loop: { label: 'Loops', hint: 'Loops', short: 'Ambient loop' },
 };
-
-const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
-const techTags = (meta) => (meta.tags ?? []).filter((t) => t !== 'no-js');
-
-/** The featured scene opens the gallery, live and interactive, in a large frame. */
-export function renderHero({ slug, meta, description, size }) {
-  return `<figure class="hero-scene">
-    <div class="mat"><iframe src="scenes/${esc(slug)}/#preview" title="${esc(meta.title)}, live" loading="eager" scrolling="no"></iframe></div>
-    <figcaption>
-      <span class="plate"><b>Now showing</b> ${esc(meta.title)}</span>
-      <span class="plate-meta">${esc(kb(size.br))} brotli · ${esc(MODES[modeOf(meta)].hint)}</span>
-      <a class="enter" href="scenes/${esc(slug)}/">Enter scene <span aria-hidden="true">→</span></a>
-    </figcaption>
-    <p class="sr">${esc(description)}</p>
-  </figure>`;
-}
-
-export function renderCard({ slug, meta, description, hasJs, size }) {
-  const mode = modeOf(meta);
-  const tags = techTags(meta).slice(0, 4).map((t) => `<li>${esc(t)}</li>`).join('');
-  const techniques = (meta.techniques ?? []).map((t) => `<li>${esc(t)}</li>`).join('');
-  const features = (meta.features ?? [])
-    .map((f) => `<li><span>${esc(f.name)}</span> <small>${esc(f.baseline)}</small></li>`).join('');
-  const credits = (meta.inspiration ?? [])
-    .map((c) => `<a href="${esc(href(c.url, slug))}">${esc(c.title)}</a> by ${esc(c.author)}`).join(', ');
-
-  return `    <li class="card" data-mode="${mode}">
-      <div class="preview" style="view-transition-name: scene-${esc(slug)}" inert>
-        <iframe src="scenes/${esc(slug)}/#card" title="${esc(meta.title)} preview" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe>
-      </div>
-      <div class="body">
-        <p class="kicker"><span>${esc(MODES[mode].hint)}</span> <span>${esc(kb(size.br))}${hasJs ? ' · uses JS' : ''}</span></p>
-        <h2><a href="scenes/${esc(slug)}/">${esc(meta.title)}</a></h2>
-        ${description ? `<p class="desc">${esc(description)}</p>` : ''}
-        ${tags ? `<ul class="tags" role="list">${tags}</ul>` : ''}
-        ${credits ? `<p class="credits">Inspired by ${credits}</p>` : ''}
-      </div>
-      <div class="foot">
-        ${techniques || features ? `<details>
-          <summary>How it's made</summary>
-          ${techniques ? `<h3>Techniques</h3><ul>${techniques}</ul>` : ''}
-          ${features ? `<h3>Features</h3><ul class="features">${features}</ul>` : ''}
-        </details>` : ''}
-        <a class="source" href="scenes/${esc(slug)}/source.html">Source<span class="sr"> for ${esc(meta.title)}</span></a>
-      </div>
-    </li>`;
-}
 
 /** The 404 page's way back: every scene as a link, with how to play it. Root-absolute, since a 404 answers any path. */
 export const renderLost = (scenes) => scenes.map(({ slug, meta }) =>
-  `<li><a href="/scenes/${esc(slug)}/">${esc(meta.title)}</a> <small>${esc(MODES[modeOf(meta)].hint)}</small></li>`).join('\n      ');
-
-/** Filter chips for the gallery: radios, so :has() filters the grid without JavaScript. */
-export function renderFilters(modes) {
-  const counts = Object.fromEntries(Object.keys(MODES).map((m) => [m, modes.filter((x) => x === m).length]));
-  const chip = (value, label, n, checked = false) =>
-    `<label><input type="radio" name="mode" value="${value}"${checked ? ' checked' : ''}> ${esc(label)} <small>${n}</small></label>`;
-  return [chip('all', 'All scenes', modes.length, true),
-    ...Object.entries(MODES).filter(([m]) => counts[m]).map(([m, { label }]) => chip(m, label, counts[m]))].join('\n      ');
-}
+  `<li><a href="/scenes/${esc(slug)}/"><img src="/posters/${esc(slug)}-sm.jpg" alt="" width="480" height="300" loading="lazy"><span>${esc(meta.title)}</span><small>${esc(MODES[modeOf(meta)].short)}</small></a></li>`).join('\n      ');
 
 /** Chrome added to every scene page, generated from the scene list: a toolbar across the top holding the way home,
  * previous/next scene links (wrapping at the ends) around the title and how to play the scene, and the scene's tools:
- * About & source, Controls and the live frame rate. The first works on its own; the other two are rendered hidden and
+ * How it’s made, Controls and the live frame rate. The first works on its own; the other two are rendered hidden and
  * the shared panel script (dist/stats.js) reveals and wires them to the Controls and Stats tabs of its column on the
  * right. The toolbar and that column take their own space (the stage is inset by --chrome-*), so neither covers the
  * scene. Every toolbar part has a fixed width, so the arrows sit in the same place on every scene. ← and → move
- * between scenes. The gallery hero loads the scene at #preview and its cards at #card, which both hide the chrome and
+ * between scenes and S toggles How it’s made. Between the arrows, the scene's number opens the scene switcher (panel.js;
+ * without it, the gallery). The gallery hero loads the scene at #preview and its cards at #card, which both hide the chrome and
  * give the stage the whole window; cards also hide the scene's own controls (labels and control groups).
  *
- * About & source toggles source.html (what the scene is, its write-up and its code, in one view) in a <dialog> over
+ * How it’s made toggles source.html (what the scene is, its write-up and its code, in one view) in a <dialog> over
  * the stage. The dialog stops at the Controls column, so the two never overlap and both can be open; on phones, where
  * the column is a sheet at the bottom, opening one closes the other. It's non-modal so the toolbar stays usable: the
  * dialog dims the scene with a spread shadow, and Escape or a click on the scene closes it. Previous/next carry it to
  * the next scene (#source opens it on load). The iframe gets its src on first hover, focus or open, so the page costs
  * nothing until it's wanted; modified clicks and no-JS visitors get the page itself. */
-export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
+export const sceneChrome = ({ slug, title, prev, next, mode, n, total }) => `<style>
 @media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}}
 .stage{view-transition-name:scene-${esc(slug)}}
 /* The chrome never covers the scene: the stage is inset by the toolbar on top and, once the panel script loads, by the
@@ -111,31 +50,35 @@ export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 @media (width<40rem){:root:has(scene-controls){--chrome-right:0px}:root[data-controls-open]{--chrome-right:0px;--chrome-bottom:min(55dvh,30rem)}}
 :root:has(:is(#preview,#card):target){--chrome-top:0px;--chrome-right:0px;--chrome-bottom:0px}
 .stage{inset:var(--chrome-top) var(--chrome-right) var(--chrome-bottom) 0}
-.scene-dock{--dock-line:light-dark(#14121f26,#fff3);position:fixed;inset:0 0 auto;z-index:9;display:flex;align-items:center;gap:.15rem;box-sizing:border-box;block-size:var(--chrome-top);padding:env(safe-area-inset-top) max(.5rem,env(safe-area-inset-right)) 0 max(.5rem,env(safe-area-inset-left));background:light-dark(#fff,#0b0a14);color:light-dark(#14121f,#f4f1ff);box-shadow:0 1px 0 light-dark(#14121f1f,#fff2);font:600 .8rem/1 system-ui,sans-serif;white-space:nowrap;view-transition-name:scene-nav}
+.scene-dock{--dock-line:light-dark(#16131d24,#f2eee62b);position:fixed;inset:0 0 auto;z-index:9;display:flex;align-items:center;gap:.15rem;box-sizing:border-box;block-size:var(--chrome-top);padding:env(safe-area-inset-top) max(.5rem,env(safe-area-inset-right)) 0 max(.6rem,env(safe-area-inset-left));background:light-dark(#f6f4ef,#09080e);color:light-dark(#16131d,#f2eee6);box-shadow:0 1px 0 var(--dock-line);font:600 .82rem/1 system-ui,sans-serif;white-space:nowrap;view-transition-name:scene-nav}
 .scene-dock .tools{margin-inline-start:auto}
 .scene-dock nav{display:flex;align-items:center;gap:.15rem}
-.scene-dock nav+nav{border-inline-start:1px solid var(--dock-line);padding-inline-start:.25rem;margin-inline-start:.1rem}
-.scene-dock :is(a,button){display:inline-flex;align-items:center;gap:.4em;padding:.5rem .65rem;border:0;border-radius:99rem;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
-.scene-dock :is(a,button):hover{background:light-dark(#14121f14,#fff2)}
+.scene-dock :is(a,button){display:inline-flex;align-items:center;gap:.45em;padding:.5rem .7rem;border:0;border-radius:99rem;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.scene-dock :is(a,button):hover{background:light-dark(#16131d12,#f2eee617)}
 .scene-dock :is(a,button):focus-visible{outline:2px solid currentColor;outline-offset:-2px}
-.scene-dock :is(a,button):is([aria-expanded=true],[aria-pressed=true]){background:light-dark(#14121f,#f4f1ff);color:light-dark(#f4f1ff,#14121f)}
-.scene-dock .home::before{content:"";inline-size:.7em;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 210deg,#9d85ff,#ff7ac6,#ffc27a,#9d85ff)}
-.scene-dock [rel]{min-inline-size:2rem;justify-content:center}
-/* Fixed widths for everything that changes between scenes or frames (the title, the fps), so the arrows sit in the same
-   place on every scene and can be clicked again and again without moving the pointer */
-.scene-dock .now{display:grid;gap:.2rem;inline-size:clamp(6rem,100vw - 36rem,13rem);padding-inline:.35rem;line-height:1.1}
+.scene-dock :is(a,button):is([aria-expanded=true],[aria-pressed=true]){background:light-dark(#16131d,#f2eee6);color:light-dark(#f6f4ef,#09080e)}
+/* The wordmark: an aperture in the brand sweep */
+.scene-dock .home{margin-inline-end:.35rem;padding-inline-end:.9rem;border-radius:99rem 0 0 99rem;box-shadow:1px 0 0 var(--dock-line);font-weight:700}
+.scene-dock .home::before{content:"";inline-size:1.1em;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 210deg,#a48bff,#ff7ac6,#ffc27a,#a48bff);box-shadow:inset 0 0 0 .26em light-dark(#f6f4ef,#09080e);outline:1.5px solid var(--dock-line)}
+.scene-dock [rel]{min-inline-size:2.1rem;justify-content:center}
+/* Where this scene sits among the rest; opens the scene switcher (the panel script), or the gallery without it */
+.scene-dock .idx{anchor-name:--scene-idx;padding:.45rem .75rem;box-shadow:inset 0 0 0 1px var(--dock-line);font:500 .74rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.scene-dock .idx::after{content:"";inline-size:.38em;aspect-ratio:1;border:solid currentColor;border-width:0 1.5px 1.5px 0;rotate:45deg;translate:0 -.12em;opacity:.7}
+/* The title and how it plays: a fixed width, so the tools never move */
+.scene-dock .now{display:grid;gap:.22rem;inline-size:clamp(6rem,100vw - 40rem,15rem);padding-inline:.6rem;line-height:1.1}
 .scene-dock .now>*{overflow:hidden;text-overflow:ellipsis}
+.scene-dock .now small{font:500 .64rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;opacity:.62}
 .scene-dock .pending{visibility:hidden} /* space held for the buttons the panel script wires up */
-.scene-dock .fps{font-variant-numeric:tabular-nums}.scene-dock .fps output{inline-size:3ch;text-align:end}.scene-dock .unit{margin-inline-start:-.15em;opacity:.65}.scene-dock .fps-dot{inline-size:.5em;aspect-ratio:1;border-radius:50%;background:var(--state,#5fd38d)}
-.scene-dock .now small{font:500 .68rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;opacity:.65}
-/* Narrow screens keep the home dot, the arrows, About & source and Controls; the title stays for screen readers, and Stats is a tab in the Controls sheet */
-@media (width<40rem){.scene-dock :is(.home span,.now){position:absolute;clip-path:inset(50%);inline-size:1px;overflow:hidden}.scene-dock .fps{display:none}.scene-dock :is(a,button){padding:.5rem .5rem}}
+.scene-dock .fps{font:500 .74rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}.scene-dock .fps output{inline-size:3ch;text-align:end}.scene-dock .unit{margin-inline-start:-.15em;opacity:.62}.scene-dock .fps-dot{inline-size:.5em;aspect-ratio:1;border-radius:50%;background:var(--state,#3ddc97)}
+/* Narrow screens keep the wordmark's aperture, the arrows and their count, How it's made and Controls; the title stays for screen readers, and Stats is a tab in the Controls sheet */
+@media (width<40rem){.scene-dock :is(.home span,.now){position:absolute;clip-path:inset(50%);inline-size:1px;overflow:hidden}.scene-dock .home{padding-inline-end:.6rem}.scene-dock .fps{display:none}.scene-dock :is(a,button){padding:.5rem .5rem}}
+@media (width<24rem){.scene-dock .idx{display:none}}
 :root:has(:is(#preview,#card):target) .scene-dock{display:none}
 :root:has(#card:target) .stage :is(label,[role=group]:has(label)){visibility:hidden}
 /* The dialog sits over the stage only: it stops at the Controls column, as the stage does */
-.scene-source{position:fixed;z-index:8;inset:calc(var(--chrome-top) + .5rem) var(--chrome-right) auto 0;inline-size:min(82rem,100% - var(--chrome-right) - 1.5rem);block-size:min(52rem,100dvh - var(--chrome-top) - 1rem);max-inline-size:none;max-block-size:none;margin:0 auto;padding:0;border:0;border-radius:1.25rem;background:var(--c-paper,Canvas);color:var(--c-ink,CanvasText);box-shadow:0 1.5rem 4rem #0008,0 0 0 1px light-dark(#14121f1f,#fff2),0 0 0 100vmax #0007;overflow:hidden;font:600 .8rem/1 system-ui,sans-serif}
+.scene-source{position:fixed;z-index:8;inset:calc(var(--chrome-top) + .5rem) var(--chrome-right) auto 0;inline-size:min(82rem,100% - var(--chrome-right) - 1.5rem);block-size:min(52rem,100dvh - var(--chrome-top) - 1rem);max-inline-size:none;max-block-size:none;margin:0 auto;padding:0;border:0;border-radius:1.25rem;background:light-dark(#f6f4ef,#09080e);color:light-dark(#16131d,#f2eee6);box-shadow:0 1.5rem 4rem #0008,0 0 0 1px light-dark(#16131d1f,#f2eee62b),0 0 0 100vmax #0009;overflow:hidden;font:600 .8rem/1 system-ui,sans-serif}
 .scene-source[open]{display:flex;flex-direction:column}
-.scene-source form{display:flex;justify-content:end;gap:.25rem;padding:.4rem;border-block-end:1px solid light-dark(#14121f1f,#fff2)}
+.scene-source form{display:flex;justify-content:end;gap:.25rem;padding:.4rem;border-block-end:1px solid light-dark(#16131d1f,#f2eee62b)}
 .scene-source :is(a,button){padding:.45rem .7rem;border:0;border-radius:99rem;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
 .scene-source :is(a,button):hover{background:light-dark(#14121f14,#fff2)}
 .scene-source :is(a,button):focus-visible{outline:2px solid currentColor;outline-offset:-2px}
@@ -145,13 +88,14 @@ export const sceneChrome = ({ slug, title, prev, next, mode }) => `<style>
 :root:has(.scene-source[open]){overflow:hidden}
 </style>
 <header class="scene-dock">
-<nav aria-label="Site"><a class="home" href="../../" aria-label="All scenes"><span>CSS Scenes</span></a></nav>
-<nav aria-label="Scenes"><a href="../${esc(prev.slug)}/" rel="prev" title="Previous: ${esc(prev.title)} (←)" aria-label="Previous scene: ${esc(prev.title)}">←</a><span class="now"><span aria-current="page" title="${esc(title)}">${esc(title)}</span><small>${esc(MODES[mode].hint)}</small></span><a href="../${esc(next.slug)}/" rel="next" title="Next: ${esc(next.title)} (→)" aria-label="Next scene: ${esc(next.title)}">→</a></nav>
-<nav aria-label="Scene tools" class="tools"><a href="source.html">About &amp; source</a><button type="button" data-tab="controls" class="pending" aria-hidden="true" tabindex="-1">Controls</button><button type="button" data-tab="stats" class="fps pending" aria-label="Stats" aria-hidden="true" tabindex="-1"><i class="fps-dot"></i><output>–</output><span class="unit">fps</span></button></nav>
+<a class="home" href="../../" aria-label="CSS Scenes: all scenes"><span>CSS Scenes</span></a>
+<nav aria-label="Scenes"><a href="../${esc(prev.slug)}/" rel="prev" title="Previous: ${esc(prev.title)} (←)" aria-label="Previous scene: ${esc(prev.title)}">←</a><a class="idx" href="../../#scenes" title="All scenes (G)" aria-label="Scene ${n} of ${total}: all scenes">${String(n).padStart(2, '0')} / ${String(total).padStart(2, '0')}</a><a href="../${esc(next.slug)}/" rel="next" title="Next: ${esc(next.title)} (→)" aria-label="Next scene: ${esc(next.title)}">→</a></nav>
+<span class="now"><span aria-current="page" title="${esc(title)}">${esc(title)}</span><small>${esc(MODES[mode].short)}</small></span>
+<nav aria-label="Scene tools" class="tools"><a href="source.html" title="How it’s made (S)">How it’s made</a><button type="button" data-tab="controls" class="pending" aria-hidden="true" tabindex="-1">Controls</button><button type="button" data-tab="stats" class="fps pending" aria-label="Stats" aria-hidden="true" tabindex="-1"><i class="fps-dot"></i><output>–</output><span class="unit">fps</span></button></nav>
 </header>
-<dialog class="scene-source" id="scene-source" aria-label="About ${esc(title)}, with its source" closedby="closerequest">
+<dialog class="scene-source" id="scene-source" aria-label="How ${esc(title)} is made" closedby="closerequest">
 <form method="dialog"><a href="source.html">Open as page</a><button autofocus>Close</button></form>
-<iframe title="About ${esc(title)}, with its source"></iframe>
+<iframe title="How ${esc(title)} is made"></iframe>
 </dialog>
 <script type="module">
 const d=document.getElementById('scene-source'),f=d.querySelector('iframe'),n=document.querySelector('.scene-dock'),a=n.querySelector('[href="source.html"]');
@@ -165,7 +109,7 @@ d.addEventListener('close',()=>a.setAttribute('aria-expanded',false));
 // Previous/next keep the source open on the next scene; ← and → follow them unless a control has the keys
 const [p,x]=n.querySelectorAll('[rel]');
 [p,x].forEach((l)=>l.addEventListener('click',()=>{if(d.open)l.hash='source'}));
-addEventListener('keydown',(e)=>{const l={ArrowLeft:p,ArrowRight:x}[e.key];if(!l||e.defaultPrevented||e.altKey||e.metaKey||e.ctrlKey||e.shiftKey||e.composedPath().some((el)=>el.matches?.('input,select,textarea,[role=slider],[contenteditable]')))return;l.click()});
+addEventListener('keydown',(e)=>{const l={ArrowLeft:p,ArrowRight:x,s:a}[e.key];if(!l||e.defaultPrevented||e.altKey||e.metaKey||e.ctrlKey||e.shiftKey||e.composedPath().some((el)=>el.matches?.('input,select,textarea,[role=slider],[contenteditable]')))return;l.click()});
 if(location.hash==='#source')open();
 </script>
 <b id="preview" hidden></b><b id="card" hidden></b>`;

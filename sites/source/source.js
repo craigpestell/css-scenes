@@ -1,12 +1,13 @@
-/** Render a scene's About & source page: what the scene is and how it's made, beside its code, in one view. The top says
+/** Render a scene's How it’s made page: what the scene is and how it's made, beside its code, in one view. The top says
  * what the scene is, how it plays, what it weighs and who inspired it. The write-up (writeup.md, when the scene has one)
  * gets a section index; scenes without one list their techniques and features from meta.json instead. The code shows
  * each authored file and the bundled CSS that ships, in tabs, with line numbers, a wrap toggle and a copy button, plus
  * an Open in CodePen button.
- * The scene's About & source button shows this page in a dialog at source.html#embed, which drops the page's own navigation. */
+ * The scene's How it’s made button shows this page in a dialog at source.html#embed, which drops the page's own navigation. */
 import { esc, highlight } from './highlight.js';
 import { renderMarkdown } from './markdown.js';
 import { SITE } from '../shared/head.js';
+import { techniquesOf } from '../techniques/techniques.js';
 
 /** CodePen's HTML panel is the body, so drop the document head and the build placeholders. */
 const bodyOf = (html) => html
@@ -60,6 +61,7 @@ export function renderSource({ meta, html, css, js, writeup, bundled, size, desc
     editors: js ? '111' : '110',
   });
 
+  const techs = techniquesOf(meta);
   return `<!doctype html>
 <html lang="en">
 <meta charset="utf-8">
@@ -78,7 +80,7 @@ if (location.hash === '#embed') {
 <style>${pageCss}</style>
 <header class="masthead">
   <nav><a class="wordmark" href="../../">CSS Scenes</a> <span aria-hidden="true">/</span> <a href="./">${esc(meta.title)}</a></nav>
-  <h1>${esc(meta.title)} <span>how it’s made</span></h1>
+  <h1 class="display">${esc(meta.title)}<br><em>how it’s made.</em></h1>
   ${description ? `<p class="lede">${esc(description)}</p>` : ''}
   ${credits ? `<p class="credits">Inspired by ${credits}</p>` : ''}
   <ul class="facts" role="list">
@@ -87,6 +89,7 @@ if (location.hash === '#embed') {
     <li>${kb(size.br)} of ${kb(size.budget)} budget (brotli)</li>
     <li class="to-code"><a href="#code">Source code <span aria-hidden="true">↓</span></a></li>
   </ul>
+  ${techs.length ? `<p class="built"><span class="label">Built with</span> ${techs.map((t) => `<a href="/techniques/${esc(t.key)}/" target="_top">${esc(t.name)}</a>`).join(' ')}</p>` : ''}
   <form action="https://codepen.io/pen/define" method="post" target="_blank">
     <input type="hidden" name="data" value="${esc(pen)}">
     <button>Open in CodePen</button>

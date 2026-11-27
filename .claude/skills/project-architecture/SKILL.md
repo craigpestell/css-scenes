@@ -24,11 +24,13 @@ scenes/<slug>/* ------------> packages/build/src/cli.js -> dist/scenes/<slug>/ (
 sites/source/* -------------/                         \-> index.html + source.html
 sites/stats/stats.js -> embedded per-scene JSON
 sites/stats/panel.js -> dist/stats.js shared runtime panel
-sites/shared/site.css -> imported by index.css and source.css (never by scenes)
-sites/index/* + all scene metadata -> dist/index.html
+sites/shared/site.css -> imported by index.css, techniques.css, source.css and 404.css (never by scenes)
+sites/index/* + all scene metadata -> dist/index.html (player, reel, poster bento, techniques grid)
+sites/techniques/* + scene meta features + scene.css -> dist/techniques/index.html + dist/techniques/<key>/index.html
+scene list -> dist/scenes.json (read by the scene switcher in dist/stats.js)
 sites/404/* + scene list -> dist/404.html (Vercel serves it for unknown paths)
 sites/shared/head.js -> favicon + link-preview tags on every page; dist/favicon.svg
-sites/og/*.jpg (made by `pnpm og`) -> dist/og/ link-preview images
+sites/og/*.jpg + sites/posters/*.jpg (made by `pnpm og`) -> dist/og/ link previews, dist/posters/ gallery stills
 ```
 
 Lightning CSS inlines tokens, `@import "lib/<name>"` and (site pages only) `@import "site/<name>"`, lowers to Chrome 120+, Safari 17.4+,
@@ -44,24 +46,35 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 - `packages/build/src/tokens.js`: converts token JSON into registered properties and root values.
 - `packages/tokens/tokens.json`: shared colors, durations, easings, and registered angles.
 - `packages/lib/src/`: reusable CSS snippets resolved only through `lib/<name>` imports.
-- `sites/shared/`: styles shared by the gallery, source and 404 pages (surfaces, type, radii, focus, wordmark), and
+- `sites/shared/`: the house palette and parts shared by every site page (site bar, buttons, segmented filters,
+  Baseline status dots, the techniques grid, display headings, wordmark), and
   `head.js`: the site icon and Open Graph/Twitter tags (`headTags`), with `SITE` as the canonical origin.
 - `sites/404/`: the not-found page; the build fills in a list of every scene.
-- `sites/og/`: committed 1200x630 link-preview JPEGs, `index.jpg` plus one per scene slug. `pnpm og`
-  (`packages/build/src/og.js`) regenerates them from `dist/` with Playwright, which is not a project dependency;
-  rerun it after a scene's look changes. A page with no image simply gets no `og:image`.
-- `sites/index/`: gallery shell, card renderer, gallery styling, and the scene dock (`sceneChrome`).
-- `sites/source/`: the generated About & source page (what the scene is and its write-up beside the code), syntax highlighting, and a small
+- `sites/og/` and `sites/posters/`: committed stills. `pnpm og [slug…]` (`packages/build/src/og.js`) renders them
+  from `dist/` with Playwright (not a project dependency): per scene a 960x600 poster, a 480x300 `-sm` thumbnail and a
+  1200x630 link preview, all from one frame chosen by pausing every animation at `meta.poster.time` seconds (default
+  4; `meta.poster.scheme` picks light or dark), plus `og/index.jpg` when run for everything. Rerun it after a scene's
+  look changes or a scene lands. A page with no image simply gets no `og:image`.
+- `sites/index/`: `index.html` (the home's words and layout; a comment names the first scene, `hero:`, and the
+  bento's opening tiles, `bento:`), `home.js` (renderers and the shared site bar), `home.client.js` (inlined: the
+  reel, auto-advance, hover-to-play posters), `index.css`, and `cards.js` (scene modes, descriptions, the 404 list and
+  the scene toolbar, `sceneChrome`).
+- `sites/techniques/`: `techniques.js` is the registry of CSS features (key, name, summary, `match` against meta
+  feature names, `css` for the lines to quote, optional `CSS.supports()` test) plus the excerpt finder; `pages.js`
+  renders the index and each technique page. A scene appears on a technique page when one of its `features` names
+  matches; add a registry entry for a new feature.
+- `sites/source/`: the generated How it's made page (what the scene is and its write-up beside the code), syntax highlighting, and a small
   Markdown renderer (`markdown.js`) for `writeup.md`. It supports only what write-ups use; extend it when one needs more.
 - `sites/stats/stats.js`: build-time stats and feature-test mapping.
 - `sites/stats/panel.js`: browser-only. `<scene-controls>`, a column on the window's right edge (a bottom sheet on
   phones) with two tabs: Controls, with playback (speed, loop, pause, restart, applied to `.stage` animations through
   the Web Animations API) and the scene settings (colour scheme, `params`), and Stats (performance, size,
   compatibility, environment). It wires the toolbar's Controls and fps buttons, which `sceneChrome` renders hidden up
-  front. Scenes play on the clock, never on scroll.
+  front. Scenes play on the clock, never on scroll. It also defines `<scene-switcher>`, the popover of every scene
+  opened from the toolbar's `08 / 11` button or G, anchored under it with CSS anchor positioning where supported.
 - Chrome never covers a scene: `sceneChrome` insets `.stage` by `--chrome-top` (the toolbar), `--chrome-right` (the
   Controls column) and `--chrome-bottom` (the phone sheet). Scenes should size from the stage (%), not the viewport,
-  where they can. Only the About & source dialog floats, and it stops at the Controls column too.
+  where they can. Only the How it's made dialog and the scene switcher float, and it stops at the Controls column too.
 - `.claude/`: scene design/build/review/write-up workflow; `/new-scene` is the
   human-approval-gated orchestrator.
 - `vercel.json`: static deployment of `dist/`; no framework runtime or serverless functions.
@@ -106,7 +119,7 @@ HTML + CSS + optional scene JS against a 14 KiB budget plus `meta.exceptions.ext
 
 1. Run `pnpm build`.
 2. Require exit code 0 and every row in the size table to remain within budget.
-3. For UI changes, run `pnpm dev` and inspect gallery, scene, the About & source dialog/page, and the Controls and Stats tabs.
+3. For UI changes, run `pnpm dev` and inspect gallery, scene, the How it's made dialog/page, the scene switcher, the technique pages, and the Controls and Stats tabs.
 4. Check light/dark, mobile/desktop, reduced motion, and feature fallback when relevant.
 5. Confirm `git status` contains authored files only, never `dist/`, `.env.local`, or `.vercel/`.
 

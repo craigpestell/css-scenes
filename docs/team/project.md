@@ -7,12 +7,12 @@ Both roles read this file first. It holds everything specific to css-scenes, so 
 - **Name:** css-scenes.
 - **What it is:** a gallery of animated scenes built with modern CSS only, each with its source viewer, size stats and a technique write-up.
 - **Owner:** the founder's own project, unbilled, on the Lite team.
-- **Stage:** live on Vercel, nine scenes (2026-10-29).
+- **Stage:** live at https://css-scenes.bizrocket.ca, eleven scenes (2026-11-27).
 
 ## Stack
 
 - A framework-free static site generator in a pnpm workspace. Lightning CSS bundles and lowers CSS (Chrome 120+, Safari 17.4+, Firefox 128+). Output goes to `dist/`, which is never edited.
-- Code map: `scenes/<slug>/` (each scene: `index.html`, `scene.css`, `meta.json`, optional `scene.js`, `brief.md`, `writeup.md`), `packages/build/src/cli.js` (the whole build and dev server), `packages/tokens/` (design tokens), `packages/lib/src/` (shared CSS snippets), `sites/` (gallery index, source viewer, stats panel), `ideas/`.
+- Code map: `scenes/<slug>/` (each scene: `index.html`, `scene.css`, `meta.json`, optional `scene.js`, `brief.md`, `writeup.md`), `packages/build/src/cli.js` (the whole build and dev server), `packages/tokens/` (design tokens), `packages/lib/src/` (shared CSS snippets), `sites/` (home, technique pages, source viewer, stats panel and scene switcher), `sites/posters/` and `sites/og/` (stills from `pnpm og`), `ideas/`.
 - The `project-architecture` skill in `.claude/skills/` is the full map; read it before cross-cutting changes.
 
 ## Project specialists
@@ -26,6 +26,7 @@ The scene pipeline has its own agents and skills in `.claude/`, run by `/new-sce
 | Install | `pnpm install --frozen-lockfile` |
 | Build (enforces each scene's size budget) | `pnpm build` |
 | Dev server | `pnpm dev` (http://localhost:4321/) |
+| Posters and link previews (after a scene's look changes) | `pnpm build && pnpm og [slug…]` (needs Playwright) |
 | Tests | none; `pnpm build` is the check |
 
 ## Hosting and deploys

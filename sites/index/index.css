@@ -1,232 +1,231 @@
 @import "site/site";
-@layer reset, tokens, base, index;
+@layer reset, tokens, base, home;
 
 @layer base {
   html { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 }
 
-@layer index {
-  .topbar, .hero, .gallery, .colophon {
-    inline-size: min(100% - 2 * var(--gutter), var(--wrap));
-    margin-inline: auto;
+@layer home {
+  /* ── The player: one scene, edge to edge ───────────────────────────────────────────────────────────────────── */
+  .screen {
+    --reel-h: clamp(6.5rem, 9vw, 8.25rem);
+    position: relative;
+    isolation: isolate;
+    block-size: 100svh;
+    min-block-size: 38rem;
+    max-block-size: 75rem;
+    overflow: clip;
+    background: #000;
+    color: #fff;
+    color-scheme: dark;
+  }
+  .frame { position: absolute; inset: 0; z-index: -2; view-transition-name: player; }
+  .frame iframe { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; border: 0; }
+  .frame iframe.next { visibility: hidden; } /* loading behind the scene it replaces */
+  /* A scrim so the words read over any scene: darker at the bottom and the left, a little at the top for the bar */
+  .screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      linear-gradient(to top, #09080ef5, #09080ea6 calc(var(--reel-h) + 4rem), #09080e00 60%),
+      linear-gradient(to right, #09080ebf, #09080e00 55%),
+      linear-gradient(to bottom, #09080e99, #09080e00 7rem);
   }
 
-  /* Top bar */
-  .topbar {
+  /* The title card */
+  .marquee {
+    position: absolute;
+    inset: auto var(--gutter) calc(var(--reel-h) + clamp(1.75rem, 4vh, 3rem));
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-block: 1.25rem;
-    font: 600 0.8rem/1 var(--mono);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    flex-direction: column;
+    align-items: start;
+    gap: 0.95rem;
+    max-inline-size: 48rem;
+    view-transition-name: marquee;
   }
-  .jump { color: var(--dim); text-decoration: none; }
-  .jump:hover { color: var(--c-ink); }
-
-  /* Hero: the pitch beside a live, interactive scene in a mat */
-  .hero {
-    display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: clamp(2rem, 5vw, 4.5rem);
-    align-items: center;
-    padding-block: clamp(1.5rem, 5vw, 4.5rem) clamp(3rem, 7vw, 6rem);
+  .now { display: flex; gap: 0.6rem; align-items: center; color: #ffffffc0; }
+  .live { display: inline-flex; align-items: center; gap: 0.45rem; color: #fff; }
+  .live::before { content: ""; inline-size: 0.45rem; aspect-ratio: 1; border-radius: 50%; background: #ff4d5e; box-shadow: 0 0 0 0.22rem #ff4d5e3d; }
+  @media (prefers-reduced-motion: no-preference) {
+    .live::before { animation: live 2.4s ease-in-out infinite; }
+    @keyframes live { 50% { box-shadow: 0 0 0 0.4rem #ff4d5e00; } }
   }
-  .eyebrow {
-    color: var(--c-accent);
-    font: 600 0.75rem/1 var(--mono);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-  h1 {
-    margin-block-start: 1rem;
-    font-size: clamp(2.6rem, 5.6vw, 4.75rem);
+  .marquee h2 {
+    font-size: clamp(3.1rem, 9vw, 8.5rem);
     font-weight: 800;
-    line-height: 0.95;
-    letter-spacing: -0.045em;
+    line-height: 0.88;
+    letter-spacing: -0.055em;
     text-wrap: balance;
+    text-shadow: 0 0.1em 0.6em #0006;
   }
-  .lede { max-inline-size: 34rem; margin-block-start: 1.4rem; font-size: 1.1rem; color: var(--dim); text-wrap: pretty; }
-  .lede code { color: var(--c-ink); }
-
-  .figures {
-    display: grid;
-    grid-template-columns: repeat(4, auto);
-    justify-content: start;
-    gap: 0 clamp(1.25rem, 3vw, 2.25rem);
-    margin-block-start: 2.25rem;
-    padding-block-start: 1.25rem;
-    border-block-start: 1px solid var(--line);
+  .desc {
+    max-inline-size: 36rem;
+    color: #ffffffd6;
+    font-size: clamp(1rem, 1.4vw, 1.12rem);
+    text-wrap: pretty;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
   }
-  .figures div { display: flex; flex-direction: column-reverse; gap: 0.3rem; }
-  .figures dt { color: var(--dim); font: 600 0.68rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
-  .figures dd { font-size: 1.75rem; font-weight: 700; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-  .figures small { font-size: 0.8rem; font-weight: 600; color: var(--dim); }
-
-  .hero-scene { display: grid; gap: 0.9rem; }
-  .mat {
-    aspect-ratio: 4 / 3;
-    max-inline-size: 100%;
-    padding: clamp(0.4rem, 1vw, 0.7rem);
-    border: 1px solid var(--line);
-    border-radius: 1.25rem;
-    background: var(--surface);
-    box-shadow: 0 2rem 4rem -2rem color-mix(in oklab, var(--c-accent) 45%, transparent);
-    view-transition-name: scene-hero;
-  }
-  .mat iframe { display: block; inline-size: 100%; block-size: 100%; border: 0; border-radius: 0.8rem; background: var(--c-ink); }
-  .hero-scene figcaption {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.35rem 1rem;
-    padding-inline: 0.4rem;
-    font-size: 0.9rem;
-  }
-  .plate b { margin-inline-end: 0.5rem; color: var(--c-accent); font: 600 0.7rem/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
-  .plate { font-weight: 600; }
-  .plate-meta { color: var(--dim); font: 0.78rem var(--mono); }
-  .enter { margin-inline-start: auto; font-weight: 600; text-decoration: none; color: var(--c-accent); }
-  .enter span { display: inline-block; transition: translate var(--t-fast) var(--ease-out); }
-  .enter:hover span { translate: 0.25rem 0; }
-
-  /* Filters: radios, and :has() hides the cards that don't match */
-  .gallery { scroll-margin-block-start: 1rem; }
-  .filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding-block-end: 1.5rem;
-    margin-block-end: clamp(1.5rem, 3vw, 2.25rem);
-    border-block-end: 1px solid var(--line);
-  }
-  .filters label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.5rem 0.95rem;
-    border: 1px solid var(--line);
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0; list-style: none; }
+  .chips li {
+    padding: 0.42rem 0.65rem;
+    border: 1px solid #ffffff2e;
     border-radius: 99rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+    background: #0000004d;
+    backdrop-filter: blur(8px);
+    color: #ffffffd9;
+    font: 500 0.72rem/1 var(--mono);
   }
-  .filters label:hover { border-color: var(--c-accent); }
-  .filters small { color: var(--dim); font: 600 0.75rem/1 var(--mono); }
-  .filters label:has(:checked) { background: var(--c-ink); border-color: var(--c-ink); color: var(--c-paper); }
-  .filters label:has(:checked) small { color: inherit; opacity: 0.7; }
-  .filters label:has(:focus-visible) { outline: 2px solid var(--c-accent); outline-offset: 2px; }
-  .filters input { position: absolute; opacity: 0; pointer-events: none; }
+  .chips li:has(.tech) { padding: 0; border-color: #b19cff6b; }
+  .chips .tech { display: block; padding: 0.42rem 0.65rem; color: #ddd3ff; text-decoration: none; }
+  .chips .tech:hover { color: #fff; }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-block-start: 0.35rem; }
+  .screen .btn:not(.solid) { background: #00000045; backdrop-filter: blur(12px); color: #fff; }
+  .screen .btn.solid { background: #fff; border-color: #fff; color: #09080e; }
 
-  .gallery:has([value="story"]:checked) .card:not([data-mode="story"]),
-  .gallery:has([value="interactive"]:checked) .card:not([data-mode="interactive"]),
-  .gallery:has([value="loop"]:checked) .card:not([data-mode="loop"]) { display: none; }
+  /* The reel: every scene as a numbered poster. Its bar runs down on the current one, then the next takes over. */
+  .reel { position: absolute; inset: auto 0 clamp(0.75rem, 2.5vh, 1.5rem); }
+  .reel ol {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.25rem var(--gutter) 0.5rem;
+    list-style: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--gutter);
+    scrollbar-width: none;
+  }
+  .reel li { flex: 0 0 clamp(7.25rem, 10.5vw, 10rem); scroll-snap-align: start; }
+  .reel a { display: grid; gap: 0.4rem; color: #ffffffa8; font-size: 0.8rem; font-weight: 600; text-decoration: none; }
+  .reel a > span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .reel .n { margin-inline-end: 0.3rem; font: 500 0.68rem var(--mono); opacity: 0.8; }
+  .reel img {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    outline: 1px solid #ffffff24;
+    filter: saturate(0.75) brightness(0.72);
+    transition: filter 0.25s, outline-color 0.25s;
+  }
+  .reel a:is(:hover, :focus-visible) { color: #fff; }
+  .reel a:is(:hover, :focus-visible) img { filter: none; }
+  .reel a:focus-visible { outline: none; }
+  .reel a:focus-visible img { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  .reel [aria-current] { color: #fff; }
+  .reel [aria-current] img { filter: none; outline: 2px solid #fff; outline-offset: 2px; }
+  .reel .bar { display: block; block-size: 2px; border-radius: 2px; }
+  .reel [aria-current] .bar { background: #ffffff38; }
+  .reel [aria-current] .bar::before { content: ""; display: block; block-size: 100%; border-radius: inherit; background: #fff; transform-origin: 0 50%; scale: 0 1; }
+  @media (prefers-reduced-motion: no-preference) {
+    /* Only once the script runs: it advances the reel when this ends */
+    .screen[data-auto] [aria-current] .bar::before { animation: advance var(--dwell, 16s) linear forwards; }
+    .screen[data-auto]:is(:hover, :focus-within, [data-paused]) [aria-current] .bar::before { animation-play-state: paused; }
+    @keyframes advance { to { scale: 1 1; } }
+  }
 
-  /* Cards: the scene is the card; words sit underneath like a gallery label */
-  .grid {
+  /* ── Sections ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+  main > section { padding: clamp(4.5rem, 9vw, 8rem) var(--gutter) 0; max-inline-size: calc(var(--wrap) + 2 * var(--gutter)); margin-inline: auto; }
+  .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 1.5rem 3rem; margin-block-end: clamp(1.75rem, 3.5vw, 2.75rem); }
+  .kicker { color: var(--dim); margin-block-end: 1rem; }
+  .intro { max-inline-size: 30rem; color: var(--dim); text-wrap: pretty; }
+  fieldset.seg { margin: 0; min-inline-size: 0; }
+
+  /* ── The collection: a bento of posters ───────────────────────────────────────────────────────────────────────── */
+  .bento {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
-    gap: clamp(2rem, 4vw, 3rem) clamp(1rem, 2.5vw, 1.75rem);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: clamp(6rem, 8.6vw, 10.5rem);
+    grid-auto-flow: dense;
+    gap: 1.35rem 1rem;
     padding: 0;
     list-style: none;
   }
-  .card { position: relative; display: flex; flex-direction: column; gap: 0.9rem; }
-
-  /* Live preview: the scene itself, rendered at card size. Scenes size in vmin/dvh, so they recompose for the frame. */
-  .preview {
+  .tile { grid-column: span 4; grid-row: span 2; min-inline-size: 0; }
+  .tile.wide { grid-column: span 6; grid-row: span 3; }
+  .tile.xl { grid-column: span 8; grid-row: span 4; }
+  .tile a { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 0.7rem; block-size: 100%; text-decoration: none; }
+  .tile a:focus-visible { outline: none; }
+  .poster {
     position: relative;
-    aspect-ratio: 16 / 10;
-    border-radius: 1rem;
     overflow: clip;
-    background: var(--c-ink);
-    box-shadow: 0 0 0 1px var(--line);
-    transition: box-shadow var(--t-base) var(--ease-out), translate var(--t-base) var(--ease-out);
-    content-visibility: auto; /* off-screen previews skip rendering */
+    border-radius: var(--r-2);
+    background: var(--surface);
+    outline: 1px solid var(--line);
+    transition: outline-color 0.2s, outline-offset 0.2s;
   }
-  .preview iframe { display: block; inline-size: 100%; block-size: 100%; border: 0; pointer-events: none; }
-  .card:is(:hover, :has(h2 a:focus-visible)) .preview {
-    translate: 0 -4px;
-    box-shadow: 0 0 0 2px var(--c-accent), 0 1.5rem 3rem -1.5rem color-mix(in oklab, var(--c-accent) 70%, transparent);
+  .poster :is(img, iframe) { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; border: 0; }
+  .poster iframe { opacity: 0; transition: opacity 0.4s; }
+  .poster iframe.on { opacity: 1; }
+  @media (prefers-reduced-motion: no-preference) {
+    .poster img { transition: scale 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+    .tile a:is(:hover, :focus-visible) .poster img { scale: 1.035; }
   }
-  /* Hovering one card quiets the rest */
-  @media (hover: hover) {
-    .grid:has(.card:hover) .card:not(:hover) .preview { opacity: 0.6; }
-    .preview { transition-property: box-shadow, translate, opacity; }
+  .tile a:is(:hover, :focus-visible) .poster { outline: 2px solid var(--c-ink); outline-offset: 3px; }
+  .tile a:focus-visible .poster { outline-color: var(--c-accent); }
+  /* A live tile says so */
+  .poster:has(iframe.on)::after {
+    content: "Playing live";
+    position: absolute;
+    inset: auto auto 0.75rem 0.75rem;
+    padding: 0.4rem 0.6rem 0.4rem 1.35rem;
+    border-radius: 99rem;
+    background: #000000b3 radial-gradient(circle at 0.7rem 50%, #ff4d5e 0.2rem, #0000 0.24rem);
+    color: #fff;
+    font: 500 0.68rem/1 var(--mono);
   }
+  .cap { display: flex; align-items: baseline; gap: 0.75rem; min-inline-size: 0; }
+  .cap .n { color: var(--dim); font: 500 0.75rem var(--mono); }
+  .cap b { font-size: 1.12rem; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .xl .cap b { font-size: clamp(1.15rem, 1.8vw, 1.6rem); }
+  .cap small { margin-inline-start: auto; color: var(--dim); font: 500 0.7rem var(--mono); letter-spacing: 0.03em; white-space: nowrap; }
 
-  .body { display: grid; gap: 0.45rem; }
-  .kicker { display: flex; justify-content: space-between; gap: 1rem; color: var(--dim); font: 600 0.7rem/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; }
-  .kicker span:first-child { color: var(--c-ink); }
-  h2 { font-size: 1.3rem; line-height: 1.2; letter-spacing: -0.015em; }
-  /* the title link covers the whole card; the footer sits above it */
-  h2 a { text-decoration: none; outline: none; }
-  h2 a::after { content: ""; position: absolute; inset: 0; border-radius: 1rem; }
-  .desc {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-    color: var(--dim);
-    font-size: 0.95rem;
-    text-wrap: pretty;
-  }
-  .tags { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; padding: 0; list-style: none; }
-  .tags li { color: var(--c-accent); font: 600 0.72rem/1.5 var(--mono); }
-  .tags li::before { content: "#"; opacity: 0.55; }
+  /* Filtering drops the bento's sizes: what's left is an even grid */
+  .collection:has(.seg [value="story"]:checked) .tile:not([data-mode="story"]),
+  .collection:has(.seg [value="interactive"]:checked) .tile:not([data-mode="interactive"]),
+  .collection:has(.seg [value="loop"]:checked) .tile:not([data-mode="loop"]) { display: none; }
+  .collection:has(.seg :checked:not([value="all"])) .tile { grid-column: span 4; grid-row: span 2; }
 
-  .foot {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.4rem 1.25rem;
-    margin-block-start: auto;
-    padding-block-start: 0.75rem;
-    border-block-start: 1px solid var(--line);
-    font-size: 0.85rem;
-  }
-  summary { cursor: pointer; inline-size: fit-content; font-weight: 600; }
-  summary:hover, .source:hover { color: var(--c-accent); }
-  details[open] { flex-basis: 100%; order: 1; }
-  details h3 { margin-block: 0.7rem 0.2rem; color: var(--dim); font: 600 0.68rem/1.2 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
-  details ul { padding-inline-start: 1.1rem; }
-  .features small { color: var(--dim); }
-  .source { font-weight: 600; text-decoration: none; }
-  .credits { color: var(--dim); font-size: 0.78rem; }
+  /* ── Techniques ───────────────────────────────────────────────────────────────────────────────────────────────── */
+  .more { margin-block-start: 1.5rem; }
 
-  .colophon {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-    gap: 1rem 3rem;
-    margin-block-start: clamp(4rem, 8vw, 7rem);
-    padding-block: 2rem 3rem;
-    border-block-start: 1px solid var(--line);
-    color: var(--dim);
-    font-size: 0.9rem;
-  }
-  .colophon b { color: var(--c-ink); }
+  /* ── About ────────────────────────────────────────────────────────────────────────────────────────────────────── */
+  .about { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem clamp(2rem, 6vw, 6rem); }
+  .words { display: grid; gap: 1rem; align-content: end; max-inline-size: 38rem; color: var(--dim); text-wrap: pretty; }
+  .words :is(b, code) { color: var(--c-ink); }
+  .figures { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.5rem; padding-block-start: 2rem; border-block-start: 1px solid var(--line); }
+  .figures dt { color: var(--dim); }
+  .figures dd { margin-block-start: 0.4rem; font-size: clamp(2rem, 4vw, 3rem); font-weight: 750; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+  .figures small { color: var(--dim); font: 500 0.8rem var(--mono); letter-spacing: 0; }
+  .footnote { margin-block-start: clamp(4rem, 8vw, 7rem); border-block-start: 1px solid var(--line); }
 
-  @media (width < 56rem) {
-    .hero { grid-template-columns: minmax(0, 1fr); }
-    .mat { aspect-ratio: 16 / 11; }
-  }
-  @media (width < 34rem) {
-    .figures { grid-template-columns: repeat(2, auto); gap: 1rem 2rem; }
-    .jump { display: none; }
-  }
-
-  /* Cards rise into place as they scroll in */
-  @supports (animation-timeline: view()) {
-    @media (prefers-reduced-motion: no-preference) {
-      .card {
-        animation: rise linear both;
-        animation-timeline: view();
-        animation-range: entry 0% entry 60%;
-      }
-      @keyframes rise { from { opacity: 0; transform: translateY(2rem) scale(0.97); } }
-    }
+  /* ── Phones ───────────────────────────────────────────────────────────────────────────────────────────────────── */
+  @media (width < 48rem) {
+    .screen { min-block-size: 36rem; }
+    .marquee { gap: 0.75rem; inset-block-end: calc(var(--reel-h) + 2.5rem); }
+    .desc { -webkit-line-clamp: 2; line-clamp: 2; }
+    .chips li:nth-child(n + 4) { display: none; }
+    .sitebar nav a { font-size: 0.82rem; }
+    .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 1.25rem 0.75rem; }
+    .tile, .tile.wide, .tile.xl,
+    .collection:has(.seg :checked:not([value="all"])) .tile { grid-column: span 1; grid-row: auto; }
+    .tile.wide, .tile.xl { grid-column: span 2; }
+    .tile a { grid-template-rows: auto auto; }
+    .poster { aspect-ratio: 16 / 10; }
+    .cap { flex-wrap: wrap; row-gap: 0.15rem; }
+    .cap small { flex-basis: 100%; margin-inline-start: 0; }
+    .sm .cap b { font-size: 0.95rem; }
+    .about { grid-template-columns: minmax(0, 1fr); }
+    .figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 }

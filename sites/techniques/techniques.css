@@ -1,0 +1,92 @@
+@import "site/site";
+@layer reset, tokens, base, techniques;
+
+@layer techniques {
+  main { max-inline-size: calc(var(--wrap) + 2 * var(--gutter)); margin-inline: auto; padding: clamp(2.5rem, 6vw, 5rem) var(--gutter) 0; }
+  .sitebar { border-block-end: 1px solid var(--line); }
+  .kicker { color: var(--dim); margin-block-end: 1.1rem; }
+  .kicker a { text-decoration: none; }
+  .kicker a:hover { color: var(--c-ink); }
+  .lede { max-inline-size: 40rem; margin-block-start: 1.4rem; color: var(--dim); font-size: clamp(1.02rem, 1.4vw, 1.15rem); text-wrap: pretty; }
+
+  /* ── The index ────────────────────────────────────────────────────────────────────────────────────────────────── */
+  .techniques-index .bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem 2rem; margin-block: clamp(2rem, 4vw, 3rem) 1.5rem; }
+  fieldset.seg { margin: 0; min-inline-size: 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+  .techniques-index:has([value="widely"]:checked) .atlas li:not([data-status="widely"]),
+  .techniques-index:has([value="newly"]:checked) .atlas li:not([data-status="newly"]),
+  .techniques-index:has([value="limited"]:checked) .atlas li:not([data-status="limited"]) { display: none; }
+
+  /* ── A technique ──────────────────────────────────────────────────────────────────────────────────────────────── */
+  .technique .intro-block { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 2rem clamp(2rem, 5vw, 5rem); align-items: end; }
+  .technique h1 {
+    font: 700 clamp(2.2rem, min(7vw, 50vw / (var(--len, 10) * 0.62)), 6.25rem)/0.98 var(--mono);
+    letter-spacing: -0.06em;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+  .technique h1 span { color: var(--c-accent); }
+  .also { margin-block-start: 0.9rem; color: var(--dim); }
+  .also code { color: var(--c-ink); }
+  .support { display: grid; gap: 0.9rem; padding: 1.25rem; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--surface); }
+  .support > .status { font-size: 0.78rem; color: var(--c-ink); }
+  .live-check { display: flex; gap: 0.5rem; align-items: baseline; color: var(--dim); font: 500 0.78rem/1.4 var(--mono); }
+  .live-check.yes::before { content: "✓"; color: var(--widely); font-weight: 700; }
+  .live-check.no::before { content: "–"; color: var(--limited); font-weight: 700; }
+
+  .used { margin-block: clamp(3rem, 6vw, 5rem) 0.5rem; padding-block-end: 1.25rem; border-block-end: 1px solid var(--line); font-size: clamp(1.6rem, 3vw, 2.3rem); font-weight: 800; letter-spacing: -0.04em; }
+  .use { display: grid; grid-template-columns: minmax(0, 24rem) minmax(0, 1fr); gap: 1.25rem clamp(1.25rem, 3vw, 2.5rem); padding-block: 1.75rem; border-block-end: 1px solid var(--line); }
+  .use .poster { position: relative; align-self: start; aspect-ratio: 16 / 10; overflow: clip; border-radius: var(--r-2); outline: 1px solid var(--line); }
+  .use .poster img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: cover; }
+  .use .poster:hover { outline: 2px solid var(--c-ink); outline-offset: 3px; }
+  .use .body { display: grid; gap: 0.85rem; align-content: start; min-inline-size: 0; }
+  .use header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.5rem 1.5rem; }
+  .use h2 { font-size: 1.4rem; letter-spacing: -0.025em; }
+  .use h2 a { text-decoration: none; }
+  .use h2 a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .use .n { margin-inline-end: 0.35rem; color: var(--dim); font: 500 0.78rem var(--mono); letter-spacing: 0; vertical-align: 0.2em; }
+  .links { display: flex; gap: 1.1rem; font-size: 0.88rem; font-weight: 600; }
+  .links a { color: var(--c-accent); text-decoration: none; }
+  .links a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .facts { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; color: var(--dim); }
+  .fallback { font-size: 0.85rem; }
+  .none { color: var(--dim); font-size: 0.9rem; }
+  .quote { display: grid; gap: 0.4rem; margin: 0; min-inline-size: 0; }
+  .quote figcaption { color: var(--dim); font: 500 0.72rem var(--mono); }
+
+  /* Code excerpts: line numbers from data-n, the lines that use the technique marked */
+  .excerpt {
+    margin: 0;
+    padding-block: 0.6rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r-1);
+    background: var(--surface);
+    font: 0.8rem/1.75 var(--mono);
+    overflow-x: auto;
+    tab-size: 2;
+    --t-com: color-mix(in oklab, var(--c-ink) 45%, var(--c-paper));
+    --t-str: light-dark(#a8501f, #ffc27a);
+    --t-kw: light-dark(#b0287a, #ff7ac6);
+    --t-prop: light-dark(#1d64b8, #8fd3ff);
+    --t-var: light-dark(#6a46f5, #c5b6ff);
+    --t-fn: light-dark(#a8501f, #ffc27a);
+    --t-num: light-dark(#14805a, #7fe0b2);
+  }
+  .excerpt code { display: block; min-inline-size: max-content; font: inherit; }
+  .excerpt .ln { display: block; padding-inline: 0.9rem 1.25rem; white-space: pre; }
+  .excerpt .ln[data-n]::before { content: attr(data-n); display: inline-block; inline-size: 3.25ch; margin-inline-end: 1.25ch; color: var(--faint); text-align: end; user-select: none; }
+  .excerpt .ln.hit { background: color-mix(in oklab, var(--c-accent) 14%, transparent); box-shadow: inset 3px 0 var(--c-accent); }
+  .excerpt .ln.gap::before { color: var(--faint); }
+  .excerpt.fallback { background: var(--c-paper); color: var(--dim); }
+  .t-com { color: var(--t-com); } .t-str { color: var(--t-str); } .t-kw { color: var(--t-kw); } .t-prop { color: var(--t-prop); }
+  .t-var { color: var(--t-var); } .t-fn { color: var(--t-fn); } .t-num { color: var(--t-num); }
+
+  .related { margin-block-start: clamp(3rem, 6vw, 5rem); }
+  .related h2 { margin-block-end: 1.25rem; font-size: 1.4rem; letter-spacing: -0.025em; }
+
+  @media (width < 48rem) {
+    .technique .intro-block { grid-template-columns: minmax(0, 1fr); }
+    .use { grid-template-columns: minmax(0, 1fr); }
+    .use .poster { max-inline-size: 28rem; }
+  }
+}

@@ -1,39 +1,69 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>CSS Scenes</title>
 <!--head-->
-<meta name="description" content="Full-window scenes and animations built with modern CSS. No images or JavaScript unless a scene needs them.">
+<meta name="description" content="Full-window scenes and animations built with modern CSS, each with its source, a write-up and the techniques it uses. No images or JavaScript unless a scene needs them.">
 <!--css-->
-<header class="topbar">
-  <a class="wordmark" href="./" aria-current="page">CSS Scenes</a>
-  <a class="jump" href="#gallery">Browse <!--count--> scenes</a>
-</header>
-<section class="hero" aria-labelledby="hero-title">
-  <div class="pitch">
-    <p class="eyebrow">A gallery of animated scenes</p>
-    <h1 id="hero-title">Whole worlds, drawn in&nbsp;CSS.</h1>
-    <p class="lede">Each scene is one HTML file and one stylesheet: <code>offset-path</code>, <code>shape()</code>, <code>@property</code>, <code>sibling-index()</code> and friends. No images or JavaScript unless a scene truly needs them.</p>
+<!--sitebar-->
+<h1 class="sr">CSS Scenes: whole worlds drawn in modern CSS</h1>
+<!--
+  The first scene on screen; the reel takes over from there. Change the slug to feature another scene.
+  hero:rainy-alley
+  The bento's opening tiles and their sizes (xl, wide, sm), in order; every other scene follows as a small tile.
+  bento:clockmakers-observatory=xl ramen-counter=sm liftoff=sm kaleidoscope=wide rainy-alley=wide
+-->
+<!--player-->
+<main>
+  <section id="scenes" class="collection" aria-labelledby="scenes-title">
+    <div class="head">
+      <div>
+        <p class="label kicker">The collection</p>
+        <h2 id="scenes-title" class="display"><!--count-word--> scenes.<br><em>One stylesheet each.</em></h2>
+      </div>
+      <fieldset class="seg" aria-label="Show scenes"><legend class="sr">Show scenes</legend><!--filters--></fieldset>
+    </div>
+    <ul class="bento" role="list">
+<!--tiles-->
+    </ul>
+  </section>
+
+  <section id="techniques" class="techniques" aria-labelledby="tech-title">
+    <div class="head">
+      <div>
+        <p class="label kicker">Techniques</p>
+        <h2 id="tech-title" class="display">Browse by <em>CSS feature.</em></h2>
+      </div>
+      <p class="intro">Every feature the scenes are built on, with its Baseline status and the exact lines that use it. Pick one to see it at work across the gallery.</p>
+    </div>
+    <ul class="atlas" role="list">
+    <!--techniques-->
+    </ul>
+    <p class="more"><a class="btn" href="techniques/">All <!--tech-count--> techniques <span aria-hidden="true">→</span></a></p>
+  </section>
+
+  <section id="about" class="about" aria-labelledby="about-title">
+    <div class="pitch">
+      <p class="label kicker">About</p>
+      <h2 id="about-title" class="display">Built with CSS.<br><em>Watched in a browser.</em></h2>
+    </div>
+    <div class="words">
+      <p>Each scene is one HTML file and one stylesheet, drawn and animated with the newest parts of CSS: <code>sibling-index()</code>, <code>shape()</code>, <code>@property</code>, <code>offset-path</code> and friends. A scene uses JavaScript or an image only when it truly needs one, and says so.</p>
+      <p>Open any scene and press <b>How it’s made</b> to read its write-up beside its code, or take it to CodePen. <b>Controls</b> changes its speed, colours and complexity, and <b>Stats</b> shows what it costs your browser.</p>
+      <p>Scenes respect reduced motion with a complete still frame, and fall back gracefully where a feature isn’t supported yet. No trackers, no web fonts, no third-party scripts.</p>
+    </div>
     <dl class="figures">
-      <div><dt>Scenes</dt><dd><!--count--></dd></div>
-      <div><dt>Average page</dt><dd><!--avg--> <small>KB</small></dd></div>
-      <div><dt>Budget, brotli</dt><dd><!--budget--> <small>KB</small></dd></div>
-      <div><dt>Image files</dt><dd>0</dd></div>
+      <div><dt class="label">Scenes</dt><dd><!--count--></dd></div>
+      <div><dt class="label">Average page</dt><dd><!--avg--> <small>KB</small></dd></div>
+      <div><dt class="label">Budget per page</dt><dd><!--budget--> <small>KB</small></dd></div>
+      <div><dt class="label">Techniques</dt><dd><!--tech-count--></dd></div>
     </dl>
-  </div>
-  <!--hero:clockmakers-observatory-->
-</section>
-<main id="gallery" class="gallery">
-  <div class="filters" role="radiogroup" aria-label="Show scenes">
-      <!--filters-->
-  </div>
-  <ul class="grid" role="list">
-<!--cards-->
-  </ul>
+  </section>
 </main>
-<footer class="colophon">
-  <p>Every page here, scene and stylesheet together, ships under <!--budget--> KB compressed. Scenes respect reduced motion and fall back gracefully where a feature isn't supported yet.</p>
-  <p>Open any scene and press <b>Source</b> to read exactly how it's built, or take it to CodePen.</p>
+<footer class="footnote">
+  <span>CSS Scenes. Sizes are Brotli-compressed HTML, CSS and JavaScript.</span>
+  <span><a href="techniques/">Techniques</a> · <a href="#scenes">Scenes</a></span>
 </footer>
+<!--js-->
