@@ -11,7 +11,7 @@ export const TECHNIQUES = [
   { key: 'sibling-index', name: 'sibling-index()', also: 'sibling-count()', group: 'Tree counting',
     match: /sibling-(index|count)/, css: /sibling-(index|count)\(\)/, test: '(order: sibling-index())',
     summary: 'sibling-index() is an element’s position among its siblings, counting from 1, and sibling-count() is how many there are. One rule can then stagger, spread or rotate a row of identical elements, with no :nth-child ladder and no index written on each element.',
-    fallback: '/* Every scene here keeps an inline index for browsers without it */\n.rain i { --i: 1; }  /* style="--i: n" in the markup */\n@supports (order: sibling-index()) {\n  .rain i { --i: sibling-index(); }\n}' },
+    fallback: '/* An inline index for browsers without it */\n.rain i { --i: 1; } /* style="--i: n" */\n@supports (order: sibling-index()) {\n  .rain i { --i: sibling-index(); }\n}' },
   { key: 'property', name: '@property', group: 'Custom properties',
     match: /@property/, css: /@property/, test: 'window.CSSPropertyRule',
     summary: 'Registers a custom property with a type, an initial value and whether it inherits. A typed property can be animated: the browser interpolates an <angle>, <color> or <length> instead of flipping between two strings. It is also cheaper, because the value is stored as a value rather than re-read as text.' },
@@ -158,5 +158,5 @@ export function excerpts(css, re, limit = 2, max = 12) {
 /** An excerpt as highlighted, numbered lines; the lines that use the technique are marked. */
 export const renderExcerpt = ({ rows }) => `<pre class="excerpt"><code>${rows.map((r) => (r.gap
   ? '<span class="ln gap" data-n="⋮"></span>'
-  : `<span class="ln${r.hit ? ' hit' : ''}" data-n="${r.n}">${highlight.css(r.text) || ' '}</span>`)).join('\n')}</code></pre>`;
+  : `<span class="ln${r.hit ? ' hit' : ''}" data-n="${r.n}">${highlight.css(r.text) || ' '}</span>`)).join('')}</code></pre>`;
 

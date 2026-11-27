@@ -13,17 +13,6 @@
   .techniques-index .bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem 2rem; margin-block: clamp(2rem, 4vw, 3rem) 1.5rem; }
   fieldset.seg { margin: 0; min-inline-size: 0; }
   .legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
-  .atlas {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
-    gap: 1px;
-    padding: 0;
-    list-style: none;
-    border: 1px solid var(--line);
-    border-radius: var(--r-2);
-    background: var(--line);
-    overflow: clip;
-  }
   .techniques-index:has([value="widely"]:checked) .atlas li:not([data-status="widely"]),
   .techniques-index:has([value="newly"]:checked) .atlas li:not([data-status="newly"]),
   .techniques-index:has([value="limited"]:checked) .atlas li:not([data-status="limited"]) { display: none; }
@@ -31,7 +20,7 @@
   /* ── A technique ──────────────────────────────────────────────────────────────────────────────────────────────── */
   .technique .intro-block { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 2rem clamp(2rem, 5vw, 5rem); align-items: end; }
   .technique h1 {
-    font: 700 clamp(2.6rem, 7vw, 6.25rem)/0.98 var(--mono);
+    font: 700 clamp(2.2rem, min(7vw, 50vw / (var(--len, 10) * 0.62)), 6.25rem)/0.98 var(--mono);
     letter-spacing: -0.06em;
     overflow-wrap: anywhere;
     text-wrap: balance;

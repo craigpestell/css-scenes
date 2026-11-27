@@ -92,14 +92,14 @@ export function renderTechnique({ t, catalogue, sources, scenes, head, css }) {
   <header class="intro-block">
     <div>
       <p class="label kicker"><a href="/techniques/">Techniques</a> / ${esc(t.group)}</p>
-      <h1>${title(t.name)}</h1>
+      <h1 style="--len: ${Math.max(8, ...t.name.split(' ').map((w) => w.length))}">${title(t.name)}</h1>
       ${t.also ? `<p class="also">with <code>${esc(t.also)}</code></p>` : ''}
       <p class="lede">${esc(t.summary)}</p>
     </div>
     <aside class="support" aria-label="Browser support">
       <p class="status ${t.status.level}">${esc(t.status.label)}${esc(since)}</p>
       ${liveCheck(t.test)}
-      ${t.fallback ? `<pre class="excerpt fallback"><code>${t.fallback.split('\n').map((l) => `<span class="ln">${esc(l)}</span>`).join('\n')}</code></pre>` : ''}
+      ${t.fallback ? `<pre class="excerpt fallback"><code>${t.fallback.split('\n').map((l) => `<span class="ln">${esc(l) || ' '}</span>`).join('')}</code></pre>` : ''}
     </aside>
   </header>
   <h2 class="used">Used in ${t.uses.length} scene${t.uses.length === 1 ? '' : 's'}</h2>

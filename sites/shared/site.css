@@ -146,6 +146,19 @@
 }
 
 @layer base {
+  /* The techniques grid: hairlines between tiles drawn by each tile (right and below), so a short last row stays clean */
+  .atlas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2);
+    overflow: clip;
+  }
+  .atlas { gap: 1px; }
+  .atlas > li { box-shadow: 1px 0 var(--line), 0 1px var(--line), 1px 1px var(--line); }
+
   /* A technique tile: its name in code, its Baseline status, the faces of the scenes that use it */
   .tech-tile {
     display: grid;

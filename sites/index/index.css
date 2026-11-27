@@ -197,17 +197,6 @@
   .collection:has(.seg :checked:not([value="all"])) .tile { grid-column: span 4; grid-row: span 2; }
 
   /* ── Techniques ───────────────────────────────────────────────────────────────────────────────────────────────── */
-  .atlas {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
-    gap: 1px;
-    padding: 0;
-    list-style: none;
-    border: 1px solid var(--line);
-    border-radius: var(--r-2);
-    background: var(--line);
-    overflow: clip;
-  }
   .more { margin-block-start: 1.5rem; }
 
   /* ── About ────────────────────────────────────────────────────────────────────────────────────────────────────── */

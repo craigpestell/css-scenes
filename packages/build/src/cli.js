@@ -75,7 +75,7 @@ async function build() {
     // Previous/next wrap around, in the same order as the index cards
     const prev = scenes.at(i - 1);
     const next = scenes[(i + 1) % scenes.length];
-    const chrome = sceneChrome({ slug, title: meta.title, prev, next, mode: modeOf(meta) });
+    const chrome = sceneChrome({ slug, title: meta.title, prev, next, mode: modeOf(meta), n: i + 1, total: scenes.length });
     const script = js ? `<script type="module">${js.replaceAll('</script', '<\\/script')}</script>` : '';
     const minCss = await bundleCss(css, tokensCss);
     const description = describe(html);
@@ -148,6 +148,7 @@ async function build() {
   await writeFile(path.join(dist, '404.html'), lostHtml
     .replace('<!--head-->', () => headTags({ root: '/', title: 'Not found · CSS Scenes', description: '', path: '/', image: null }))
     .replace('<!--css-->', `<style>${await bundleCss(lostCss, tokensCss, '404.css')}</style>`)
+    .replace('<!--sitebar-->', () => siteBar({ root: '/', here: '' }))
     .replace('<!--scenes-->', () => renderLost(shown)));
 
   // Shared files: the site icon and the link-preview images
