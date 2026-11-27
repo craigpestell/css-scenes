@@ -99,7 +99,7 @@ export function renderTechnique({ t, catalogue, sources, scenes, head, css }) {
     <aside class="support" aria-label="Browser support">
       <p class="status ${t.status.level}">${esc(t.status.label)}${esc(since)}</p>
       ${liveCheck(t.test)}
-      ${t.fallback ? `<pre class="excerpt fallback"><code>${t.fallback.split('\n').map((l) => `<span class="ln">${esc(l) || ' '}</span>`).join('')}</code></pre>` : ''}
+      ${t.fallback ? `<pre class="excerpt fallback" tabindex="0"><code>${t.fallback.split('\n').map((l) => `<span class="ln">${esc(l) || ' '}</span>`).join('')}</code></pre>` : ''}
     </aside>
   </header>
   <h2 class="used">Used in ${t.uses.length} scene${t.uses.length === 1 ? '' : 's'}</h2>

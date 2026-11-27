@@ -105,7 +105,8 @@ a.addEventListener('pointerenter',load);a.addEventListener('focus',load);
 a.addEventListener('click',e=>{if(e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();d.open?d.close():open()});
 // Escape closes it (closedby); so does a click on the scene (not on the toolbar or the Controls column)
 addEventListener('pointerdown',(e)=>{if(d.open&&!e.composedPath().some((el)=>el===d||el===n||el.localName==='scene-controls'))d.close()});
-d.addEventListener('close',()=>a.setAttribute('aria-expanded',false));
+// Closing with focus inside it (Escape, Close) hands focus back to the How it’s made link
+d.addEventListener('close',()=>{a.setAttribute('aria-expanded',false);const f=document.activeElement;if(f===document.body||d.contains(f))a.focus({preventScroll:true})});
 // Previous/next keep the source open on the next scene; ← and → follow them unless a control has the keys
 const [p,x]=n.querySelectorAll('[rel]');
 [p,x].forEach((l)=>l.addEventListener('click',()=>{if(d.open)l.hash='source'}));

@@ -156,7 +156,7 @@ export function excerpts(css, re, limit = 2, max = 12) {
 }
 
 /** An excerpt as highlighted, numbered lines; the lines that use the technique are marked. */
-export const renderExcerpt = ({ rows }) => `<pre class="excerpt"><code>${rows.map((r) => (r.gap
+export const renderExcerpt = ({ rows }) => `<pre class="excerpt" tabindex="0"><code>${rows.map((r) => (r.gap
   ? '<span class="ln gap" data-n="⋮"></span>'
   : `<span class="ln${r.hit ? ' hit' : ''}" data-n="${r.n}">${highlight.css(r.text) || ' '}</span>`)).join('')}</code></pre>`;
 
