@@ -689,11 +689,26 @@ if (window === window.top && !/^#(card|preview)$/.test(location.hash)) {
     button.setAttribute('aria-expanded', 'false');
     button.setAttribute('aria-controls', sw.id);
     button.addEventListener('pointerenter', () => sw.fill(), { once: true });
+    // The number toggles the list. Light dismiss closes it on the number's own pointerdown, so remember whether it was
+    // open then, or the click would open it straight back up.
+    let wasOpen = false;
+    button.addEventListener('pointerdown', () => { wasOpen = sw.matches(':popover-open'); });
     button.addEventListener('click', (e) => {
       if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       e.preventDefault();
+      if (wasOpen) { wasOpen = false; sw.hidePopover?.(); return; }
       sw.togglePopover();
     });
+    // Escape and a click anywhere else close it. Popovers light-dismiss on their own in most browsers, but not every
+    // browser does it reliably for a custom element whose content lives in a shadow root, so close it here too.
+    const close = () => { if (sw.matches(':popover-open')) { sw.hidePopover(); return true; } };
+    addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && close()) { e.preventDefault(); e.stopImmediatePropagation(); button.focus({ preventScroll: true }); }
+    }, true);
+    addEventListener('pointerdown', (e) => {
+      const path = e.composedPath();
+      if (!path.includes(sw) && !path.includes(button)) close();
+    }, true);
     addEventListener('keydown', (e) => {
       if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey || e.key.toLowerCase() !== 'g') return;
       if (e.composedPath().some((el) => el.matches?.('input,select,textarea,[contenteditable]'))) return;
