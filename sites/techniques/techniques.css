@@ -72,6 +72,8 @@
     --t-fn: light-dark(#a8501f, #ffc27a);
     --t-num: light-dark(#14805a, #7fe0b2);
   }
+  /* Focusable, so long lines can be scrolled from the keyboard */
+  .excerpt:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
   .excerpt code { display: block; min-inline-size: max-content; font: inherit; }
   .excerpt .ln { display: block; padding-inline: 0.9rem 1.25rem; white-space: pre; }
   .excerpt .ln[data-n]::before { content: attr(data-n); display: inline-block; inline-size: 3.25ch; margin-inline-end: 1.25ch; color: var(--faint); text-align: end; user-select: none; }

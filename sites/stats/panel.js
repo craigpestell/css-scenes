@@ -303,7 +303,8 @@ class SceneControls extends HTMLElement {
       this.paint();
       requestAnimationFrame(this.tick);
     };
-    this.toggle(store.get('controls') === 'open', store.get('panel') === 'stats' ? 'stats' : 'controls');
+    // A phone always starts with the scene in full: there the panel is a sheet over half of it
+    this.toggle(store.get('controls') === 'open' && !phone.matches, store.get('panel') === 'stats' ? 'stats' : 'controls');
   }
 
   /** Open on a tab, or close when that tab is already showing: what the toolbar buttons do. */
@@ -622,6 +623,8 @@ const SWITCHER_CSS = `
   margin:0;padding:0;border:0;background:none;overflow:visible;
   --bg:light-dark(#f6f4efF2,#13111bF2);--fg:light-dark(#16131d,#f2eee6);--dim:light-dark(#5f5a68,#a8a39b);--line:light-dark(#16131d1f,#f2eee62b);
   font:13px/1.4 system-ui,sans-serif;color:var(--fg)}
+/* all:initial above also undoes the browser's rule that hides a closed popover, so hide it again here */
+:host(:not(:popover-open)){display:none}
 .box{box-sizing:border-box;inline-size:min(54rem,100vw - 1rem);max-block-size:calc(100dvh - var(--chrome-top,3.25rem) - 1.25rem);overflow:auto;overscroll-behavior:contain;
   display:grid;gap:.9rem;padding:1rem;border-radius:1rem;background:var(--bg);backdrop-filter:blur(20px);box-shadow:0 0 0 1px var(--line),0 1.75rem 4.5rem #000a}
 @media (prefers-reduced-motion:no-preference){:host(:popover-open) .box{animation:in .18s cubic-bezier(.22,1,.36,1)}@keyframes in{from{opacity:0;translate:0 -.4rem}}}
@@ -659,6 +662,8 @@ class SceneSwitcher extends HTMLElement {
     this.addEventListener('toggle', (e) => {
       this.button?.setAttribute('aria-expanded', e.newState === 'open');
       if (e.newState === 'open') this.fill().then(() => this.shadowRoot.querySelector('[aria-current]')?.focus({ preventScroll: true }));
+      // Closing with focus inside (G, Escape) hands it back to the scene number instead of leaving it in a hidden list
+      else if (document.activeElement === this) this.button?.focus({ preventScroll: true });
     });
   }
   async fill() {

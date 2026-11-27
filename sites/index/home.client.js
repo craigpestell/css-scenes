@@ -64,6 +64,21 @@ if (!calm.matches) {
   new IntersectionObserver(([e]) => screen.toggleAttribute('data-paused', !e.isIntersecting), { threshold: 0.35 }).observe(screen);
 }
 
+// Once the player is scrolled fully out of view its scene holds still, so it doesn't keep drawing under the collection
+{
+  let held = [];
+  new IntersectionObserver(([e]) => {
+    const doc = frame.querySelector('iframe')?.contentDocument;
+    if (!e.isIntersecting) {
+      held = doc?.getAnimations().filter((x) => x.playState === 'running') ?? [];
+      held.forEach((x) => x.pause());
+    } else {
+      held.forEach((x) => x.play());
+      held = [];
+    }
+  }).observe(frame);
+}
+
 // Posters play live on hover or focus, after a short pause so sweeping the pointer across the grid stays quiet
 if (matchMedia('(hover: hover)').matches && !calm.matches) {
   let timer, live;
